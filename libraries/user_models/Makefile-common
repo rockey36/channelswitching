@@ -1,0 +1,7 @@
+USER_MODELS_OPTIONS = -DUSER_MODELS_LIB
+USER_MODELS_DIR = ../libraries/user_models/src
+USER_MODELS_SRCS = \
+$(USER_MODELS_DIR)/phy_chanswitch.cpp
+USER_MODELS_INCLUDES = \
+-I$(USER_MODELS_DIR)
+

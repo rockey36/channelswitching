@@ -1,0 +1,44 @@
+# To activate an addon, uncomment the Makefile for the addon here.
+#
+# Then, make clean and make.
+#
+# Addons are divided into four classes:
+#  Libraries are the protocol libraries sold with QualNet
+#  Interfaces are external interfaces requiring third party s/w.
+#  Addons are usually temporary code or custom code not for sale
+#  Contributed models are given to us by customers for distribution.
+
+# INSERT LIBRARIES HERE
+include ../libraries/developer/Makefile-windows
+include ../libraries/multimedia_enterprise/Makefile-windows
+include ../libraries/wireless/Makefile-windows
+include ../libraries/advanced_wireless/Makefile-windows
+#include ../libraries/ale_asaps/Makefile-windows   # only supported on 32 bit Windows and Linux
+include ../libraries/cellular/Makefile-windows
+include ../libraries/umts/Makefile-windows
+#include ../libraries/military/Makefile-windows
+include ../libraries/satellite/Makefile-windows
+#include ../libraries/tirem/Makefile-windows      # limited to platforms tirem supports
+include ../libraries/urban/Makefile-windows
+include ../libraries/network_security/Makefile-windows
+include ../libraries/sensor_networks/Makefile-windows
+# USER_MODELS library
+include ../libraries/user_models/Makefile-windows
+
+
+# INSERT INTERFACES HERE
+#include ../interfaces/dis/Makefile-windows
+#include ../interfaces/hla/Makefile-windows
+#include ../interfaces/interfacetutorial/Makefile-windows
+#include ../interfaces/qsh/Makefile-windows
+#include ../interfaces/stk/Makefile-windows
+include ../interfaces/agi/Makefile-windows
+
+# INSERT ADDONS HERE
+#include ../addons/ebe/Makefile-windows    # requires SPAWAR permission, no Windows support
+#include ../addons/link16/Makefile-windows # requires SPAWAR permission
+#include ../addons/opar/Makefile-windows   # not for distribution
+#include ../addons/rfps/Makefile-windows   # requires SPAWAR permission and EMPIRE s/w
+
+# INSERT Contributed Models HERE
+#include ../contributed/maodv/Makefile-windows
