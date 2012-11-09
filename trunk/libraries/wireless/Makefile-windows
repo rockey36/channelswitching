@@ -1,0 +1,16 @@
+#
+# Define Wireless library models.
+#
+
+include ../libraries/wireless/Makefile-common
+
+ADDON_OPTIONS   = $(ADDON_OPTIONS) $(WIRELESS_OPTIONS)
+ADDON_SRCS      = $(ADDON_SRCS) $(WIRELESS_SRCS)
+ADDON_INCLUDES  = $(ADDON_INCLUDES) $(WIRELESS_INCLUDES)
+ADDON_LIBRARIES = $(ADDON_LIBRARIES) ../lib/$(ARCH)/libexpat.lib
+
+SHPTOXML_SRCS     = $(SHPTOXML_SRCS:/=\)
+SHPTOXML_OBJS_PRE = $(SHPTOXML_SRCS:.cpp=.obj)
+SHPTOXML_OBJS     = $(SHPTOXML_OBJS_PRE:.c=.obj)
+
+ALL_TARGETS = $(ALL_TARGETS) $(RADIO_RANGE_EXEC) $(SHPTOXML_EXEC)
