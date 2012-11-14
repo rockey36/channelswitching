@@ -45,6 +45,49 @@
                     <option value="PHY802.11a" name="PHY802.11a Reception Model" />
                 </variable>
             </option>
+            <option value="PHY_CHANSWITCH" name="Channel Switching" addon="wireless">
+                <variable key="PHY_CHANSWITCH-AUTO-RATE-FALLBACK" type="Selection" name="Enable Auto Rate Fallback" default="NO">
+                    <option value="NO" name="No">
+                        <variable key="PHY_CHANSWITCH-DATA-RATE" type="Fixed multiplier" name="Data Rate" default="6 Mbps" help="bandwidth in bps. supported data rates: 6Mbps, 9Mbps, 12Mbps, 18Mbps, 24Mbps, 36Mbps, 48Mbps, 54Mbps" unit="bps" maxunit="Gbps" minunit="bps" />
+                    </option>
+                    <option value="YES" name="Yes">
+                        <variable key="DUMMY-PHY_CHANSWITCH-DATA-RATE-FOR-BROADCAST" type="Selection" name="Specify Broadcast Data Rate" default="Not Applicable">
+                            <option value="Not Applicable" name="No" />
+                            <option value="YES" name="Yes">
+                                <variable key="PHY802.11-DATA-RATE-FOR-BROADCAST" type="Fixed multiplier" name="Broadcast Data Rate" default="54 Mbps" help="bandwidth in bps. supported data rates: 6Mbps, 9Mbps, 12Mbps, 18Mbps, 24Mbps, 36Mbps, 48Mbps, 54Mbps" unit="bps" maxunit="Gbps" minunit="bps" />
+                            </option>
+                        </variable>
+                    </option>
+                </variable>
+                <variable key="PHY_CHANSWITCH-TX-POWER--6MBPS" type="Fixed" name="Transmission Power at 6 Mbps (dBm)" default="20.0" />
+                <variable key="PHY_CHANSWITCH-TX-POWER--9MBPS" type="Fixed" name="Transmission Power at 9 Mbps (dBm)" default="20.0" />
+                <variable key="PHY_CHANSWITCH-TX-POWER-12MBPS" type="Fixed" name="Transmission Power at 12 Mbps (dBm)" default="19.0" />
+                <variable key="PHY_CHANSWITCH-TX-POWER-18MBPS" type="Fixed" name="Transmission Power at 18 Mbps (dBm)" default="19.0" />
+                <variable key="PHY_CHANSWITCH-TX-POWER-24MBPS" type="Fixed" name="Transmission Power at 24 Mbps (dBm)" default="18.0" />
+                <variable key="PHY_CHANSWITCH-TX-POWER-36MBPS" type="Fixed" name="Transmission Power at 36 Mbps (dBm)" default="18.0" />
+                <variable key="PHY_CHANSWITCH-TX-POWER-48MBPS" type="Fixed" name="Transmission Power at 48 Mbps (dBm)" default="16.0" />
+                <variable key="PHY_CHANSWITCH-TX-POWER-54MBPS" type="Fixed" name="Transmission Power at 54 Mbps (dBm)" default="16.0" />
+                <variable key="PHY_CHANSWITCH-RX-SENSITIVITY--6MBPS" type="Fixed" name="Receive Sensitivity at 6 Mbps (dBm)" default="-85.0" />
+                <variable key="PHY_CHANSWITCH-RX-SENSITIVITY--9MBPS" type="Fixed" name="Receive Sensitivity at 9 Mbps (dBm)" default="-85.0" />
+                <variable key="PHY_CHANSWITCH-RX-SENSITIVITY-12MBPS" type="Fixed" name="Receive Sensitivity at 12 Mbps (dBm)" default="-83.0" />
+                <variable key="PHY_CHANSWITCH-RX-SENSITIVITY-18MBPS" type="Fixed" name="Receive Sensitivity at 18 Mbps (dBm)" default="-83.0" />
+                <variable key="PHY_CHANSWITCH-RX-SENSITIVITY-24MBPS" type="Fixed" name="Receive Sensitivity at 24 Mbps (dBm)" default="-78.0" />
+                <variable key="PHY_CHANSWITCH-RX-SENSITIVITY-36MBPS" type="Fixed" name="Receive Sensitivity at 36 Mbps (dBm)" default="-78.0" />
+                <variable key="PHY_CHANSWITCH-RX-SENSITIVITY-48MBPS" type="Fixed" name="Receive Sensitivity at 48 Mbps (dBm)" default="-69.0" />
+                <variable key="PHY_CHANSWITCH-RX-SENSITIVITY-54MBPS" type="Fixed" name="Receive Sensitivity at 54 Mbps (dBm)" default="-69.0" />
+                <variable key="PHY802.11-ESTIMATED-DIRECTIONAL-ANTENNA-GAIN" type="Fixed" name="Estimated Directional Antenna Gain (dB)" default="15.0" />
+                <variable key="PHY-RX-MODEL" type="Selection" name="Packet Reception Model" default="PHY_802.11a">
+<!--
+                    <option value="BER-BASED" name="BER-based Reception Model" help="If specified, the Simulator will look up Bit Error Rate (BER) in the SNR - BER table specified by BER-TABLE-FILE.">
+                        <variable name="Number of BER Tables" key="NUM-PHY-RX-BER-TABLE-802.11a" default="8" type="Array" disable="true">
+                            <variable key="PHY-RX-BER-TABLE-FILE" type="File" name="BER Table" default="[Required]" filetype="ber" />
+                        </variable>
+                    </option>
+										-->
+                    <option value="PHY802.11a" name="PHY802.11a Reception Model" />
+                    <option value="PHY_CHANSWITCH" name="Channel Switching Reception Model" />
+                </variable>
+            </option>
             <option value="PHY802.11b" name="802.11b Radio" addon="wireless">
                 <variable key="PHY802.11-AUTO-RATE-FALLBACK" type="Selection" name="Enable Auto Rate Fallback" default="NO">
                     <option value="NO" name="No">

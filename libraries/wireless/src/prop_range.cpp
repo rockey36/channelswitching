@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
                     &nodeInput,
                     interfaceIndex,
                     &networkAddress,
-                    PHY802_11a,
+                    PHY_CHANSWITCH,
                     &node->macData[interfaceIndex]->phyNumber);
 
             phyModel = PHY_CHANSWITCH;

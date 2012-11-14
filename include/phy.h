@@ -90,13 +90,13 @@ enum PhyModel {
 enum PhyRxModel {
     RX_802_11a,
     RX_802_11b,
+		RX_CHANSWITCH,
     RX_802_16,
     RX_UMTS,
     RX_802_15_4,
     SNR_THRESHOLD_BASED,
     BER_BASED,
-    PCOM_BASED,
-		RX_CHANSWITCH
+    PCOM_BASED
 };
 
 //**
