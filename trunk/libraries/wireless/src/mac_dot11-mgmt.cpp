@@ -31,6 +31,7 @@
 //---------------------HCCA-Updates------------------------------------------
 #include "mac_dot11-hcca.h"
 #include "phy_802_11.h"
+#include "phy_chanswitch.h"
 #include "phy_abstract.h"
 //--------------------HCCA-Updates-End---------------------------------------
 //-------------------------------DEFINITIONS--------------------------------
@@ -5714,7 +5715,7 @@ void MacDot11ManagementInit(
             case PHY_CHANSWITCH: {
                 PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*)(thisPhy->phyVar);
                 dot11->thresholdSignalStrength =
-                        Phy802_11GetSignalStrength(node,phychanswitch) +
+                        PhyChanSwitchGetSignalStrength(node,phychanswitch) +
                         DOT11_HANDOVER_RSS_MARGIN;
                 break;
             }

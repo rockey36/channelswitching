@@ -71,6 +71,7 @@
 
 #ifdef WIRELESS_LIB
 #include "phy_802_11.h"
+#include "phy_chanswitch.h"
 #include "phy_abstract.h"
 #include "antenna_global.h"
 #include "antenna_switched.h"
@@ -668,6 +669,7 @@ void GUI_InitWirelessInterface(Node* node,
     PhyData*         thisRadio;
     PhyModel         phyModel = PHY_NONE;
     PhyData802_11*   phy802_11 = NULL;
+		PhyDataChanSwitch * phychanswitch = NULL;
     PhyDataAbstract* phyAbstract;
     AntennaOmnidirectional* omniDirectional;
     AntennaSwitchedBeam* switchedBeam;
