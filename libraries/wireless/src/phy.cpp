@@ -2045,6 +2045,14 @@ void PHY_StartTransmittingSignal(
 
             break;
         }
+        case PHY_CHANSWITCH: {
+            PhyChanSwitchStartTransmittingSignal(
+                node, phyNum, msg,
+                useMacLayerSpecifiedDelay, delayUntilAirborne);
+
+            break;
+        }
+
         case PHY_ABSTRACT: {
             PhyAbstractStartTransmittingSignal(
                 node, phyNum, msg,
