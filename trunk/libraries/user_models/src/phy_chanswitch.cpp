@@ -847,7 +847,7 @@ void PhyChanSwitchInit(
         node->nodeId,
         node->phyData[phyIndex]->networkAddress,
         nodeInput,
-        "PHYChanSwitch-AUTO-RATE-FALLBACK",
+        "PHY_CHANSWITCH-AUTO-RATE-FALLBACK",
         &wasFound,
         &yes);
 
@@ -859,7 +859,7 @@ void PhyChanSwitchInit(
             node->nodeId,
             node->phyData[phyIndex]->networkAddress,
             nodeInput,
-            "PHYChanSwitch-DATA-RATE",
+            "PHY_CHANSWITCH-DATA-RATE",
             &wasFound1,
             &dataRate);
 
@@ -871,7 +871,7 @@ void PhyChanSwitchInit(
             }
             if (i >= phychanswitch->numDataRates) {
                 ERROR_ReportError(
-                    "Specified PHYChanSwitch-DATA-RATE is not "
+                    "Specified PHY_CHANSWITCH-DATA-RATE is not "
                     "in the supported data rate set");
             }
 
@@ -880,8 +880,8 @@ void PhyChanSwitchInit(
         }
         else {
             ERROR_ReportError(
-                "PHYChanSwitch-DATA-RATE not set without "
-                "PHYChanSwitch-AUTO-RATE-FALLBACK turned on");
+                "PHY_CHANSWITCH-DATA-RATE not set without "
+                "PHY_CHANSWITCH-AUTO-RATE-FALLBACK turned on");
         }
     }
 
@@ -894,7 +894,7 @@ void PhyChanSwitchInit(
         node->nodeId,
         node->phyData[phyIndex]->networkAddress,
         nodeInput,
-        "PHYChanSwitch-DATA-RATE-FOR-BROADCAST",
+        "PHY_CHANSWITCH-DATA-RATE-FOR-BROADCAST",
         &wasFound,
         &dataRateForBroadcast);
 
@@ -909,7 +909,7 @@ void PhyChanSwitchInit(
             i > phychanswitch->highestDataRateType)
         {
             ERROR_ReportError(
-                "Specified PHYChanSwitch-DATA-RATE-FOR-BROADCAST is not "
+                "Specified PHY_CHANSWITCH-DATA-RATE-FOR-BROADCAST is not "
                 "in the data rate set");
         }
 
@@ -930,7 +930,7 @@ void PhyChanSwitchInit(
         node->nodeId,
         node->phyData[phyIndex]->networkAddress,
         nodeInput,
-        "PHYChanSwitch-ESTIMATED-DIRECTIONAL-ANTENNA-GAIN",
+        "PHY_CHANSWITCH-ESTIMATED-DIRECTIONAL-ANTENNA-GAIN",
         &wasFound,
         &(phychanswitch->directionalAntennaGain_dB));
 
@@ -941,7 +941,7 @@ void PhyChanSwitchInit(
             != ANTENNA_PATTERNED))
     {
         ERROR_ReportError(
-            "PHYChanSwitch-ESTIMATED-DIRECTIONAL-ANTENNA-GAIN is missing\n");
+            "PHY_CHANSWITCH-ESTIMATED-DIRECTIONAL-ANTENNA-GAIN is missing\n");
     }
 
 

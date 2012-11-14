@@ -593,7 +593,7 @@ void PHY_CreateAPhyForMac(
         }
         else if (strcmp(buf, "PHY_CHANSWITCH") == 0) {
             thisPhy->phyRxModel = RX_CHANSWITCH;
-           // PhyChanSwitchSetBerTable(thisPhy);
+            PhyChanSwitchSetBerTable(thisPhy);
         }
         else
 #endif // WIRELESS_LIB

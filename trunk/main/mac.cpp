@@ -3092,7 +3092,7 @@ AddNodeToSubnet(
                     nodeInput,
                     interfaceIndex,
                     &address,
-                    PHY802_11b,
+                    PHY_CHANSWITCH,
                     &node->macData[interfaceIndex]->phyNumber);
 
             phyModel = PHY_CHANSWITCH;
