@@ -35,6 +35,7 @@
 #include "mac_dot11s-frames.h"
 #include "mac_dot11s.h"
 #include "phy_802_11.h"
+#include "phy_chanswitch.h"
 #include "mac_dot11-pc.h"
 //--------------------HCCA-Updates Start---------------------------------//
 #include "mac_dot11-hcca.h"
@@ -3493,7 +3494,7 @@ void MacDot11Init(
                    (UInt32)MAC_PROTOCOL_DOT11,
                    (UInt32)interfaceIndex);
 
-    if (phyModel == PHY802_11a) {
+    if (phyModel == PHY802_11a || phyModel == PHY_CHANSWITCH) {
         dot11->cwMin = DOT11_802_11a_CW_MIN;
         dot11->cwMax = DOT11_802_11a_CW_MAX;
         dot11->slotTime = DOT11_802_11a_SLOT_TIME;
@@ -3634,6 +3635,11 @@ void MacDot11Init(
                 case PHY802_11a: {
                     PhyData802_11* phy802_11 = (PhyData802_11*)(thisPhy->phyVar);
                     turnaroundtime = phy802_11->rxTxTurnaroundTime;
+                    break;
+                }
+                case PHY_CHANSWITCH: {
+                    PhyDataChanSwitch* phyChanSwitch = (PhyDataChanSwitch*)(thisPhy->phyVar);
+                    turnaroundtime = phyChanSwitch->rxTxTurnaroundTime;
                     break;
                 }
                 case PHY_ABSTRACT: {
