@@ -1289,7 +1289,7 @@ void PHY_Finalize(Node *node) {
 
                 break;
             }
-        case PHY_CHANSWITCH: {
+						case PHY_CHANSWITCH: {
                 PhyChanSwitchFinalize(node, phyNum);
 
                 break;
@@ -1912,6 +1912,13 @@ void PHY_StartTransmittingSignal(
 
             break;
         }
+        case PHY_CHANSWITCH: {
+            PhyChanSwitchStartTransmittingSignal(
+                node, phyNum, msg,
+                useMacLayerSpecifiedDelay, delayUntilAirborne);
+
+            break;
+        }
         case PHY_ABSTRACT: {
             PhyAbstractStartTransmittingSignal(
                 node, phyNum, msg, bitSize,
@@ -2418,6 +2425,14 @@ void PHY_ChannelListeningSwitchNotification(
         case PHY802_11b:
         case PHY802_11a: {
             Phy802_11ChannelListeningSwitchNotification(
+                node,
+                phyIndex,
+                channelIndex,
+                startListening);
+            break;
+        }
+        case PHY_CHANSWITCH: {
+            PhyChanSwitchChannelListeningSwitchNotification(
                 node,
                 phyIndex,
                 channelIndex,
@@ -3882,7 +3897,12 @@ double PHY_PropagationRange(Node* node,
         if (phyModel == PHY802_11a)
         {
             numIterations = PHY802_11a_NUM_DATA_RATES;
-        } else if (phyModel == PHY802_11b) {
+        } 
+				else if (phyModel == PHY_CHANSWITCH)
+        {
+            numIterations = PHY_CHANSWITCH_NUM_DATA_RATES;
+        } 
+				else if (phyModel == PHY802_11b) {
             numIterations = PHY802_11b_NUM_DATA_RATES;
         }
     }
@@ -4008,13 +4028,17 @@ double PHY_PropagationRange(Node* node,
             }
         }
 
-        if (phyModel == PHY802_11a || phyModel == PHY802_11b)
-        {
+        if (phyModel == PHY802_11a || phyModel == PHY802_11b || phyModel == PHY_CHANSWITCH){
             int modelType = 'a';
 
             if (phyModel == PHY802_11b) {
                 modelType = 'b';
             }
+
+            if (phyModel == PHY_CHANSWITCH) {
+                modelType = 'c';
+            }
+				
 
             // printf("%.15f %.15f %d %.15f %.3f\n",
             //        txPower_dBm, rxThreshold_mW, index,
