@@ -76,7 +76,7 @@
                 <variable key="PHY_CHANSWITCH-RX-SENSITIVITY-48MBPS" type="Fixed" name="Receive Sensitivity at 48 Mbps (dBm)" default="-69.0" />
                 <variable key="PHY_CHANSWITCH-RX-SENSITIVITY-54MBPS" type="Fixed" name="Receive Sensitivity at 54 Mbps (dBm)" default="-69.0" />
                 <variable key="PHY802.11-ESTIMATED-DIRECTIONAL-ANTENNA-GAIN" type="Fixed" name="Estimated Directional Antenna Gain (dB)" default="15.0" />
-                <variable key="PHY-RX-MODEL" type="Selection" name="Packet Reception Model" default="PHY_802.11a">
+                <variable key="PHY-RX-MODEL" type="Selection" name="Packet Reception Model" default="PHY_CHANSWITCH">
 <!--
                     <option value="BER-BASED" name="BER-based Reception Model" help="If specified, the Simulator will look up Bit Error Rate (BER) in the SNR - BER table specified by BER-TABLE-FILE.">
                         <variable name="Number of BER Tables" key="NUM-PHY-RX-BER-TABLE-802.11a" default="8" type="Array" disable="true">
