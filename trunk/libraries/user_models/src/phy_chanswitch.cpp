@@ -1201,6 +1201,7 @@ void PhyChanSwitchSignalArrivalFromChannel(
 {
     PhyData *thisPhy = node->phyData[phyIndex];
     PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*) thisPhy->phyVar;
+		PhyChanSwitchChangeState(node,phyIndex,PHY_IDLE);
     assert(phychanswitch->mode != PHY_TRANSMITTING);
 
     if (DEBUG)
