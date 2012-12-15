@@ -3776,6 +3776,34 @@ void MacDot11Init(
     dot11->broadcastQueueSize = DOT11_PS_MODE_DEFAULT_BROADCAST_QUEUE_SIZE;
     dot11->unicastQueueSize = DOT11_PS_MODE_DEFAULT_UNICAST_QUEUE_SIZE;
 //---------------------------Power-Save-Mode-End-Updates-----------------//
+
+	// Read channel switching interval
+	// Only if PHY type is Channel Switching
+	if(phyModel == PHY_CHANSWITCH){
+		
+		IO_ReadInt(
+        node->nodeId,
+        &address,
+        nodeInput,
+        "MAC-DOT11-CHANSWITCH-INTERVAL",
+        &wasFound,
+        &anIntInput);
+
+		if (wasFound) {
+			dot11->chanswitchInterval = anIntInput;
+			ERROR_Assert(dot11->chanswitchInterval > 0,
+				"MacDot11Init: "
+				"Value of MAC-DOT11-CHANSWITCH-INTERVAL "
+				"should be greater than zero.\n");
+			}
+		else {
+			dot11->chanswitchInterval = DOT11_CHANSWITCH_INTERVAL;
+			}
+		}
+	else {
+		dot11->chanswitchInterval = 0;
+		}
+
     // Read short retry count.
     // Format is :
     // MAC-DOT11-SHORT-PACKET-TRANSMIT-LIMIT <value>
