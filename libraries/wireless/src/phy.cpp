@@ -502,6 +502,83 @@ void PHY_CreateAPhyForMac(
         }
     }
 
+	//CHANSWITCH-CHANNEL-MASK
+	//Only used by Channel Switching 
+	if(phyModel == PHY_CHANSWITCH){
+		IO_ReadString(
+			node,
+			node->nodeId,
+			interfaceIndex,
+			nodeInput,
+			"PHY-CHANSWITCH-CHANNEL-MASK",
+			&wasFound,
+			buf);
+
+		if (wasFound) {
+			int numberChannels = PROP_NumberChannels(node);
+
+			if (strlen(buf) > (unsigned)numberChannels) {
+				char errorMessage[10*MAX_STRING_LENGTH];
+				char addr[MAX_STRING_LENGTH];
+				NodeAddress subnetAddress;
+
+				subnetAddress = MAPPING_GetSubnetAddressForInterface(node,
+					node->nodeId, interfaceIndex);
+
+				IO_ConvertIpAddressToString(subnetAddress, addr);
+				sprintf(errorMessage,
+					"[%s] PHY-CHANSWITCH-CHANNEL-MASK %s \n"
+					"contains channels more than the total number of channels\n"
+					"total number of channels %d",addr, buf, numberChannels);
+
+				ERROR_ReportError(errorMessage);
+			}
+			if (strlen(buf) < (unsigned)numberChannels) {
+				char errorMessage[10*MAX_STRING_LENGTH];
+				char addr[MAX_STRING_LENGTH];
+				NodeAddress subnetAddress;
+
+				subnetAddress = MAPPING_GetSubnetAddressForInterface(node,
+					node->nodeId, interfaceIndex);
+
+				IO_ConvertIpAddressToString(subnetAddress, addr);
+				sprintf(errorMessage,
+					"[%s] PHY-CHANSWITCH-CHANNEL-MASK %s \n"
+					"contains channels less than the total number of channels\n"
+					"total number of channels %d",addr, buf, numberChannels);
+
+				ERROR_ReportError(errorMessage);
+			}
+			assert(strlen(buf) == (unsigned)numberChannels);
+
+			for (i = 0; i < numberChannels; i++) {
+			
+				if (buf[i] == '1') {
+					//PHY_StartListeningToChannel(node, phyIndex, i);
+					//Right now do nothing
+				}
+				else if (buf[i] == '0') {
+					// Do nothing as it is initialized to FALSE
+				}
+			
+				else {
+					char errorMessage[10*MAX_STRING_LENGTH];
+					char addr[MAX_STRING_LENGTH];
+				NodeAddress subnetAddress;
+
+				subnetAddress = MAPPING_GetSubnetAddressForInterface(node,
+					node->nodeId, interfaceIndex);
+
+				IO_ConvertIpAddressToString(subnetAddress, addr);
+					sprintf(errorMessage,
+						"[%s] PHY-CHANSWITCH-CHANNEL-MASK %s \n"
+						"is incorrectly formatted\n",addr, buf);
+
+					ERROR_ReportError(errorMessage);
+				}
+			}
+		}
+	}
 
     //
     // Get the temperature
