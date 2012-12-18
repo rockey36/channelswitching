@@ -212,6 +212,7 @@ struct PhyData {
     Address*    networkAddress;
     D_BOOL*     channelListenable;
     D_BOOL*     channelListening;
+	D_BOOL*		channelSwitch; //index of channels used by PHY_CHANSWITCH
     BOOL        phyStats;
     int         channelIndexForTransmission;
 
