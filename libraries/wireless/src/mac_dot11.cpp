@@ -2476,6 +2476,22 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             MESSAGE_Free(node, msg);
             break;
         }
+	case MSG_MAC_DOT11_ChanSwitchTimerExpired: {
+            if (DEBUG_PS_TIMERS) {
+                MacDot11Trace(
+                    node,
+                    dot11,
+                    NULL,
+                    "MSG_MAC_DOT11_ChanSwitchTimerExpired Timer expired");
+            }
+
+            unsigned timerSequenceNumber =
+                (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
+            ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
+                "MacDot11Layer: Received invalid timer message.\n");
+       }
+       MESSAGE_Free(node, msg);
+       break;
 
 //---------------------------Power-Save-Mode-Updates---------------------//
         case MSG_MAC_DOT11_Beacon: {
