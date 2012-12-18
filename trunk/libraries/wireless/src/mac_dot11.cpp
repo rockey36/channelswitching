@@ -4214,6 +4214,16 @@ void MacDot11Init(
         Dot11s_Init(node, nodeInput, dot11, networkType);
     }
 
+	//If the type is Channel Switching, send the first message
+	if (phyModel == PHY_CHANSWITCH){
+		clocktype delay = dot11->chanswitchInterval * SECOND;
+		MacDot11StationStartTimerOfGivenType(
+						node,
+						dot11,
+						delay,
+						MSG_MAC_DOT11_ChanSwitchTimerExpired);
+	}
+
     MacDot11TraceInit(node, nodeInput, dot11);
 
 #ifdef PARALLEL //Parallel
