@@ -553,8 +553,7 @@ void PHY_CreateAPhyForMac(
 		for (i = 0; i < numberChannels; i++) {
 			
 			if (buf[i] == '1') {
-				//PHY_StartListeningToChannel(node, phyIndex, i);
-				//Right now do nothing
+				thisPhy->channelSwitch[i] = TRUE;
 			}
 			else if (buf[i] == '0') {
 				// Do nothing as it is initialized to FALSE
