@@ -262,6 +262,7 @@ void PHY_CreateAPhyForMac(
 
     thisPhy->channelListenable = new D_BOOL[numberChannels];
     thisPhy->channelListening = new D_BOOL[numberChannels];
+	thisPhy->channelSwitch = new D_BOOL[numberChannels];
 
 
 

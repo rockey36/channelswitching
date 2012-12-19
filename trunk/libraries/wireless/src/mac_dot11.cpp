@@ -2476,6 +2476,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             MESSAGE_Free(node, msg);
             break;
         }
+								   
 	case MSG_MAC_DOT11_ChanSwitchTimerExpired: {
             if (DEBUG_PS_TIMERS) {
                 MacDot11Trace(
@@ -2489,9 +2490,16 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
                 (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
             ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
                 "MacDot11Layer: Received invalid timer message.\n");
+
+			Int8 buf[MAX_STRING_LENGTH];
+            sprintf(buf, "Testing ChanSwitch Timer on node %d at sequence number %d ... \n ",
+                        node->nodeId, timerSequenceNumber);
+			ERROR_ReportWarning(buf);
+
        }
        MESSAGE_Free(node, msg);
        break;
+	   
 
 //---------------------------Power-Save-Mode-Updates---------------------//
         case MSG_MAC_DOT11_Beacon: {
@@ -4216,12 +4224,13 @@ void MacDot11Init(
 
 	//If the type is Channel Switching, send the first message
 	if (phyModel == PHY_CHANSWITCH){
+		
 		clocktype delay = dot11->chanswitchInterval * SECOND;
 		MacDot11StationStartTimerOfGivenType(
 						node,
 						dot11,
 						delay,
-						MSG_MAC_DOT11_ChanSwitchTimerExpired);
+						MSG_MAC_DOT11_ChanSwitchTimerExpired);					
 	}
 
     MacDot11TraceInit(node, nodeInput, dot11);
