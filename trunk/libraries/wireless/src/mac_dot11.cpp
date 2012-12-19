@@ -852,6 +852,24 @@ void MacDot11MngmtQueueHasPacketToSend(
         MacDot11StationCheckForOutgoingPacket(node,dot11,FALSE);
     }
 }
+
+//--------------------------------------------------------------------------
+//  NAME:        MacDot11HandleChannelSwitching
+//  PURPOSE:     Called when we want to switch channels.
+//  PARAMETERS:  Node* node
+//                  Pointer to node
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//  RETURN:      None
+//  ASSUMPTION:  None
+//  NOTES:       Only used by Channel Switching PHY protocol
+//               
+//--------------------------------------------------------------------------
+void MacDot11HandleChannelSwitching(
+    Node* node,
+    MacDataDot11* dot11){
+		return;
+}
 //--------------------------------------------------------------------------
 //  NAME:        MacDot11MgmtQueueHasPacketToSend
 //  PURPOSE:     Called when management queue transition from empty.
@@ -2495,8 +2513,19 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             sprintf(buf, "Testing ChanSwitch Timer on node %d at sequence number %d ... \n ",
                         node->nodeId, timerSequenceNumber);
 			ERROR_ReportWarning(buf);
+			
+			MacDot11HandleChannelSwitching(node,dot11);
+
+			//Start another chanswitch timer
+			clocktype delay = dot11->chanswitchInterval * SECOND;
+			MacDot11StationStartTimerOfGivenType(
+						node,
+						dot11,
+						delay,
+						MSG_MAC_DOT11_ChanSwitchTimerExpired);
 
        }
+
        MESSAGE_Free(node, msg);
        break;
 	   

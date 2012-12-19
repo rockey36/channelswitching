@@ -2838,5 +2838,21 @@ void MacDot11MngmtQueueHasPacketToSend(
     Node* node,
     MacDataDot11* dot11);
 
+//--------------------------------------------------------------------------
+//  NAME:        MacDot11HandleChannelSwitching
+//  PURPOSE:     Called when we want to switch channels.
+//  PARAMETERS:  Node* node
+//                  Pointer to node
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//  RETURN:      None
+//  ASSUMPTION:  None
+//  NOTES:       Only used by Channel Switching PHY protocol
+//               
+//--------------------------------------------------------------------------
+void MacDot11HandleChannelSwitching(
+    Node* node,
+    MacDataDot11* dot11);
+
 
 #endif /*MAC_DOT11_H*/
