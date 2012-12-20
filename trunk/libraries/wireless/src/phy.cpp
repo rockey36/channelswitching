@@ -578,7 +578,6 @@ void PHY_CreateAPhyForMac(
 		}
 	}
 
-
     //
     // Get the temperature
     //
