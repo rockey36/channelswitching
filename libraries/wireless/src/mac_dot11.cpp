@@ -888,21 +888,9 @@ void MacDot11HandleChannelSwitching(
 			}	
 		}
 
-
-		//debug
-		for (int i = 0; i < numberChannels; i++) {
-			if (thisPhy->channelSwitch[i]) {
-				Int8 buf[MAX_STRING_LENGTH];
-				sprintf(buf, "Channel %d is in channelSwitch \n ",
-                        i);
-				ERROR_ReportWarning(buf);
-			}
-		}
-		//debug
-
 		for (int i = 1; i < numberChannels+1; i++) {
 			newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
-			if (thisPhy->channelSwitch[i]) {
+			if (thisPhy->channelSwitch[newChannel]) {
 				PHY_StartListeningToChannel(node,phyIndex,newChannel);
 				break;
 			}
@@ -2553,10 +2541,12 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
                 "MacDot11Layer: Received invalid timer message.\n");
 
+			/*
 			Int8 buf[MAX_STRING_LENGTH];
             sprintf(buf, "Testing ChanSwitch Timer on node %d at sequence number %d ... \n ",
                         node->nodeId, timerSequenceNumber);
 			ERROR_ReportWarning(buf);
+			*/
 			
 			MacDot11HandleChannelSwitching(node,dot11);
 
