@@ -868,6 +868,40 @@ void MacDot11MngmtQueueHasPacketToSend(
 void MacDot11HandleChannelSwitching(
     Node* node,
     MacDataDot11* dot11){
+		int phyIndex = dot11->myMacData->phyNumber;
+        PhyData *thisPhy = node->phyData[phyIndex];
+		int numberChannels = PROP_NumberChannels(node);
+		int oldChannel, newChannel;
+
+		//find the current channel
+		//(assume it's only transmitting on one channel)
+		for (int i = 0; i < numberChannels; i++) {
+			if (thisPhy->channelListenable[i]) {
+				if(PHY_IsListeningToChannel(node,phyIndex,i)){
+					//check the PHY state
+					if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
+						MacDot11StationCancelTimer(node, dot11);
+						MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+					}
+					oldChannel = i;
+					PHY_StopListeningToChannel(node,phyIndex,i);
+					break;
+				}
+			}
+		}
+
+		for (int i = 0; i < numberChannels; i++) {
+			newChannel = (i + oldChannel + 1) % numberChannels; //start at old channel+1, cycle through all
+			if (thisPhy->channelSwitch[i]) {
+				PHY_StartListeningToChannel(node,phyIndex,newChannel);
+				break;
+			}
+		}
+		Int8 buf[MAX_STRING_LENGTH];
+        sprintf(buf, "Changing from channel %d to channel %d on node %d ... \n ",
+                        node->nodeId, oldChannel, newChannel);
+		ERROR_ReportWarning(buf);
+
 		return;
 }
 //--------------------------------------------------------------------------

@@ -454,7 +454,7 @@ void PHY_CreateAPhyForMac(
 
             IO_ConvertIpAddressToString(subnetAddress, addr);
             sprintf(errorMessage,
-                "[%s] PHY-LISTENABLE-CHANNEL-MASK %s \n"
+                "[%s] PHY-LISTENING-CHANNEL-MASK %s \n"
                 "contains channels more than the total number of channels\n"
                 "total number of channels %d",addr, buf, numberChannels);
 
@@ -470,7 +470,7 @@ void PHY_CreateAPhyForMac(
 
             IO_ConvertIpAddressToString(subnetAddress, addr);
             sprintf(errorMessage,
-                "[%s] PHY-LISTENABLE-CHANNEL-MASK %s \n"
+                "[%s] PHY-LISTENING-CHANNEL-MASK %s \n"
                 "contains channels less than the total number of channels\n"
                 "total number of channels %d",addr, buf, numberChannels);
 
