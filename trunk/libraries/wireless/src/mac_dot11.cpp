@@ -891,13 +891,26 @@ void MacDot11HandleChannelSwitching(
 		*/
 
 		//check the PHY state
-		
+
+		BOOL frameHeaderHadError;
+        clocktype endSignalTime;
+
 		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
+			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
+				PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
+				ERROR_ReportWarning("Terminating current transmission... /n");
+			}
+
+			else if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
+				PHY_TerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
+                &frameHeaderHadError, &endSignalTime);
+				ERROR_ReportWarning("Terminating current receieve... /n");
+			}
 			MacDot11StationCancelTimer(node, dot11);
 			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 		}
 		
-		//find the current TRANSMISSION channel
+		//find the current transmission channel
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 		PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 		
