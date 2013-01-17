@@ -214,7 +214,6 @@ struct PhyData {
     D_BOOL*     channelListening;
 	D_BOOL*		channelSwitch; //index of channels used by PHY_CHANSWITCH
     BOOL        phyStats;
-	BOOL		chanSwitchMaster; //master initiates any channel switch
     int         channelIndexForTransmission;
 
     PhyModel       phyModel;
