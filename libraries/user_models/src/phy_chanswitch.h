@@ -353,4 +353,6 @@ BOOL PhyChanSwitchMediumIsIdleInDirection(
 
 void PhyChanSwitchSetSensingDirection(Node* node, int phyIndex, double azimuth);
 
+void PhyChanSwitchChangeState(Node* node, int phyIndex, PhyStatusType newStatus);
+
 #endif /* PHY_CHANSWITCH_H */

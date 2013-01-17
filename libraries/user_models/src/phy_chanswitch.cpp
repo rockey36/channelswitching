@@ -14,7 +14,6 @@
 #include "mac_dot11.h"
 #include "mac_dot11-sta.h"
 
-static
 void PhyChanSwitchChangeState(
     Node* node,
     int phyIndex,
