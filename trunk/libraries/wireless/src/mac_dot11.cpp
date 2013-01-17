@@ -875,6 +875,7 @@ void MacDot11HandleChannelSwitching(
 
 		//find the current channel
 		//(assume it's only transmitting on one channel)
+		
 		/*
 		for (int i = 0; i < numberChannels; i++) {
 			if(PHY_IsListeningToChannel(node,phyIndex,i)){
@@ -884,11 +885,12 @@ void MacDot11HandleChannelSwitching(
 					MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 				}
 				oldChannel = i;
-				PHY_StopListeningToChannel(node,phyIndex,i);
+				//PHY_StopListeningToChannel(node,phyIndex,i);
 				break;
 			}	
 		}
 		*/
+		
 		//check the PHY state
 
 		BOOL frameHeaderHadError;
@@ -905,6 +907,7 @@ void MacDot11HandleChannelSwitching(
 			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 			PhyChanSwitchChangeState(node, phyIndex, PHY_IDLE);
 		}
+		
 
 		//find the current transmission channel
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);

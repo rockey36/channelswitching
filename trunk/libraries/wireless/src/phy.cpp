@@ -503,6 +503,36 @@ void PHY_CreateAPhyForMac(
         }
     }
 
+
+	// PHY-CHANSWITCH-MASTER
+    // boolean - determine whether this channel is one that *initiates* channel switches
+	// (any chanswitch channel will switch if told)
+    //
+    IO_ReadString(
+        node,
+        node->nodeId,
+        interfaceIndex,
+        nodeInput,
+        "PHY-CHANSWITCH-MASTER",
+        &wasFound,
+        buf);
+
+    if (wasFound) {
+        if (strcmp(buf, "YES") == 0) {
+            thisPhy->chanSwitchMaster = TRUE;
+        }
+        else if (strcmp(buf, "NO") == 0) {
+            thisPhy->chanSwitchMaster = FALSE;
+        }
+        else {
+            fprintf(stderr, "%s is not a valid choice.\n", buf);
+            assert(FALSE);
+        }
+    }
+    else {
+        thisPhy->chanSwitchMaster = FALSE;
+    }
+
 	//PHY-CHANSWITCH-CHANNEL-MASK
 	//Only used by Channel Switching 
 	IO_ReadString(
