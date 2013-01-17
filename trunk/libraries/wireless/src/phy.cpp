@@ -1364,8 +1364,8 @@ void PHY_Finalize(Node *node) {
 
                 break;
             }
-						case PHY_CHANSWITCH: {
-                PhyChanSwitchFinalize(node, phyNum);
+			case PHY_CHANSWITCH: {
+				PhyChanSwitchFinalize(node, phyNum);
 
                 break;
             }
