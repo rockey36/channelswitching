@@ -873,46 +873,63 @@ void MacDot11HandleChannelSwitching(
 		int numberChannels = PROP_NumberChannels(node);
 		int oldChannel, newChannel;
 
-		//initiate a channel switch - only master node should do this
-		if(thisPhy->chanSwitchMaster) {
-			BOOL frameHeaderHadError;
-			clocktype endSignalTime;
-
-			//terminate receives
-			if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
-				PhyChanSwitchTerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
-				&frameHeaderHadError, &endSignalTime);
-				ERROR_ReportWarning("Terminating current receieve... \n");
+		//find the current channel
+		//(assume it's only transmitting on one channel)
+		/*
+		for (int i = 0; i < numberChannels; i++) {
+			if(PHY_IsListeningToChannel(node,phyIndex,i)){
+				//check the PHY state
+				if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
+					MacDot11StationCancelTimer(node, dot11);
+					MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 				}
-
-			//check PHY state and cancel timer if not idle
-			if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
-				MacDot11StationCancelTimer(node, dot11);
-				MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
-				PhyChanSwitchChangeState(node, phyIndex, PHY_IDLE);
-			}
-		
-			//get the current channel
-			PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
-		
-			//switch channel
-			for (int i = 1; i < numberChannels+1; i++) {
-				newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
-				if (thisPhy->channelSwitch[newChannel]) {
-					if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
-						PHY_StartListeningToChannel(node,phyIndex,newChannel);
-					}
-					PHY_SetTransmissionChannel(node,phyIndex,newChannel);
-					PHY_StopListeningToChannel(node,phyIndex,oldChannel);
-					break;
-				}
-			}
-		
-			Int8 buf[MAX_STRING_LENGTH];
-			sprintf(buf, "Changing from channel %d to channel %d on node %d... \n ",
-							oldChannel, newChannel,node->nodeId);
-			ERROR_ReportWarning(buf);
+				oldChannel = i;
+				PHY_StopListeningToChannel(node,phyIndex,i);
+				break;
+			}	
 		}
+		*/
+
+		//check the PHY state
+
+		BOOL frameHeaderHadError;
+        clocktype endSignalTime;
+
+		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
+			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
+				PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
+				ERROR_ReportWarning("Terminating current transmission... /n");
+			}
+
+			else if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
+				PHY_TerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
+                &frameHeaderHadError, &endSignalTime);
+				ERROR_ReportWarning("Terminating current receieve... /n");
+			}
+			MacDot11StationCancelTimer(node, dot11);
+			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+		}
+		
+		//find the current transmission channel
+		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+		PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+		
+		
+		for (int i = 1; i < numberChannels+1; i++) {
+			newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
+			if (thisPhy->channelSwitch[newChannel]) {
+				if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
+					PHY_StartListeningToChannel(node,phyIndex,newChannel);
+				}
+				PHY_SetTransmissionChannel(node,phyIndex,newChannel);
+				break;
+			}
+		}
+		
+		Int8 buf[MAX_STRING_LENGTH];
+        sprintf(buf, "Changing from channel %d to channel %d on node %d... \n ",
+                        oldChannel, newChannel,node->nodeId);
+		ERROR_ReportWarning(buf);
 
 		return;
 }
