@@ -173,6 +173,7 @@ struct DOT11s_Data;
 
 //----------Channel Switching defaults.----------------------------------//
 #define DOT11_CHANSWITCH_INTERVAL 5
+#define DOT11_CHANSWITCH_MASTER FALSE
 
 //---------------------------Power-Save-Mode-Updates---------------------//
 // defalut listen interval for STAs in PS mode
@@ -1431,6 +1432,8 @@ struct MacDataDot11 {
 
 	//timed channel switch parameter
 	int chanswitchInterval;
+	//determine if this node is a master (initiator) for channel switching
+	BOOL chanswitchMaster;
 
     D_Clocktype extraPropDelay;
 
