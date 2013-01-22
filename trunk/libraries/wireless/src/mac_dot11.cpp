@@ -3922,6 +3922,26 @@ void MacDot11Init(
 		dot11->chanswitchInterval = 0;
 		}
 
+	//Channel switching master
+	IO_ReadString(
+	node->nodeId,
+	&address,
+	nodeInput,
+	"MAC-DOT11-CHANSWITCH-MASTER",
+	&wasFound,
+	retString);
+
+	if ((!wasFound) || (strcmp(retString, "NO") == 0))
+	{
+		dot11->chanswitchMaster = FALSE;
+	}
+	else if (strcmp(retString, "YES") == 0)
+	{
+		dot11->chanswitchMaster = TRUE;
+	}
+	
+
+
     // Read short retry count.
     // Format is :
     // MAC-DOT11-SHORT-PACKET-TRANSMIT-LIMIT <value>
