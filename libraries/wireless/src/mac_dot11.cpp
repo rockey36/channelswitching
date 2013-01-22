@@ -868,33 +868,18 @@ void MacDot11MngmtQueueHasPacketToSend(
 void MacDot11HandleChannelSwitching(
     Node* node,
     MacDataDot11* dot11){
-		int phyIndex = dot11->myMacData->phyNumber;
-        PhyData *thisPhy = node->phyData[phyIndex];
-		int numberChannels = PROP_NumberChannels(node);
-		int oldChannel, newChannel;
+	int phyIndex = dot11->myMacData->phyNumber;
+    PhyData *thisPhy = node->phyData[phyIndex];
+	int numberChannels = PROP_NumberChannels(node);
+	int oldChannel, newChannel;
+		
 
-		//find the current channel
-		//(assume it's only transmitting on one channel)
-		/*
-		for (int i = 0; i < numberChannels; i++) {
-			if(PHY_IsListeningToChannel(node,phyIndex,i)){
-				//check the PHY state
-				if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
-					MacDot11StationCancelTimer(node, dot11);
-					MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
-				}
-				oldChannel = i;
-				PHY_StopListeningToChannel(node,phyIndex,i);
-				break;
-			}	
-		}
-		*/
+	BOOL frameHeaderHadError;
+    clocktype endSignalTime;
 
-		//check the PHY state
-
-		BOOL frameHeaderHadError;
-        clocktype endSignalTime;
-
+	//Only initiate the channel change if this channel is a Master.
+	if(dot11->chanswitchMaster){
+		//Check the PHY state
 		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
 			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
 				PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
@@ -903,7 +888,7 @@ void MacDot11HandleChannelSwitching(
 
 			else if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
 				PHY_TerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
-                &frameHeaderHadError, &endSignalTime);
+				&frameHeaderHadError, &endSignalTime);
 				ERROR_ReportWarning("Terminating current receieve... /n");
 			}
 			MacDot11StationCancelTimer(node, dot11);
@@ -927,11 +912,12 @@ void MacDot11HandleChannelSwitching(
 		}
 		
 		Int8 buf[MAX_STRING_LENGTH];
-        sprintf(buf, "Changing from channel %d to channel %d on node %d... \n ",
-                        oldChannel, newChannel,node->nodeId);
+		sprintf(buf, "Changing from channel %d to channel %d on node %d... \n ",
+						oldChannel, newChannel,node->nodeId);
 		ERROR_ReportWarning(buf);
+	}
 
-		return;
+	return;
 }
 //--------------------------------------------------------------------------
 //  NAME:        MacDot11MgmtQueueHasPacketToSend
@@ -3940,8 +3926,6 @@ void MacDot11Init(
 		dot11->chanswitchMaster = TRUE;
 	}
 	
-
-
     // Read short retry count.
     // Format is :
     // MAC-DOT11-SHORT-PACKET-TRANSMIT-LIMIT <value>
