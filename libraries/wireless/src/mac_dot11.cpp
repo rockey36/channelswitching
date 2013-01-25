@@ -333,6 +333,9 @@ void MacDot11ReceiveNetworkLayerPacket(
     dot11->currentMessage = NULL;
     dot11->currentNextHopAddress = INVALID_802ADDRESS;
 
+	//set chanswitch destination node
+	dot11->chanswitchDestNode = ipDestAddr;
+
 
     frameInfo.msg = msg;
     // frame type is default
@@ -3702,6 +3705,7 @@ void MacDot11Init(
     dot11->CW = dot11->cwMin;
     dot11->BO = 0;
     MacDot11StationResetAckVariables(dot11);
+	dot11->chanswitchDestNode = INVALID_802ADDRESS;
     dot11->NAV = 0;
     dot11->noOutgoingPacketsUntilTime = 0;
 

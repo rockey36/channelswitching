@@ -506,6 +506,9 @@ typedef enum {
 
     DOT11_MESH_DATA           = 0x30, // 11 0000
 
+//--------------------Channel switching alert packet---------------------//
+	DOT11_CHANSWITCH		  = 0x31, // 11 0001
+
     DOT11_CF_NONE             = 0x3F  // 11 1111 Reserved
 } DOT11_MacFrameType;
 
@@ -1434,6 +1437,8 @@ struct MacDataDot11 {
 	int chanswitchInterval;
 	//determine if this node is a master (initiator) for channel switching
 	BOOL chanswitchMaster;
+	//mac address of last destination node (used to send chanswich alert)
+	Mac802Address chanswitchDestNode;
 
     D_Clocktype extraPropDelay;
 
