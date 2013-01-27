@@ -878,23 +878,81 @@ void MacDot11HandleChannelSwitchTimer(
 	//Only initiate the channel change if this channel is a Master.
 	if(dot11->chanswitchMaster){
 
+		//Check the PHY state
+		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
+			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
+				PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
+				ERROR_ReportWarning("MacDot11HandleChannelSwitchTimer: Terminating current transmission... \n");
+			}
+
+			else if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
+				PHY_TerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
+				&frameHeaderHadError, &endSignalTime);
+				ERROR_ReportWarning("MacDot11HandleChannelSwitchTimer: Terminating current receieve... \n");
+			}
+			MacDot11StationCancelTimer(node, dot11);
+			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+		}
+
+		//calculate old and new channel
+		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+
+		for (int i = 1; i < numberChannels+1; i++) {
+			newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
+			if (thisPhy->channelSwitch[newChannel]) {
+				break;
+			}
+		}
+
 		//send the channel change alert pkt
 		if(dot11->chanswitchDestNode != INVALID_802ADDRESS){
 			ERROR_ReportWarning("sending channel change alert pkt \n");
 			MacDot11SendChanSwitchPacket(node,dot11);
 		}
 
-		//Check the PHY state
+		//set the short timer
+
+	}
+
+	return;
+}
+
+//--------------------------------------------------------------------------
+//  NAME:        MacDot11HandleChannelSwitchTimerAfterPkt
+//  PURPOSE:     Actually change the channel after sending the chanswitch pkt.
+//  PARAMETERS:  Node* node
+//                  Pointer to node
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//  RETURN:      None
+//  ASSUMPTION:  None
+//  NOTES:       Only used by Channel Switching PHY protocol
+//               
+//--------------------------------------------------------------------------
+void MacDot11HandleChannelSwitchTimerAfterPkt(
+    Node* node,
+    MacDataDot11* dot11){
+
+	int phyIndex = dot11->myMacData->phyNumber;
+    PhyData *thisPhy = node->phyData[phyIndex];
+	int numberChannels = PROP_NumberChannels(node);
+	int oldChannel, newChannel;
+
+	BOOL frameHeaderHadError;
+    clocktype endSignalTime;
+
+	if(dot11->chanswitchMaster){
+			//Check the PHY state
 		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
 			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
 				PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
-				ERROR_ReportWarning("Terminating current transmission... \n");
+				ERROR_ReportWarning("MacDot11HandleChannelSwitchTimerAfterPkt: Terminating current transmission... \n");
 			}
 
 			else if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
 				PHY_TerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
 				&frameHeaderHadError, &endSignalTime);
-				ERROR_ReportWarning("Terminating current receieve... \n");
+				ERROR_ReportWarning("MacDot11HandleChannelSwitchTimerAfterPkt: Terminating current receieve... \n");
 			}
 			MacDot11StationCancelTimer(node, dot11);
 			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
@@ -921,8 +979,6 @@ void MacDot11HandleChannelSwitchTimer(
 						oldChannel, newChannel,node->nodeId);
 		ERROR_ReportWarning(buf);
 	}
-
-	return;
 }
 
 //--------------------------------------------------------------------------
@@ -959,6 +1015,10 @@ void MacDot11SendChanSwitchPacket(
     ERROR_Assert(dot11->chanswitchDestNode ==
                  dot11->dataRateInfo->ipAddress,
                  "Address does not match");
+
+	ERROR_Assert(MacDot11StationPhyStatus(node, dot11) == PHY_IDLE,
+    "MacDot11SendChanSwitchPacket: "
+    "Physical status is not IDLE.\n");
 
     PHY_SetTxDataRateType(node,
         dot11->myMacData->phyNumber,
