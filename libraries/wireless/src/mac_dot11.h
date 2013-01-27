@@ -411,6 +411,7 @@ typedef enum {
     DOT11_X_BEACON,               // 18  Last State in range
 //---------------------------Power-Save-Mode-Updates---------------------//
     DOT11_X_IBSSBEACON,           // 19
+	DOT11_X_CHANSWITCH,
     DOT11_X_PSPOLL,               // 20
 //---------------------------Power-Save-Mode-End-Updates-----------------//
     DOT11_CFP_START,              // 22  State during CFP
@@ -425,6 +426,8 @@ typedef enum {
     DOT11_S_WFIBSSBEACON,
     DOT11_S_WFIBSSJITTER,
     DOT11_S_WFPSPOLL_ACK
+//--------------------------Channel Switch pkt transmit------------------//
+	
 //---------------------------Power-Save-Mode-End-Updates-----------------//
 } DOT11_MacStates;
 
@@ -505,6 +508,8 @@ typedef enum {
 //--------------------DOT11e-End-Updates---------------------------------//
 
     DOT11_MESH_DATA           = 0x30, // 11 0000
+//-------------------Channel Switching----------------------------------//
+	DOT11_CHANSWITCH		  = 0x31,  // 11 0001
 
     DOT11_CF_NONE             = 0x3F  // 11 1111 Reserved
 } DOT11_MacFrameType;
@@ -1996,6 +2001,9 @@ void MacDot11Trace(
                 break;
             case DOT11_X_PSPOLL:
                 sprintf(buf1, "PSPOLL");
+                break;
+			case DOT11_X_CHANSWITCH:
+                sprintf(buf1, "CHANSWITCH");
                 break;
 //---------------------------Power-Save-Mode-End-Updates-----------------//
             default:
