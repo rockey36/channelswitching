@@ -877,28 +877,29 @@ void MacDot11HandleChannelSwitchTimer(
 
 	//Only initiate the channel change if this channel is a Master.
 	if(dot11->chanswitchMaster){
-		//Check the PHY state
-		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
-			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
-				PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
-				ERROR_ReportWarning("Terminating current transmission... /n");
-			}
 
-			else if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
-				PHY_TerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
-				&frameHeaderHadError, &endSignalTime);
-				ERROR_ReportWarning("Terminating current receieve... /n");
-			}
-			MacDot11StationCancelTimer(node, dot11);
-			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
-		}
-		
 		//send the channel change alert pkt
 		if(dot11->chanswitchDestNode != INVALID_802ADDRESS){
 			ERROR_ReportWarning("sending channel change alert pkt \n");
 			MacDot11SendChanSwitchPacket(node,dot11);
 		}
 
+		//Check the PHY state
+		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
+			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
+				PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
+				ERROR_ReportWarning("Terminating current transmission... \n");
+			}
+
+			else if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
+				PHY_TerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
+				&frameHeaderHadError, &endSignalTime);
+				ERROR_ReportWarning("Terminating current receieve... \n");
+			}
+			MacDot11StationCancelTimer(node, dot11);
+			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+		}
+		
 		//find the current transmission channel
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 		PHY_StopListeningToChannel(node,phyIndex,oldChannel);
@@ -984,13 +985,13 @@ void MacDot11SendChanSwitchPacket(
                         TRACE_DOT11);
 
     hdr = (DOT11_LongControlFrame*)MESSAGE_ReturnPacket(msg);
-    hdr->frameType = DOT11_RTS;
+    hdr->frameType = DOT11_CHANSWITCH;
 
     hdr->sourceAddr = dot11->selfAddr;
 	hdr->destAddr = dot11->chanswitchDestNode;
 
-    dot11->waitingForAckOrCtsFromAddress = dot11->chanswitchDestNode;
-	MacDot11StationSetState(node, dot11, DOT11_X_RTS);
+    //dot11->waitingForAckOrCtsFromAddress = dot11->chanswitchDestNode;
+	MacDot11StationSetState(node, dot11, DOT11_X_CHANSWITCH);
 
     //dot11->rtsPacketsSentDcf++;
 
