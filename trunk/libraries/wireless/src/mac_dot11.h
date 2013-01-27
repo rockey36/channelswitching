@@ -506,9 +506,6 @@ typedef enum {
 
     DOT11_MESH_DATA           = 0x30, // 11 0000
 
-//--------------------Channel switching alert packet---------------------//
-	DOT11_CHANSWITCH		  = 0x31, // 11 0001
-
     DOT11_CF_NONE             = 0x3F  // 11 1111 Reserved
 } DOT11_MacFrameType;
 
@@ -2847,8 +2844,8 @@ void MacDot11MngmtQueueHasPacketToSend(
     MacDataDot11* dot11);
 
 //--------------------------------------------------------------------------
-//  NAME:        MacDot11HandleChannelSwitching
-//  PURPOSE:     Called when we want to switch channels.
+//  NAME:        MacDot11HandleChannelSwitchTimer
+//  PURPOSE:     Called when ChanSwitch timer expires.
 //  PARAMETERS:  Node* node
 //                  Pointer to node
 //               MacDataDot11* dot11
@@ -2858,7 +2855,23 @@ void MacDot11MngmtQueueHasPacketToSend(
 //  NOTES:       Only used by Channel Switching PHY protocol
 //               
 //--------------------------------------------------------------------------
-void MacDot11HandleChannelSwitching(
+void MacDot11HandleChannelSwitchTimer(
+    Node* node,
+    MacDataDot11* dot11);
+
+//--------------------------------------------------------------------------
+//  NAME:        MacDot11SendChanSwitchPacket
+//  PURPOSE:     Send the channel change/stay alert pkt (chanswitch master)
+//  PARAMETERS:  Node* node
+//                  Pointer to node
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//  RETURN:      None
+//  ASSUMPTION:  None
+//  NOTES:       Only used by Channel Switching PHY protocol
+//               
+//--------------------------------------------------------------------------
+void MacDot11SendChanSwitchPacket(
     Node* node,
     MacDataDot11* dot11);
 

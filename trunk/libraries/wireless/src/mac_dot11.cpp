@@ -329,12 +329,8 @@ void MacDot11ReceiveNetworkLayerPacket(
     DOT11_FrameInfo* newFrameInfo;
 
 
-
     dot11->currentMessage = NULL;
     dot11->currentNextHopAddress = INVALID_802ADDRESS;
-
-	//set chanswitch destination node
-	dot11->chanswitchDestNode = ipDestAddr;
 
 
     frameInfo.msg = msg;
@@ -857,8 +853,8 @@ void MacDot11MngmtQueueHasPacketToSend(
 }
 
 //--------------------------------------------------------------------------
-//  NAME:        MacDot11HandleChannelSwitching
-//  PURPOSE:     Called when we want to switch channels.
+//  NAME:        MacDot11HandleChannelSwitchTimer
+//  PURPOSE:     Called when ChanSwitch timer expires.
 //  PARAMETERS:  Node* node
 //                  Pointer to node
 //               MacDataDot11* dot11
@@ -868,7 +864,7 @@ void MacDot11MngmtQueueHasPacketToSend(
 //  NOTES:       Only used by Channel Switching PHY protocol
 //               
 //--------------------------------------------------------------------------
-void MacDot11HandleChannelSwitching(
+void MacDot11HandleChannelSwitchTimer(
     Node* node,
     MacDataDot11* dot11){
 	int phyIndex = dot11->myMacData->phyNumber;
@@ -876,7 +872,6 @@ void MacDot11HandleChannelSwitching(
 	int numberChannels = PROP_NumberChannels(node);
 	int oldChannel, newChannel;
 		
-
 	BOOL frameHeaderHadError;
     clocktype endSignalTime;
 
@@ -898,6 +893,12 @@ void MacDot11HandleChannelSwitching(
 			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 		}
 		
+		//send the channel change alert pkt
+		if(dot11->chanswitchDestNode != INVALID_802ADDRESS){
+			ERROR_ReportWarning("sending channel change alert pkt \n");
+			MacDot11SendChanSwitchPacket(node,dot11);
+		}
+
 		//find the current transmission channel
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 		PHY_StopListeningToChannel(node,phyIndex,oldChannel);
@@ -921,6 +922,60 @@ void MacDot11HandleChannelSwitching(
 	}
 
 	return;
+}
+
+//--------------------------------------------------------------------------
+//  NAME:        MacDot11SendChanSwitchPacket
+//  PURPOSE:     Send the channel change/stay alert pkt (chanswitch master)
+//  PARAMETERS:  Node* node
+//                  Pointer to node
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//  RETURN:      None
+//  ASSUMPTION:  None
+//  NOTES:       Only used by Channel Switching PHY protocol
+//               
+//--------------------------------------------------------------------------
+void MacDot11SendChanSwitchPacket(
+	  Node* node, 
+	  MacDataDot11* dot11)
+{
+	DOT11_FrameInfo frameInfo;
+    Message* newMsg;
+    DOT11_FrameInfo* newFrameInfo;
+
+	dot11->currentMessage = NULL;
+    dot11->currentNextHopAddress = INVALID_802ADDRESS;
+
+	//frameInfo.msg = msg;
+	frameInfo.msg = NULL;
+    // frame type is default
+    frameInfo.RA = dot11->chanswitchDestNode;
+    frameInfo.TA = dot11->selfAddr;
+    frameInfo.DA = dot11->chanswitchDestNode;
+    frameInfo.SA = dot11->selfAddr;
+    frameInfo.insertTime = getSimTime(node);
+
+    MacDot11StationResetCurrentMessageVariables(node, dot11);
+
+    newFrameInfo = (DOT11_FrameInfo*)MEM_malloc(sizeof(DOT11_FrameInfo*));
+    *newFrameInfo = frameInfo;
+
+	//newMsg = MESSAGE_Duplicate(node, msg);
+    newMsg = MESSAGE_Duplicate(node, NULL);
+    MESSAGE_AddHeader(node,
+                  newMsg,
+                  DOT11_DATA_FRAME_HDR_SIZE,
+                  TRACE_DOT11);
+
+    newFrameInfo->msg = newMsg;
+    newFrameInfo->frameType = DOT11_DATA;
+
+    MacDot11StationSetFieldsInDataFrameHdr(dot11, (DOT11_FrameHdr*)MESSAGE_ReturnPacket(newMsg)
+		,dot11->chanswitchDestNode, newFrameInfo->frameType);
+
+    // Enqueue the broadcast data for transmission
+    MacDot11DataQueue_EnqueuePacket(node, dot11, newFrameInfo);
 }
 //--------------------------------------------------------------------------
 //  NAME:        MacDot11MgmtQueueHasPacketToSend
@@ -1604,6 +1659,7 @@ void MacDot11ProcessMyFrame(
 
         case DOT11_ACK: {
             MacDot11Trace(node, dot11, msg, "Receive");
+			dot11->chanswitchDestNode = dot11->waitingForAckOrCtsFromAddress;
 
 #ifdef NETSEC_LIB
             // In IA, the adversary may inject any packets, including
@@ -2568,7 +2624,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
 			ERROR_ReportWarning(buf);
 			*/
 			
-			MacDot11HandleChannelSwitching(node,dot11);
+			MacDot11HandleChannelSwitchTimer(node,dot11);
 
 			//Start another chanswitch timer
 			clocktype delay = dot11->chanswitchInterval * SECOND;
