@@ -940,45 +940,62 @@ void MacDot11SendChanSwitchPacket(
 	  Node* node, 
 	  MacDataDot11* dot11)
 {
-	DOT11_FrameInfo frameInfo;
-    Message* newMsg;
-    DOT11_FrameInfo* newFrameInfo;
+	DOT11_LongControlFrame* hdr;
+    Message* msg;
+    Mac802Address destAddr;
+    int dataRateType;
+    clocktype packetTransmissionDuration = 0;
 
+	destAddr = dot11->chanswitchDestNode;
+    if(dot11->dataRateInfo == NULL || (dot11->chanswitchDestNode !=
+        dot11->dataRateInfo->ipAddress))
+    {
+        dot11->dataRateInfo =
+            MacDot11StationGetDataRateEntry(node, dot11,
+                dot11->chanswitchDestNode);
+    }
+
+    ERROR_Assert(dot11->chanswitchDestNode ==
+                 dot11->dataRateInfo->ipAddress,
+                 "Address does not match");
+
+    PHY_SetTxDataRateType(node,
+        dot11->myMacData->phyNumber,
+        MIN(dot11->dataRateInfo->dataRateType,
+            dot11->highestDataRateTypeForBC));
+
+    dataRateType = PHY_GetTxDataRateType(node, dot11->myMacData->phyNumber);
+
+	/*
+    if ( !MacDot11StationHasFrameToSend(dot11) ) {
+        ERROR_ReportError("MacDot11StationTransmitRTSFrame: "
+            "There is no message in the local buffer.\n");
+    }
+	*/
 	dot11->currentMessage = NULL;
     dot11->currentNextHopAddress = INVALID_802ADDRESS;
 
-	//newMsg = MESSAGE_Duplicate(node, msg);
 	//dummy message
-	newMsg = MESSAGE_Alloc(node, MAC_LAYER, MAC_PROTOCOL_DOT11, MSG_MAC_DOT11_ChanSwitchAlert);
+	msg = MESSAGE_Alloc(node,0,0,0);
 
-	//frameInfo.msg = msg;
-	frameInfo.msg = NULL;
-    // frame type is default
-    frameInfo.RA = dot11->chanswitchDestNode;
-    frameInfo.TA = dot11->selfAddr;
-    frameInfo.DA = dot11->chanswitchDestNode;
-    frameInfo.SA = dot11->selfAddr;
-    frameInfo.insertTime = getSimTime(node);
+	MESSAGE_PacketAlloc(node,
+                        msg,
+                        DOT11_LONG_CTRL_FRAME_SIZE,
+                        TRACE_DOT11);
 
-    MacDot11StationResetCurrentMessageVariables(node, dot11);
+    hdr = (DOT11_LongControlFrame*)MESSAGE_ReturnPacket(msg);
+    hdr->frameType = DOT11_RTS;
 
-    newFrameInfo = (DOT11_FrameInfo*)MEM_malloc(sizeof(DOT11_FrameInfo*));
-    *newFrameInfo = frameInfo;
+    hdr->sourceAddr = dot11->selfAddr;
+	hdr->destAddr = dot11->chanswitchDestNode;
 
+    dot11->waitingForAckOrCtsFromAddress = dot11->chanswitchDestNode;
+	MacDot11StationSetState(node, dot11, DOT11_X_RTS);
 
-    MESSAGE_AddHeader(node,
-                  newMsg,
-                  DOT11_DATA_FRAME_HDR_SIZE,
-                  TRACE_DOT11);
+    //dot11->rtsPacketsSentDcf++;
 
-    newFrameInfo->msg = newMsg;
-    newFrameInfo->frameType = DOT11_DATA;
+    MacDot11StationStartTransmittingPacket(node, dot11, msg, dot11->delayUntilSignalAirborn);
 
-    MacDot11StationSetFieldsInDataFrameHdr(dot11, (DOT11_FrameHdr*)MESSAGE_ReturnPacket(newMsg)
-		,dot11->chanswitchDestNode, newFrameInfo->frameType);
-
-    // Enqueue the broadcast data for transmission
-    MacDot11DataQueue_EnqueuePacket(node, dot11, newFrameInfo);
 }
 //--------------------------------------------------------------------------
 //  NAME:        MacDot11MgmtQueueHasPacketToSend
