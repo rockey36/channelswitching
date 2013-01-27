@@ -947,6 +947,10 @@ void MacDot11SendChanSwitchPacket(
 	dot11->currentMessage = NULL;
     dot11->currentNextHopAddress = INVALID_802ADDRESS;
 
+	//newMsg = MESSAGE_Duplicate(node, msg);
+	//dummy message
+	newMsg = MESSAGE_Alloc(node, MAC_LAYER, MAC_PROTOCOL_DOT11, MSG_MAC_DOT11_ChanSwitchAlert);
+
 	//frameInfo.msg = msg;
 	frameInfo.msg = NULL;
     // frame type is default
@@ -961,8 +965,7 @@ void MacDot11SendChanSwitchPacket(
     newFrameInfo = (DOT11_FrameInfo*)MEM_malloc(sizeof(DOT11_FrameInfo*));
     *newFrameInfo = frameInfo;
 
-	//newMsg = MESSAGE_Duplicate(node, msg);
-    newMsg = MESSAGE_Duplicate(node, NULL);
+
     MESSAGE_AddHeader(node,
                   newMsg,
                   DOT11_DATA_FRAME_HDR_SIZE,
