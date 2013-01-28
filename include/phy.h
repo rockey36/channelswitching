@@ -212,7 +212,6 @@ struct PhyData {
     Address*    networkAddress;
     D_BOOL*     channelListenable;
     D_BOOL*     channelListening;
-	D_BOOL*		channelSwitch; //index of channels used by PHY_CHANSWITCH
     BOOL        phyStats;
     int         channelIndexForTransmission;
 
@@ -255,6 +254,7 @@ struct PhyData {
     EnergyModelGeneric genericEnergyModelParameters;
 #endif //WIRELESS_LIB
     double         noiseFactor;  //added for 802.16
+	D_BOOL*		channelSwitch; //index of channels used by PHY_CHANSWITCH
 };
 
 
