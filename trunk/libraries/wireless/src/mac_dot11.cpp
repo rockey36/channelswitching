@@ -878,24 +878,6 @@ void MacDot11HandleChannelSwitchTimer(
 	//Only initiate the channel change if this channel is a Master.
 	if(dot11->chanswitchMaster){
 
-		/*
-		//Check the PHY state
-		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
-			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
-				PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
-				ERROR_ReportWarning("MacDot11HandleChannelSwitchTimer: Terminating current transmission... \n");
-			}
-
-			else if (MacDot11StationPhyStatus(node, dot11) == PHY_RECEIVING){
-				PHY_TerminateCurrentReceive(node, dot11->myMacData->phyNumber, FALSE,
-				&frameHeaderHadError, &endSignalTime);
-				ERROR_ReportWarning("MacDot11HandleChannelSwitchTimer: Terminating current receieve... \n");
-			}
-			MacDot11StationCancelTimer(node, dot11);
-			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
-		}
-		*/
-
 		//calculate old and new channel
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 
@@ -911,12 +893,6 @@ void MacDot11HandleChannelSwitchTimer(
 			ERROR_ReportWarning("sending channel change alert pkt \n");
 			MacDot11SendChanSwitchPacket(node,dot11);
 		}
-
-		//set the short timer
-		//Do something in MacDot11StationTransmissionHasFinished?
-
-		//MacDot11StationSetBackoffIfZero(node, dot11);
-        //MacDot11StationAttemptToGoIntoWaitForDifsOrEifsState(node, dot11);
 	}
 
 	return;
@@ -2596,6 +2572,8 @@ void MacDot11HandleTimeout(
         }
 		case DOT11_S_WFCHANSWITCH:{
 			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+			//now actually change the channel
+			MacDot11HandleChannelSwitchTimerAfterPkt(node,dot11);
             break;
 		}
 //---------------------------Power-Save-Mode-Updates---------------------//
