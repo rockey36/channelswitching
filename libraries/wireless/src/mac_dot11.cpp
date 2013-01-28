@@ -878,6 +878,7 @@ void MacDot11HandleChannelSwitchTimer(
 	//Only initiate the channel change if this channel is a Master.
 	if(dot11->chanswitchMaster){
 
+		/*
 		//Check the PHY state
 		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
 			if (MacDot11StationPhyStatus(node, dot11) == PHY_TRANSMITTING){
@@ -893,6 +894,7 @@ void MacDot11HandleChannelSwitchTimer(
 			MacDot11StationCancelTimer(node, dot11);
 			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 		}
+		*/
 
 		//calculate old and new channel
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
@@ -911,7 +913,10 @@ void MacDot11HandleChannelSwitchTimer(
 		}
 
 		//set the short timer
+		//Do something in MacDot11StationTransmissionHasFinished?
 
+		//MacDot11StationSetBackoffIfZero(node, dot11);
+        //MacDot11StationAttemptToGoIntoWaitForDifsOrEifsState(node, dot11);
 	}
 
 	return;
@@ -1995,6 +2000,7 @@ void MacDot11ReceivePacketFromPhy(
         MacDot11IsCfpTransmittingState(dot11->cfpState)),
         "MacDot11ReceivePacketFromPhy: "
         "Cannot receive packet while in transmit state.\n");
+
 
     // Check if we're in CFP
     if (MacDot11IsInCfp(dot11->state)) {
