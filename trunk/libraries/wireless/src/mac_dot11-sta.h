@@ -2765,6 +2765,7 @@ void MacDot11StationPhyStatusIsNowIdleStartSendTimers(
         case DOT11_S_WFIBSSBEACON:
         case DOT11_S_WFIBSSJITTER:
         case DOT11_S_WFPSPOLL_ACK:
+		case DOT11_S_WFCHANSWITCH:
 //---------------------------Power-Save-Mode-End-Updates-----------------//
         // default:
             break;
@@ -2779,8 +2780,10 @@ void MacDot11StationPhyStatusIsNowIdleStartSendTimers(
         // default:
 
         default:
-            ERROR_ReportError("MacDot11StationPhyStatusIsNowIdleStartSendTimers: "
-                "Invalid state encountered.\n");
+			Int8 buf[MAX_STRING_LENGTH];
+            sprintf(buf,"MacDot11StationPhyStatusIsNowIdleStartSendTimers: "
+                "Invalid state encountered: %d\n",dot11->state);
+			ERROR_ReportError(buf);
             break;
     }//switch//
 
