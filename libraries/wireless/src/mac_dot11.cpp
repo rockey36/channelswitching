@@ -904,9 +904,9 @@ void MacDot11HandleChannelSwitchTimer(
 				sprintf(buf,"MacDot11HandleChannelSwitchTimer: Terminating current receieve on node %d... \n", node->nodeId);
 				ERROR_ReportWarning(buf);
 			}
-			MacDot11StationCancelTimer(node, dot11);
 
 			if(MacDot11StationPhyStatus(node,dot11) != PHY_TRANSMITTING){
+				MacDot11StationCancelTimer(node, dot11);
 				MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 			}
 			
@@ -950,12 +950,11 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
     clocktype endSignalTime;
 
 	if(dot11->chanswitchMaster){
-			//Check the PHY state
-		
+			
+		//Check the PHY state
 		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
-			MacDot11StationCancelTimer(node, dot11);
-
 			if(MacDot11StationPhyStatus(node,dot11) != PHY_TRANSMITTING){
+				MacDot11StationCancelTimer(node, dot11);
 				MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 			}
 		}
