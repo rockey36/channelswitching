@@ -112,7 +112,7 @@ void MacDot11StationChannelSwitchTransmitted(
 {
 	clocktype wait;
 
-    MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+    MacDot11StationSetState(node, dot11, DOT11_S_WFCHANSWITCH);
 
 	    wait =
         dot11->extraPropDelay +
