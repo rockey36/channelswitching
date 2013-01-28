@@ -668,8 +668,10 @@ void MacDot11StationTransmissionHasFinished(
             break;
 //---------------------------Power-Save-Mode-End-Updates-----------------//
         default:
-            ERROR_ReportError("MacDot11TransmissionHasFinished: "
-                "Invalid transmit state.\n");
+			Int8 buf[MAX_STRING_LENGTH];
+            sprintf(buf,"MacDot11TransmissionHasFinished: "
+				"Invalid transmit state: %d\n", dot11->state);
+			ERROR_ReportError(buf);
             break;
     }//switch//
 }
