@@ -2594,6 +2594,10 @@ void MacDot11HandleTimeout(
 
             break;
         }
+		case DOT11_S_WFCHANSWITCH:{
+			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+            break;
+		}
 //---------------------------Power-Save-Mode-Updates---------------------//
         case DOT11_S_WFIBSSBEACON: {
 

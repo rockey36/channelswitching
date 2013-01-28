@@ -398,6 +398,7 @@ typedef enum {
     DOT11_S_WFACK,                // 9
     DOT11_S_WFMANAGEMENT,         // 10
     DOT11_S_WFBEACON,             // 11 Last State in range
+	DOT11_S_WFCHANSWITCH,
 
     // Transmission States:
     // Make consistent with MacDot11InTransmittingState().
