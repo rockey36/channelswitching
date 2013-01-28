@@ -902,10 +902,11 @@ void MacDot11HandleChannelSwitchTimer(
 			}
 			MacDot11StationCancelTimer(node, dot11);
 			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
-			PhyChanSwitchChangeState(node, phyIndex, PHY_IDLE);
+			
 		}
 		//send the channel change alert pkt
 		if(dot11->chanswitchDestNode != INVALID_802ADDRESS){
+			PhyChanSwitchChangeState(node, phyIndex, PHY_IDLE);
 			MacDot11SendChanSwitchPacket(node,dot11);
 		}
 		else{
@@ -955,11 +956,12 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 			}
 			MacDot11StationCancelTimer(node, dot11);
 			MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
-			PhyChanSwitchChangeState(node, phyIndex, PHY_IDLE);
+			//PhyChanSwitchChangeState(node, phyIndex, PHY_IDLE);
 		}
 		
 		//find the current transmission channel
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+		PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 		
 		for (int i = 1; i < numberChannels+1; i++) {
 			newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
@@ -968,7 +970,7 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 					PHY_StartListeningToChannel(node,phyIndex,newChannel);
 				}
 				PHY_SetTransmissionChannel(node,phyIndex,newChannel);
-				PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+
 				break;
 			}
 		}
