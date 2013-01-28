@@ -2869,6 +2869,22 @@ void MacDot11HandleChannelSwitchTimer(
     MacDataDot11* dot11);
 
 //--------------------------------------------------------------------------
+//  NAME:        Actually change the channel after sending the chanswitch pkt.
+//  PURPOSE:     Called when ChanSwitch timer expires.
+//  PARAMETERS:  Node* node
+//                  Pointer to node
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//  RETURN:      None
+//  ASSUMPTION:  None
+//  NOTES:       Only used by Channel Switching PHY protocol
+//               
+//--------------------------------------------------------------------------
+void MacDot11HandleChannelSwitchTimerAfterPkt(
+    Node* node,
+    MacDataDot11* dot11);
+
+//--------------------------------------------------------------------------
 //  NAME:        MacDot11SendChanSwitchPacket
 //  PURPOSE:     Send the channel change/stay alert pkt (chanswitch master)
 //  PARAMETERS:  Node* node

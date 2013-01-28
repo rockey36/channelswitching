@@ -14,7 +14,6 @@
 #include "mac_dot11.h"
 #include "mac_dot11-sta.h"
 
-static
 void PhyChanSwitchChangeState(
     Node* node,
     int phyIndex,
@@ -1164,7 +1163,7 @@ void PhyChanSwitchFinalize(Node *node, const int phyIndex) {
     PhyData* thisPhy = node->phyData[phyIndex];
     PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*) thisPhy->phyVar;
     char buf[MAX_STRING_LENGTH];
-
+	
     if (thisPhy->phyStats == FALSE) {
         return;
     }
