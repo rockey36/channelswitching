@@ -412,7 +412,7 @@ typedef enum {
 //---------------------------Power-Save-Mode-Updates---------------------//
     DOT11_X_IBSSBEACON,           // 19
 	DOT11_X_CHANSWITCH,
-    DOT11_X_PSPOLL,               // 20
+    DOT11_X_PSPOLL,               // 21
 //---------------------------Power-Save-Mode-End-Updates-----------------//
     DOT11_CFP_START,              // 22  State during CFP
     DOT11_S_MANAGEMENT,            // 23  In Management

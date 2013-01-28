@@ -92,6 +92,41 @@ void MacDot11StationRTSTransmitted(Node* node, MacDataDot11* dot11)
 
 }// MacDot11StationRTSTransmitted
 
+
+//--------------------------------------------------------------------------
+//  NAME:        MacDot11StationChannelSwitch
+//  PURPOSE:     Idle after sending channel switch alert.
+//  PARAMETERS:  Node* node
+//                  Pointer to node that sent the chanswitch pkt
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//               NodeAddress address
+//                  Node address of station
+//  RETURN:      None
+//  ASSUMPTION:  None
+//--------------------------------------------------------------------------
+static //inline//
+void MacDot11StationChannelSwitchTransmitted(
+    Node* node,
+    MacDataDot11* dot11)
+{
+	clocktype wait;
+
+    MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+
+	    wait =
+        dot11->extraPropDelay +
+        dot11->sifs +
+        PHY_GetTransmissionDuration(
+            node, dot11->myMacData->phyNumber,
+            PHY_GetTxDataRateType(node, dot11->myMacData->phyNumber),
+            DOT11_SHORT_CTRL_FRAME_SIZE) +
+        dot11->extraPropDelay +
+        dot11->slotTime;
+
+	//wait for the usual DIFS+backoff after ctrl pkt
+    MacDot11StationStartTimer(node, dot11, wait);
+}// MacDot11StationChannelSwitchTransmitted
 //---------------------------Power-Save-Mode-Updates---------------------//
 
 //--------------------------------------------------------------------------
@@ -495,7 +530,7 @@ void MacDot11StationTransmissionHasFinished(
 {
     switch (dot11->state) {
 		case DOT11_X_CHANSWITCH:
-		//add the short break
+			MacDot11StationChannelSwitchTransmitted(node,dot11);
 			break;
 
         case DOT11_X_ACK:

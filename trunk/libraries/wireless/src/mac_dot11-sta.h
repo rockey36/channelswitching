@@ -5604,7 +5604,6 @@ void MacDot11StationStartTransmittingPacket(
         }
     }
 //--------------------DOT11e-End-Updates---------------------------------//
-
     PHY_StartTransmittingSignal(
         node, dot11->myMacData->phyNumber, packet, TRUE, delay);
 
