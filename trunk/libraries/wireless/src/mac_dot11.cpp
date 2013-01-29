@@ -907,7 +907,7 @@ void MacDot11HandleChannelSwitchTimer(
 
 			if(MacDot11StationPhyStatus(node,dot11) != PHY_TRANSMITTING){
 				MacDot11StationCancelTimer(node, dot11);
-				MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+				//MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
 			}
 			
 		}
@@ -950,26 +950,30 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
     clocktype endSignalTime;
 
 	if(dot11->chanswitchMaster){
-			
-		//Check the PHY state
-		if (MacDot11StationPhyStatus(node, dot11) != PHY_IDLE){
-			if(MacDot11StationPhyStatus(node,dot11) != PHY_TRANSMITTING){
-				MacDot11StationCancelTimer(node, dot11);
-				MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
-			}
-		}
 		
-		//find the current transmission channel
-		BOOL stopAfter = FALSE;
-		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
-		if(MacDot11StationPhyStatus(node,dot11) != PHY_TRANSMITTING){
-			PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+		//Check the PHY state
+		if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
+				MacDot11StationCancelTimer(node, dot11);
 		}
-		else{
-			sprintf(buf, "I am transmitting - don't change channel yet. node %d, phystate %d, mac state %d \n",node->nodeId,MacDot11StationPhyStatus(node,dot11),dot11->state);
+
+		//fix for transmitting state errors
+		if ((MacDot11StationPhyStatus(node,dot11) == PHY_TRANSMITTING) || (dot11->state != DOT11_S_IDLE)){
+			sprintf(buf, "Node %d is not idle (phy status %d, mac state %d): Wait to try and change channels. \n",node->nodeId,MacDot11StationPhyStatus(node,dot11),dot11->state);
 			ERROR_ReportWarning(buf);
-			stopAfter = TRUE;
+
+			//start another timer
+			clocktype wait = 100 * MILLI_SECOND;
+			
+			MacDot11StationStartTimerOfGivenType(
+						node,
+						dot11,
+						wait,
+						MSG_MAC_DOT11_ChanSwitchWaitForTX);
+			return;
 		}
+
+		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+		PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 		
 		for (int i = 1; i < numberChannels+1; i++) {
 			newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
@@ -980,12 +984,6 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 				PHY_SetTransmissionChannel(node,phyIndex,newChannel);
 				break;
 			}
-		}
-
-		if(stopAfter) {
-			sprintf(buf, "I was transmitting - stop listening now. node %d, phystate %d, mac state %d \n",node->nodeId,MacDot11StationPhyStatus(node,dot11),dot11->state);
-			ERROR_ReportWarning(buf);
-			PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 		}
 		
 		sprintf(buf, "Changing from channel %d to channel %d on node %d... \n ",
@@ -2728,18 +2726,46 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
 			MacDot11HandleChannelSwitchTimer(node,dot11);
 
 			//Start another chanswitch timer
+			/*
 			clocktype delay = dot11->chanswitchInterval * SECOND;
 			MacDot11StationStartTimerOfGivenType(
 						node,
 						dot11,
 						delay,
 						MSG_MAC_DOT11_ChanSwitchTimerExpired);
+						*/
 
        }
+		
+
+
 
        MESSAGE_Free(node, msg);
        break;
-	   
+
+	  	case MSG_MAC_DOT11_ChanSwitchWaitForTX: {
+            if (DEBUG_PS_TIMERS) {
+                MacDot11Trace(
+                    node,
+                    dot11,
+                    NULL,
+                    "MSG_MAC_DOT11_ChanSwitchWaitForTX Timer expired");
+            }
+
+            unsigned timerSequenceNumber =
+                (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
+            ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
+                "MacDot11Layer: Received invalid timer message.\n");
+			MacDot11HandleChannelSwitchTimerAfterPkt(node,dot11);
+
+
+       }
+		
+
+
+
+       MESSAGE_Free(node, msg);
+       break; 
 
 //---------------------------Power-Save-Mode-Updates---------------------//
         case MSG_MAC_DOT11_Beacon: {
