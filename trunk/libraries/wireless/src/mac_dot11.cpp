@@ -960,9 +960,15 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 		}
 		
 		//find the current transmission channel
+		BOOL stopAfter = FALSE;
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 		if(MacDot11StationPhyStatus(node,dot11) != PHY_TRANSMITTING){
 			PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+		}
+		else{
+			sprintf(buf, "I am transmitting - don't change channel yet. node %d, phystate %d, mac state %d \n",node->nodeId,MacDot11StationPhyStatus(node,dot11),dot11->state);
+			ERROR_ReportWarning(buf);
+			stopAfter = TRUE;
 		}
 		
 		for (int i = 1; i < numberChannels+1; i++) {
@@ -976,7 +982,9 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 			}
 		}
 
-		if(MacDot11StationPhyStatus(node,dot11) == PHY_TRANSMITTING){
+		if(stopAfter) {
+			sprintf(buf, "I was transmitting - stop listening now. node %d, phystate %d, mac state %d \n",node->nodeId,MacDot11StationPhyStatus(node,dot11),dot11->state);
+			ERROR_ReportWarning(buf);
 			PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 		}
 		
@@ -4032,6 +4040,7 @@ void MacDot11Init(
     dot11->tempAttachNodeList = NULL;
     dot11->broadcastQueueSize = DOT11_PS_MODE_DEFAULT_BROADCAST_QUEUE_SIZE;
     dot11->unicastQueueSize = DOT11_PS_MODE_DEFAULT_UNICAST_QUEUE_SIZE;
+	dot11->inTransmitreadyforchanswitch = FALSE;
 //---------------------------Power-Save-Mode-End-Updates-----------------//
 
 	// Read channel switching interval

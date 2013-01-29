@@ -1436,12 +1436,6 @@ struct MacDataDot11 {
     int SLRC;
     Mac802Address waitingForAckOrCtsFromAddress;
 
-	//timed channel switch parameter
-	int chanswitchInterval;
-	//determine if this node is a master (initiator) for channel switching
-	BOOL chanswitchMaster;
-	//mac address of last destination node (used to send chanswich alert)
-	Mac802Address chanswitchDestNode;
 
     D_Clocktype extraPropDelay;
 
@@ -1752,6 +1746,14 @@ struct MacDataDot11 {
 
     BOOL waitForProbeDelay;
 
+	//timed channel switch parameter
+	int chanswitchInterval;
+	//determine if this node is a master (initiator) for channel switching
+	BOOL chanswitchMaster;
+	//mac address of last destination node (used to send chanswitch alert)
+	Mac802Address chanswitchDestNode;
+	//to handle special case: need to change channels while phy state is PHY_TRANSMITTING
+	BOOL inTransmitreadyforchanswitch; 
 };
 
 
