@@ -105,7 +105,7 @@ void MacDot11StationRTSTransmitted(Node* node, MacDataDot11* dot11)
 //  RETURN:      None
 //  ASSUMPTION:  None
 //--------------------------------------------------------------------------
-static //inline//
+static
 void MacDot11StationChannelSwitchTransmitted(
     Node* node,
     MacDataDot11* dot11)
@@ -113,6 +113,7 @@ void MacDot11StationChannelSwitchTransmitted(
 	clocktype wait;
 
     MacDot11StationSetState(node, dot11, DOT11_S_WFCHANSWITCH);
+
 
 	    wait =
         dot11->extraPropDelay +
