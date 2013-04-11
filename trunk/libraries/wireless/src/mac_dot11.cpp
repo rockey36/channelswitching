@@ -942,6 +942,7 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 
 	int phyIndex = dot11->myMacData->phyNumber;
     PhyData *thisPhy = node->phyData[phyIndex];
+    PhyDataChanSwitch *phychanswitch = (PhyDataChanSwitch *)thisPhy->phyVar;
 	int numberChannels = PROP_NumberChannels(node);
 	int oldChannel, newChannel;
 	Int8 buf[MAX_STRING_LENGTH];
@@ -986,15 +987,18 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 			}
 		}
 		
+
 		sprintf(buf, "Changing from channel %d to channel %d on node %d... \n ",
 						oldChannel, newChannel,node->nodeId);
 		ERROR_ReportWarning(buf);
+		
 	}
 }
 
 //--------------------------------------------------------------------------
 //  NAME:        MacDot11SendChanSwitchPacket
 //  PURPOSE:     Send the channel change/stay alert pkt (chanswitch master)
+//				 (Currently this is just an empty dummy packet...)
 //  PARAMETERS:  Node* node
 //                  Pointer to node
 //               MacDataDot11* dot11

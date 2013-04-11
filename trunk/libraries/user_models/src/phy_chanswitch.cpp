@@ -149,6 +149,8 @@ BOOL PhyChanSwitchCarrierSensing(Node* node, PhyDataChanSwitch* phychanswitch) {
     return FALSE;
 }
 
+
+
 static //inline//
 BOOL PhyChanSwitchCheckRxPacketError(
     Node* node,
@@ -2002,4 +2004,11 @@ void PhyChanSwitchUnlockAntennaDirection(Node* node, int phyIndex) {
             NULL,
             &(phychanswitch->interferencePower_mW));
     }//if//
+
+}
+
+//added - quick function to compute the snr
+double PhyChanSwitchComputeSINR (PhyDataChanSwitch* phychanswitch){
+	return 0.0;
+
 }
