@@ -986,7 +986,7 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 				break;
 			}
 		}
-		
+
 
 		sprintf(buf, "Changing from channel %d to channel %d on node %d... \n ",
 						oldChannel, newChannel,node->nodeId);
