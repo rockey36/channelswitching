@@ -1498,7 +1498,7 @@ void PhyChanSwitchSignalEndFromChannel(
         sigMeasure.cinr = IN_DB(phychanswitch->rxMsgPower_mW /
                              (phychanswitch->interferencePower_mW + noise));
 
-		printf("interference power from PhyChanSwitchSignalEndFromChannel = %f \n", phychanswitch->rxMsgPower_mW);
+		//printf("message power from PhyChanSwitchSignalEndFromChannel = %f \n", phychanswitch->rxMsgPower_mW);
 
         PhyChanSwitchUnlockSignal(phychanswitch);
 
