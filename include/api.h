@@ -128,8 +128,8 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
 	// Message Type for DOT11 channel switching
-	MSG_MAC_DOT11_ChanSwitchAlert			   = 398,
-	MSG_MAC_DOT11_ChanSwitchTimerExpired	   = 399,
+	MSG_MAC_DOT11_ChanSwitchSinrProbe		    = 398,
+	MSG_MAC_DOT11_ChanSwitchTimerExpired	     = 399,
 	MSG_MAC_DOT11_ChanSwitchWaitForTX			= 397,
 //---------------------------Power-Save-Mode-Updates---------------------//
     MSG_BATTERY_TimerExpired                    = 334,

@@ -194,6 +194,7 @@ BOOL Phy802_11CheckRxPacketError(
     sinr = (phy802_11->rxMsgPower_mW /
             (phy802_11->interferencePower_mW + noise));
 
+
     if (sinrPtr != NULL)
     {
         *sinrPtr = sinr;
