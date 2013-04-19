@@ -173,6 +173,7 @@ struct DOT11s_Data;
 
 //----------Channel Switching defaults.----------------------------------//
 #define DOT11_CHANSWITCH_INTERVAL 5
+#define DOT11_RX_PROBE_INTERVAL   (100 * MILLI_SECOND)
 #define DOT11_CHANSWITCH_MASTER FALSE
 
 //---------------------------Power-Save-Mode-Updates---------------------//

@@ -167,6 +167,12 @@ BOOL PhyChanSwitchCheckRxPacketError(
 
     sinr = (phychanswitch->rxMsgPower_mW /
             (phychanswitch->interferencePower_mW + noise));
+    
+    // if(node->nodeId < 3) {
+    //     printf("PhyChanSwitchCheckRxPacketError sinr = %f, rx msg power = %f, int+noise = %f at node %d \n", 
+    //     IN_DB(sinr),IN_DB(phychanswitch->rxMsgPower_mW),IN_DB(phychanswitch->interferencePower_mW + noise),node->nodeId);
+
+    // }
 
     if (sinrPtr != NULL)
     {
@@ -2009,8 +2015,3 @@ void PhyChanSwitchUnlockAntennaDirection(Node* node, int phyIndex) {
 
 }
 
-//added - quick function to compute the snr
-double PhyChanSwitchComputeSINR (PhyDataChanSwitch* phychanswitch){
-	return 0.0;
-
-}

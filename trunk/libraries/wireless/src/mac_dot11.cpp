@@ -872,12 +872,27 @@ void MacDot11HandleChannelSwitchTimer(
 	int numberChannels = PROP_NumberChannels(node);
 	int oldChannel, newChannel;
 	Int8 buf[MAX_STRING_LENGTH];
+    PhyDataChanSwitch *phychanswitch = (PhyDataChanSwitch *)thisPhy->phyVar;
 		
 	BOOL frameHeaderHadError;
     clocktype endSignalTime;
 
 	//Only initiate the channel change if this channel is a Master.
 	if(dot11->chanswitchMaster){
+        double sinr;
+        double BER;
+        double noise =
+            phychanswitch->thisPhy->noise_mW_hz * phychanswitch->channelBandwidth;
+
+        assert(phychanswitch->rxMsgError == FALSE);
+
+
+        sinr = (phychanswitch->rxMsgPower_mW /
+                (phychanswitch->interferencePower_mW + noise));
+
+        // printf("MacDot11HandleChannelSwitchTimer sinr = %f, rx msg power = %f, int+noise = %f at node %d \n", 
+        //    IN_DB(sinr),IN_DB(phychanswitch->rxMsgPower_mW),IN_DB(phychanswitch->interferencePower_mW + noise),node->nodeId);
+
 
 		//calculate old and new channel
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
@@ -946,11 +961,29 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 	int numberChannels = PROP_NumberChannels(node);
 	int oldChannel, newChannel;
 	Int8 buf[MAX_STRING_LENGTH];
+    double noise_mW = 0.0;
 
 	BOOL frameHeaderHadError;
     clocktype endSignalTime;
 
 	if(dot11->chanswitchMaster){
+
+        //test: print sinr before switching
+        // double sinr;
+        // double BER;
+        // double noise =
+        //     phychanswitch->thisPhy->noise_mW_hz * phychanswitch->channelBandwidth;
+
+        // assert(phychanswitch->rxMsgError == FALSE);
+
+
+        // sinr = (phychanswitch->rxMsgPower_mW /
+        //         (phychanswitch->interferencePower_mW + noise));
+
+        // printf("MacDot11HandleChannelSwitchTimerAfterPkt sinr = %f, rx msg power = %f, int+noise = %f at node %d \n", 
+        //    IN_DB(sinr),IN_DB(phychanswitch->rxMsgPower_mW),IN_DB(phychanswitch->interferencePower_mW + noise),node->nodeId);
+
+
 		
 		//Check the PHY state
 		if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
@@ -973,6 +1006,7 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 			return;
 		}
 
+
 		PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 		PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 		
@@ -988,9 +1022,8 @@ void MacDot11HandleChannelSwitchTimerAfterPkt(
 		}
 
 
-		sprintf(buf, "Changing from channel %d to channel %d on node %d... \n ",
+		printf("Changing from channel %d to channel %d on node %d... \n ",
 						oldChannel, newChannel,node->nodeId);
-		ERROR_ReportWarning(buf);
 		
 	}
 }
@@ -2740,7 +2773,32 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
 						*/
 
        }
-		
+	
+    //Check the sinr every so often
+    case MSG_MAC_DOT11_ChanSwitchSinrProbe: {
+            int phyIndex = dot11->myMacData->phyNumber;
+            PhyData *thisPhy = node->phyData[phyIndex];
+            PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*)(thisPhy->phyVar);
+
+            double sinr;
+            double BER;
+            double noise =
+                phychanswitch->thisPhy->noise_mW_hz * phychanswitch->channelBandwidth;
+
+
+            sinr = (phychanswitch->rxMsgPower_mW /
+                    (phychanswitch->interferencePower_mW + noise));
+
+            printf("ChanSwitchSinrProbe sinr = %f, rx msg power = %f, int+noise = %f at node %d \n", 
+               IN_DB(sinr),IN_DB(phychanswitch->rxMsgPower_mW),IN_DB(phychanswitch->interferencePower_mW + noise),node->nodeId);
+            clocktype delay = DOT11_RX_PROBE_INTERVAL;
+            MacDot11StationStartTimerOfGivenType(
+                        node,
+                        dot11,
+                        delay,
+                        MSG_MAC_DOT11_ChanSwitchSinrProbe);
+
+    }
 
 
 
@@ -4513,6 +4571,7 @@ void MacDot11Init(
     }
 
 	//If the type is Channel Switching, send the first message
+    //Also send the first RX probe
 	if (phyModel == PHY_CHANSWITCH){
 		
 		clocktype delay = dot11->chanswitchInterval * SECOND;
@@ -4520,8 +4579,21 @@ void MacDot11Init(
 						node,
 						dot11,
 						delay,
-						MSG_MAC_DOT11_ChanSwitchTimerExpired);					
+						MSG_MAC_DOT11_ChanSwitchTimerExpired);	
+
+        delay = DOT11_RX_PROBE_INTERVAL;
+        MacDot11StationStartTimerOfGivenType(
+                        node,
+                        dot11,
+                        delay,
+                        MSG_MAC_DOT11_ChanSwitchSinrProbe);  
+
+
+
 	}
+
+
+
 
     MacDot11TraceInit(node, nodeInput, dot11);
 
