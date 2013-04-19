@@ -2784,11 +2784,16 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             double BER;
             double noise =
                 phychanswitch->thisPhy->noise_mW_hz * phychanswitch->channelBandwidth;
+            double intnoise;
+
+            double avg_intnoise = -90.0;
 
 
             sinr = (phychanswitch->rxMsgPower_mW /
                     (phychanswitch->interferencePower_mW + noise));
 
+
+            //lowest of last 10 interference power?
             printf("ChanSwitchSinrProbe sinr = %f, rx msg power = %f, int+noise = %f at node %d \n", 
                IN_DB(sinr),IN_DB(phychanswitch->rxMsgPower_mW),IN_DB(phychanswitch->interferencePower_mW + noise),node->nodeId);
             clocktype delay = DOT11_RX_PROBE_INTERVAL;
