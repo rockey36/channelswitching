@@ -2799,7 +2799,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             sinr = (phychanswitch->rxMsgPower_mW /
                     (phychanswitch->interferencePower_mW + noise));
 
-            printf("node %d chan %d: %f",
+            printf("node %d chan %d: %f \n",
                node->nodeId,channel,thisPhy->worst_intnoise_dB[channel]);
             clocktype delay = DOT11_RX_PROBE_INTERVAL;
             MacDot11StationStartTimerOfGivenType(
