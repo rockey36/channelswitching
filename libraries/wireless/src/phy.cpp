@@ -263,6 +263,12 @@ void PHY_CreateAPhyForMac(
     thisPhy->channelListenable = new D_BOOL[numberChannels];
     thisPhy->channelListening = new D_BOOL[numberChannels];
 	thisPhy->channelSwitch = new D_BOOL[numberChannels];
+    thisPhy->avg_intnoise_dB = new double[numberChannels];
+    thisPhy->worst_intnoise_dB = new double[numberChannels];
+    for(i=0; i < numberChannels; i++){
+        thisPhy->avg_intnoise_dB[i] = -90.0;
+        thisPhy->worst_intnoise_dB[i] = -100.0;
+    }
 
 
 
