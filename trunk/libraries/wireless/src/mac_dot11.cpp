@@ -2779,23 +2779,28 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             int phyIndex = dot11->myMacData->phyNumber;
             PhyData *thisPhy = node->phyData[phyIndex];
             PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*)(thisPhy->phyVar);
+            int channel;
 
             double sinr;
             double BER;
             double noise =
                 phychanswitch->thisPhy->noise_mW_hz * phychanswitch->channelBandwidth;
-            double intnoise;
-
-            double avg_intnoise = -90.0;
-
+            double intnoise_dB = IN_DB(phychanswitch->interferencePower_mW + noise);
+            PHY_GetTransmissionChannel(node,phyIndex,&channel);
+            //compute the new rolling average
+            thisPhy->avg_intnoise_dB[channel] =
+                (1 - 0.1) * thisPhy->avg_intnoise_dB[channel] + 
+                0.1 * intnoise_dB; 
+            //compute the new worst interference
+                if(intnoise_dB > thisPhy->worst_intnoise_dB[channel]) {
+                    thisPhy->worst_intnoise_dB[channel] = intnoise_dB;
+                }
 
             sinr = (phychanswitch->rxMsgPower_mW /
                     (phychanswitch->interferencePower_mW + noise));
 
-
-            //lowest of last 10 interference power?
-            printf("ChanSwitchSinrProbe sinr = %f, rx msg power = %f, int+noise = %f at node %d \n", 
-               IN_DB(sinr),IN_DB(phychanswitch->rxMsgPower_mW),IN_DB(phychanswitch->interferencePower_mW + noise),node->nodeId);
+            printf("node %d chan %d: %f",
+               node->nodeId,channel,thisPhy->worst_intnoise_dB[channel]);
             clocktype delay = DOT11_RX_PROBE_INTERVAL;
             MacDot11StationStartTimerOfGivenType(
                         node,
