@@ -129,6 +129,7 @@ enum
 
 	// Message Type for DOT11 channel switching
 	MSG_MAC_DOT11_ChanSwitchSinrProbe		    = 398,
+    MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch = 396,
 	MSG_MAC_DOT11_ChanSwitchTimerExpired	     = 399,
 	MSG_MAC_DOT11_ChanSwitchWaitForTX			= 397,
 //---------------------------Power-Save-Mode-Updates---------------------//

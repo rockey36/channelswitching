@@ -1137,9 +1137,65 @@ void MacDot11HandleSinrProbeChanSwitch(
     if(dot11->chanswitchMaster){
         //move to the next channel on chanswitch
 
-        //if we haven't checked them all start another timer
 
+                //Check the PHY state
+        if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
+                MacDot11StationCancelTimer(node, dot11);
+        }
+
+        //fix for transmitting state errors
+        if ((MacDot11StationPhyStatus(node,dot11) == PHY_TRANSMITTING) || (dot11->state != DOT11_S_IDLE)){
+            sprintf(buf, "Node %d is not idle (phy status %d, mac state %d): Wait to try and change channels. \n",node->nodeId,MacDot11StationPhyStatus(node,dot11),dot11->state);
+            ERROR_ReportWarning(buf);
+
+            //start another timer
+            clocktype wait = 100 * MILLI_SECOND;
+            
+            MacDot11StationStartTimerOfGivenType(
+                        node,
+                        dot11,
+                        wait,
+                        MSG_MAC_DOT11_ChanSwitchWaitForTX);
+            return;
+        }
+
+        PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+
+        //we've checked it
+        thisPhy->channelChecked[oldChannel] = TRUE;
+
+        for (int i = 1; i < numberChannels+1; i++) {
+            newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
+            if (thisPhy->channelSwitch[newChannel]) {
+                break;
+            }
+        }
+
+         //if we haven't checked them all switch and start another timer
+        if(thisPhy->channelChecked[newChannel] == TRUE){
+            printf("SinrProbeChanSwitch: Changing from channel %d to channel %d on node %d... \n ",
+                    oldChannel, newChannel,node->nodeId);
+
+            PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+
+            if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
+                PHY_StartListeningToChannel(node,phyIndex,newChannel);
+            }
+            PHY_SetTransmissionChannel(node,phyIndex,newChannel);
+
+            clocktype delay = DOT11_RX_PROBE_CHAN_SAMPLE_TIME * SECOND;
+
+            MacDot11StationStartTimerOfGivenType(
+            node,
+            dot11,
+            delay,
+            MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch);  
+
+        }
         //if we have checked them all pick the channel
+        else{
+            printf("SinrProbeChanSwitch: looked at all channels \n");
+        }
 
     }
 
@@ -2809,8 +2865,10 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
 						delay,
 						MSG_MAC_DOT11_ChanSwitchTimerExpired);
 						*/
+           MESSAGE_Free(node, msg);
+           break;
+    }
 
-       }
 	
     //Check the sinr every so often
     case MSG_MAC_DOT11_ChanSwitchSinrProbe: {
@@ -2846,12 +2904,16 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
                         delay,
                         MSG_MAC_DOT11_ChanSwitchSinrProbe);
 
+            MESSAGE_Free(node, msg);
+            break;
+
     }
 
-
-
-       MESSAGE_Free(node, msg);
-       break;
+    case MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch: {
+        MacDot11HandleSinrProbeChanSwitch(node,dot11);
+        MESSAGE_Free(node, msg);
+        break;
+    }
 
 	  	case MSG_MAC_DOT11_ChanSwitchWaitForTX: {
             if (DEBUG_PS_TIMERS) {
@@ -2870,10 +2932,6 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
 
 
        }
-		
-
-
-
        MESSAGE_Free(node, msg);
        break; 
 
@@ -4625,20 +4683,29 @@ void MacDot11Init(
 
         //Commented out - currently not testing timed chanswitch
 		
-		delay = dot11->chanswitchInterval * SECOND;
-        
-		MacDot11StationStartTimerOfGivenType(
-						node,
-						dot11,
-						delay,
-						MSG_MAC_DOT11_ChanSwitchTimerExpired);	
+		// delay = dot11->chanswitchInterval * SECOND;
+
+		// MacDot11StationStartTimerOfGivenType(
+		// 				node,
+		// 				dot11,
+		// 				delay,
+		// 				MSG_MAC_DOT11_ChanSwitchTimerExpired);	
 
         delay = DOT11_RX_PROBE_BEGIN_TIME * SECOND;
+
         MacDot11StationStartTimerOfGivenType(
                         node,
                         dot11,
                         delay,
                         MSG_MAC_DOT11_ChanSwitchSinrProbe);  
+
+        // delay = (DOT11_RX_PROBE_BEGIN_TIME + DOT11_RX_PROBE_CHAN_SAMPLE_TIME) * SECOND;
+        
+        // MacDot11StationStartTimerOfGivenType(
+        //                 node,
+        //                 dot11,
+        //                 delay,
+        //                 MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch);  
 
 	}
 
