@@ -173,7 +173,9 @@ struct DOT11s_Data;
 
 //----------Channel Switching defaults.----------------------------------//
 #define DOT11_CHANSWITCH_INTERVAL 5
-#define DOT11_RX_PROBE_INTERVAL   (100 * MILLI_SECOND)
+#define DOT11_RX_PROBE_INTERVAL   (50 * MILLI_SECOND)
+#define DOT11_RX_PROBE_BEGIN_TIME   1 //simulation time (in seconds) to begin looking at interference
+#define DOT11_RX_PROBE_CHAN_SAMPLE_TIME 1 //simulation time (in seconds) to look at interference on each channel
 #define DOT11_INTNOISE_SAMPLE_WEIGHT = 0.1 //weight given to new interference + noise sample in rolling average
 #define DOT11_CHANSWITCH_MASTER FALSE
 
