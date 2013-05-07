@@ -228,6 +228,7 @@ typedef struct struct_phy_chanswitch_str {
     PhyStatusType previousMode;
 
     PhyChanSwitchStats  stats;
+    D_BOOL*   channelChecked; //channels for which interference was measured   
 } PhyDataChanSwitch;
 
 

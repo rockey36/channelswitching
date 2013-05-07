@@ -284,6 +284,8 @@ void PhyChanSwitchaInitializeDefaultParameters(Node* node, int phyIndex) {
     phychanswitch->channelBandwidth = PHY_CHANSWITCH_CHANNEL_BANDWIDTH;
     phychanswitch->rxTxTurnaroundTime = PHY_CHANSWITCH_RX_TX_TURNAROUND_TIME;
 
+
+
     return;
 }
 
@@ -719,6 +721,7 @@ void PhyChanSwitchInit(
 
     phychanswitch->thisPhy = node->phyData[phyIndex];
 
+
     std::string path;
     D_Hierarchy *h = &node->partitionData->dynamicHierarchy;
 
@@ -961,6 +964,13 @@ void PhyChanSwitchInit(
     phychanswitch->stats.totalTxSignals = 0;
     phychanswitch->stats.energyConsumed = 0.0;
     phychanswitch->stats.turnOnTime = getSimTime(node);
+
+    //add the channel checked array
+    phychanswitch->channelChecked =  new D_BOOL[numChannels];
+    for(i=0;i<numChannels;i++){
+        phychanswitch->channelChecked[i] = FALSE;
+
+    }
 
 
     //

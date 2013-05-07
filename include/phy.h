@@ -253,11 +253,11 @@ struct PhyData {
     LoadProfile*  curLoad;
     EnergyModelGeneric genericEnergyModelParameters;
 #endif //WIRELESS_LIB
-      double    noiseFactor;  //added for 802.16
-    	D_BOOL*		channelSwitch; //index of channels used by PHY_CHANSWITCH
-      double*   avg_intnoise_dB; //average interference + noise per channel
-      double*   worst_intnoise_dB; //worst int+noise measured on this channel
-      D_BOOL*   channelChecked; //channels for which interference was measured      
+    double    noiseFactor;  //added for 802.16
+  	D_BOOL*		channelSwitch; //index of channels used by PHY_CHANSWITCH   
+    double*   avg_intnoise_dB; //average interference + noise per channel
+    double*   worst_intnoise_dB; //worst int+noise measured on this channel
+
 };
 
 
