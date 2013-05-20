@@ -1132,7 +1132,7 @@ void MacDot11HandleSinrProbeChanSwitch(
     int numberChannels = PROP_NumberChannels(node);
     int oldChannel, newChannel;
     Int8 buf[MAX_STRING_LENGTH];
-    PhyDataChanSwitch *phychanswitch = (PhyDataChanSwitch *)thisPhy->phyVar;
+    PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*)(thisPhy->phyVar);
     if(dot11->chanswitchMaster){
         //move to the next channel on chanswitch
 
@@ -1221,6 +1221,8 @@ void MacDot11HandleSinrProbeChanSwitch(
             ERROR_ReportWarning(buf);
             sprintf(buf,"SinrProbeChanSwitch: Selecting channel %d on node %d...\n",lowest_int_channel,node->nodeId);
             ERROR_ReportWarning(buf);
+
+            phychanswitch->isProbing = FALSE;
 
             PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 
@@ -2913,7 +2915,6 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
                 NULL,
                 "MSG_MAC_DOT11_ChanSwitchSinrProbe Timer expired");
         }
-
         unsigned timerSequenceNumber =
             (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
         ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
@@ -2945,12 +2946,14 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         printf("node %d chan %d: %f \n",
            node->nodeId,channel,thisPhy->worst_intnoise_dB[channel]);
         clocktype delay = DOT11_RX_PROBE_INTERVAL;
-        MacDot11StationStartTimerOfGivenType(
-                    node,
-                    dot11,
-                    delay,
-                    MSG_MAC_DOT11_ChanSwitchSinrProbe);
 
+        if(phychanswitch->isProbing){
+                MacDot11StationStartTimerOfGivenType(
+                            node,
+                            dot11,
+                            delay,
+                            MSG_MAC_DOT11_ChanSwitchSinrProbe);
+        }
         MESSAGE_Free(node, msg);
         break;
 
@@ -4741,7 +4744,7 @@ void MacDot11Init(
 
 	//If the type is Channel Switching, send the first message
     //Also send the first RX probe
-	if (phyModel == PHY_CHANSWITCH){
+	if (phyModel == PHY_CHANSWITCH && dot11->chanswitchMaster){
         clocktype delay;
 
         //Commented out - currently not testing timed chanswitch
@@ -4754,13 +4757,19 @@ void MacDot11Init(
 		// 				delay,
 		// 				MSG_MAC_DOT11_ChanSwitchTimerExpired);	
 
+        int phyIndex = dot11->myMacData->phyNumber;    
+        PhyData *thisPhy = node->phyData[phyIndex];    
+        PhyDataChanSwitch *phychanswitch = (PhyDataChanSwitch *)thisPhy->phyVar;
+        phychanswitch->isProbing = TRUE;
         delay = DOT11_RX_PROBE_BEGIN_TIME * SECOND;
 
+        
         MacDot11StationStartTimerOfGivenType(
                         node,
                         dot11,
                         delay,
                         MSG_MAC_DOT11_ChanSwitchSinrProbe);  
+
 
         delay = (DOT11_RX_PROBE_BEGIN_TIME + DOT11_RX_PROBE_CHAN_SAMPLE_TIME) * SECOND;
         
