@@ -972,6 +972,9 @@ void PhyChanSwitchInit(
 
     }
 
+    //probe disabled by default
+    phychanswitch->isProbing = FALSE;
+
 
     //
     // Initialize status of phy
