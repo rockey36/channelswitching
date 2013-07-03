@@ -260,7 +260,7 @@ int Scheduler::numQueue()
 
 int Scheduler::GetQueuePriority(int queueIndex)
 {
-    ERROR_Assert(queueIndex < numQueues, "Queue Inex value corrupted!");
+    ERROR_Assert(queueIndex < numQueues, "Queue Index value corrupted!");
     return queueData[queueIndex].priority;
 }
 
