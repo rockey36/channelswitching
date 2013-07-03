@@ -771,6 +771,22 @@ void MacDot11NetworkLayerHasPacketToSend(
     }
 }//MacDot11NetworkLayerHasPacketToSend//
 
+//--------------------------------------------------------------------------
+// NAME         MacDot11NetworkLayerHasPacketToSend
+// PURPOSE      To notify dot11 that channel should be changed
+// PARAMETERS   Node* node
+//                  Node which received the message.
+//              MacDataDot11* dot11
+//                  Dot11 data structure
+// RETURN       None
+// NOTES        None
+//--------------------------------------------------------------------------
+void MacDot11NetworkLayerChanswitch(
+   Node* node, MacDataDot11* dot11) {
+    printf("MAC layer got the channel change notification \n");
+
+}//MacDot11NetworkLayerChanswitch//
+
 
 //--------------------------------------------------------------------------
 //  NAME:        MacDot11DataQueueHasPacketToSend

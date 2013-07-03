@@ -13852,8 +13852,23 @@ NetworkIpQueueInsert(
     double filled = 100 * ((double)bytes / (double)maxBytes);
     if(filled > CHANSWITCH_THRESHOLD){
         printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
-        //send a message to the MAC layer - change to the next channel
-        
+        int interfaceIndex;
+        //copypasta
+        if (incomingInterface == CPU_INTERFACE)
+        {
+            // If sent by this node, then routing protocol should be
+            // associated with the outgoing interface.
+            interfaceIndex = outgoingInterface;
+        }
+        else
+        {
+            // If packet is being forwarded, then routing protocol should
+            // be associated with the incoming interface.
+            interfaceIndex = incomingInterface;
+        }
+            //switch that channel on MAC layer
+            MAC_NetworkLayerChanswitch(node, interfaceIndex);
+
     }
 
     ipHeader = (IpHeaderType*) MESSAGE_ReturnPacket(msg);

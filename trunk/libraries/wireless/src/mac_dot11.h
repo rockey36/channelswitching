@@ -2770,6 +2770,19 @@ void MacDot11Finalize(Node* node, int interfaceIndex);
 void MacDot11NetworkLayerHasPacketToSend(
    Node* node, MacDataDot11* dot11);
 
+//--------------------------------------------------------------------------
+// NAME         MacDot11NetworkLayerHasPacketToSend
+// PURPOSE      To notify dot11 that channel should be changed
+// PARAMETERS   Node* node
+//                  Node which received the message.
+//              MacDataDot11* dot11
+//                  Dot11 data structure
+// RETURN       None
+// NOTES        None
+//--------------------------------------------------------------------------
+void MacDot11NetworkLayerChanswitch(
+   Node* node, MacDataDot11* dot11);
+
 
 //--------------------------------------------------------------------------
 // NAME         MacDot11ReceivePacketFromPhy
