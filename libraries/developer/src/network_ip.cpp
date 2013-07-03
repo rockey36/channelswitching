@@ -13852,6 +13852,8 @@ NetworkIpQueueInsert(
     double filled = 100 * ((double)bytes / (double)maxBytes);
     if(filled > CHANSWITCH_THRESHOLD){
         printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
+        //send a message to the MAC layer - change to the next channel
+        
     }
 
     ipHeader = (IpHeaderType*) MESSAGE_ReturnPacket(msg);

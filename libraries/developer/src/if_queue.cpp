@@ -727,7 +727,9 @@ BOOL Queue::isEmpty()
 
 
 // /**
-// FUNCTION   :: Queue::bytesInQueue
+// FUNCTION   :: Queue::
+
+
 // LAYER      ::
 // PURPOSE    :: This function prototype returns the number of bytes stored
 //               in the array.
