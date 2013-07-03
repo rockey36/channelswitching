@@ -268,6 +268,9 @@
 
 #define NoECN_DEBUG_TEST
 
+//percentage of queue-fill at which to switch channels
+#define CHANSWITCH_THRESHOLD 75.0
+
 /*
  * Change this value to the number of drops required
  * e.g. #define ECN_TEST_PKT_MARK 3 for 3 drops
@@ -13847,7 +13850,9 @@ NetworkIpQueueInsert(
     int bytes = (*scheduler).bytesInQueue(0);
     int maxBytes = (*scheduler).sizeOfQueue(0);
     double filled = 100 * ((double)bytes / (double)maxBytes);
-    printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
+    if(filled > CHANSWITCH_THRESHOLD){
+        printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
+    }
 
     ipHeader = (IpHeaderType*) MESSAGE_ReturnPacket(msg);
 
