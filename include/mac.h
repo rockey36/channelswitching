@@ -716,6 +716,15 @@ MAC_NetworkLayerHasPacketToSend(
     Node *node,
     int interfaceIndex);
 
+// /**
+// FUNCTION     :: MAC_NetworkLayerChanswitch
+// LAYER        :: MAC
+// PURPOSE      :: Network layer tells MAC layer to switch channels.               
+// PARAMETERS   ::
+// + node           : Node* : Pointer to a network node
+// + interfaceIndex : int   : index of interface
+// RETURN       :: void :
+// **/
 void
 MAC_NetworkLayerChanswitch(
     Node *node,

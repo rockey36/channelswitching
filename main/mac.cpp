@@ -7019,7 +7019,11 @@ MAC_NetworkLayerChanswitch(
     int interfaceIndex){
 
     #ifdef WIRELESS_LIB
-    
+
+    if(node->macData[interfaceIndex]->macProtocol == MAC_PROTOCOL_DOT11){
+        MacDot11NetworkLayerChanswitch(node, (MacDataDot11 *) node->macData[interfaceIndex]->macVar);
+    }
+
     #endif
 
 }
