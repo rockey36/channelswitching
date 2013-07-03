@@ -7003,6 +7003,27 @@ MAC_NetworkLayerHasPacketToSend(Node *node, int interfaceIndex)
     }//switch//
 }
 
+
+// /**
+// FUNCTION     :: MAC_NetworkLayerChanswitch
+// LAYER        :: MAC
+// PURPOSE      :: Network layer tells MAC layer to switch channels.               
+// PARAMETERS   ::
+// + node           : Node* : Pointer to a network node
+// + interfaceIndex : int   : index of interface
+// RETURN       :: void :
+// **/
+void
+MAC_NetworkLayerChanswitch(    
+    Node *node,
+    int interfaceIndex){
+
+    #ifdef WIRELESS_LIB
+    
+    #endif
+
+}
+
 // --------------------------------------------------------------------------
 // FUNCTION: MAC_ReceivePacketFromPhy
 // PURPOSE:  Handles packets that was just received from the physical medium.
