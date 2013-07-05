@@ -716,19 +716,7 @@ MAC_NetworkLayerHasPacketToSend(
     Node *node,
     int interfaceIndex);
 
-// /**
-// FUNCTION     :: MAC_NetworkLayerMarkAsTX
-// LAYER        :: MAC
-// PURPOSE      :: Designate this node as a transmit node.  [802.11 only]             
-// PARAMETERS   ::
-// + node           : Node* : Pointer to a network node
-// + interfaceIndex : int   : index of interface
-// RETURN       :: void :
-// **/
-void
-MAC_NetworkLayerMarkAsTX(    
-    Node *node,
-    int interfaceIndex);
+
 
 // /**
 // FUNCTION     :: MAC_NetworkLayerChanswitch
