@@ -7003,6 +7003,33 @@ MAC_NetworkLayerHasPacketToSend(Node *node, int interfaceIndex)
     }//switch//
 }
 
+// /**
+// FUNCTION     :: MAC_NetworkLayerMarkAsTX
+// LAYER        :: MAC
+// PURPOSE      :: Designate this node as a transmit node.  [802.11 only]             
+// PARAMETERS   ::
+// + node           : Node* : Pointer to a network node
+// + interfaceIndex : int   : index of interface
+// RETURN       :: void :
+// **/
+void
+MAC_NetworkLayerMarkAsTX(    
+    Node *node,
+    int interfaceIndex){
+
+    #ifdef WIRELESS_LIB
+
+    if(node->macData[interfaceIndex]->macProtocol == MAC_PROTOCOL_DOT11){
+        MacDataDot11* dot11 = (MacDataDot11 *) node->macData[interfaceIndex]->macVar;
+        int phyIndex = dot11->myMacData->phyNumber;
+        PhyData *thisPhy = node->phyData[phyIndex];
+        thisPhy->is_tx = TRUE;
+    }
+
+    #endif
+
+}
+
 
 // /**
 // FUNCTION     :: MAC_NetworkLayerChanswitch

@@ -13850,26 +13850,10 @@ NetworkIpQueueInsert(
     int bytes = (*scheduler).bytesInQueue(0);
     int maxBytes = (*scheduler).sizeOfQueue(0);
     double filled = 100 * ((double)bytes / (double)maxBytes);
+    MAC_NetworkLayerMarkAsTX(node,outgoingInterface);
     if(filled > CHANSWITCH_THRESHOLD){
         printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
-        //int interfaceIndex;
-        //copypasta
-        /*
-        if (incomingInterface == CPU_INTERFACE)
-        {
-            // If sent by this node, then routing protocol should be
-            // associated with the outgoing interface.
-            interfaceIndex = outgoingInterface;
-        }
-        else
-        {
-            // If packet is being forwarded, then routing protocol should
-            // be associated with the incoming interface.
-            interfaceIndex = incomingInterface;
-        }
-        */
-            //switch that channel on MAC layer
-            MAC_NetworkLayerChanswitch(node, outgoingInterface);
+        MAC_NetworkLayerChanswitch(node, outgoingInterface);
 
     }
 

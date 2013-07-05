@@ -257,6 +257,9 @@ struct PhyData {
   	D_BOOL*		channelSwitch; //index of channels used by PHY_CHANSWITCH   
     double*   avg_intnoise_dB; //average interference + noise per channel
     double*   worst_intnoise_dB; //worst int+noise measured on this channel
+    BOOL      tx_chanswitch_wait; //true if tx is waiting
+    BOOL      rx_chanswitch_wait; //true if rx is looking (before changing back to original channel)
+    BOOL      is_tx;               //true if we ever got something from the MAC layer to transmit
 
 };
 
