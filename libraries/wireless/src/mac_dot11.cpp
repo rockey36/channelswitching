@@ -1681,6 +1681,7 @@ void MacDot11ProcessMyFrame(
     switch (hdr->frameType) {
 
         case DOT11_RTS: {
+            printf("test: got rts \n");
             DOT11_LongControlFrame* hdr =
             (DOT11_LongControlFrame*) MESSAGE_ReturnPacket(msg);
 
@@ -2224,9 +2225,7 @@ void MacDot11ReceivePacketFromPhy(
 
     int phyIndex = dot11->myMacData->phyNumber;
     PhyData *thisPhy = node->phyData[phyIndex];
-    if(thisPhy->is_tx = FALSE){
-        printf("got pkt from PHY on node %d (marked as 'not TX') \n", node->nodeId);
-        }
+
     // Since in QualNet it's possible to have two events occurring
     // at the same time, enforce the fact that when a node is
     // transmitting, a node can't be receiving a frame at the same time.
