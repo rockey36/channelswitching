@@ -271,7 +271,7 @@ void PHY_CreateAPhyForMac(
     }
     thisPhy->tx_chanswitch_wait = FALSE;
     thisPhy->rx_chanswitch_wait = FALSE;
-    thisPhy->is_tx = FALSE;
+    thisPhy->is_rx = FALSE;
 
 
 #ifdef ADDON_NGCNMS

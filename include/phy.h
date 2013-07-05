@@ -259,7 +259,7 @@ struct PhyData {
     double*   worst_intnoise_dB; //worst int+noise measured on this channel
     BOOL      tx_chanswitch_wait; //true if tx is waiting
     BOOL      rx_chanswitch_wait; //true if rx is looking (before changing back to original channel)
-    BOOL      is_tx;               //true if we ever got something from the MAC layer to transmit
+    BOOL      is_rx;               //true if we ever received something 
 
 };
 

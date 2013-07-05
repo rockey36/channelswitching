@@ -1681,7 +1681,6 @@ void MacDot11ProcessMyFrame(
     switch (hdr->frameType) {
 
         case DOT11_RTS: {
-            printf("test: got rts \n");
             DOT11_LongControlFrame* hdr =
             (DOT11_LongControlFrame*) MESSAGE_ReturnPacket(msg);
 
@@ -1900,6 +1899,8 @@ void MacDot11ProcessMyFrame(
         case DOT11_QOS_DATA:
         case DOT11_MESH_DATA:
         case DOT11_CF_DATA_ACK: {
+
+            printf("got data for me on node %d \n", node->nodeId);
 //---------------------------Power-Save-Mode-Updates---------------------//
             if(MacDot11IsIBSSStationSupportPSMode(dot11)){
                 MacDot11SetExchangeVariabe(node, dot11, msg);
