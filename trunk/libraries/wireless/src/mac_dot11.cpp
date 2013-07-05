@@ -783,7 +783,49 @@ void MacDot11NetworkLayerHasPacketToSend(
 //--------------------------------------------------------------------------
 void MacDot11NetworkLayerChanswitch(
    Node* node, MacDataDot11* dot11) {
-    printf("MAC layer got the channel change notification \n");
+
+    int phyIndex = dot11->myMacData->phyNumber;
+    PhyData *thisPhy = node->phyData[phyIndex];
+    int numberChannels = PROP_NumberChannels(node);
+    int oldChannel, newChannel;
+    PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*)(thisPhy->phyVar);
+
+    //Eventually will be for CHANSWITCH_MASTER only, but for testing...
+
+    PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+    for (int i = 1; i < numberChannels+1; i++) {
+        newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
+        if (thisPhy->channelSwitch[newChannel]) {
+            break;
+        }
+    }
+    if(thisPhy->tx_chanswitch_wait == FALSE) {
+        printf("MAC layer got the channel change notification - try to change from channel %d to channel %d \n",oldChannel,newChannel);
+        //Check the PHY state
+            if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
+                    MacDot11StationCancelTimer(node, dot11);
+            }
+    
+            
+            PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+    
+            if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
+                PHY_StartListeningToChannel(node,phyIndex,newChannel);
+            }
+            PHY_SetTransmissionChannel(node,phyIndex,newChannel);
+    
+        //Start the tx_chanswitch_waiting timer
+        thisPhy->tx_chanswitch_wait = TRUE;
+
+        clocktype delay = DOT11_TX_CHANSWITCH_DELAY * SECOND;
+
+        MacDot11StationStartTimerOfGivenType(
+        node,
+        dot11,
+        delay,
+        MSG_MAC_DOT11_ChanSwitchTxDelay);  
+
+    }
 
 }//MacDot11NetworkLayerChanswitch//
 
@@ -2180,7 +2222,11 @@ void MacDot11ReceivePacketFromPhy(
 
     dot11->IsInExtendedIfsMode = FALSE;
 
-    //
+    int phyIndex = dot11->myMacData->phyNumber;
+    PhyData *thisPhy = node->phyData[phyIndex];
+    if(thisPhy->is_tx = FALSE){
+        printf("got pkt from PHY on node %d (marked as 'not TX') \n", node->nodeId);
+        }
     // Since in QualNet it's possible to have two events occurring
     // at the same time, enforce the fact that when a node is
     // transmitting, a node can't be receiving a frame at the same time.
@@ -2973,6 +3019,31 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         MESSAGE_Free(node, msg);
         break;
 
+    }
+
+    case MSG_MAC_DOT11_ChanSwitchTxDelay: {
+        Int8 buf[MAX_STRING_LENGTH];
+
+        if (DEBUG_PS_TIMERS) {
+            MacDot11Trace(
+                node,
+                dot11,
+                NULL,
+                "MSG_MAC_DOT11_ChanSwitchTxDelay Timer expired");
+        }
+
+
+        unsigned timerSequenceNumber =
+            (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
+        ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
+            "MacDot11Layer: Received invalid timer message.\n");
+
+        printf("test: MSG_MAC_DOT11_ChanSwitchTxDelay \n");
+        int phyIndex = dot11->myMacData->phyNumber;
+        PhyData *thisPhy = node->phyData[phyIndex];
+        thisPhy->tx_chanswitch_wait = FALSE;
+        MESSAGE_Free(node, msg);
+        break;
     }
 
     case MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch: {

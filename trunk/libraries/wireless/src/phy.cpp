@@ -269,7 +269,9 @@ void PHY_CreateAPhyForMac(
         thisPhy->avg_intnoise_dB[i] = -90.0;
         thisPhy->worst_intnoise_dB[i] = -100.0;
     }
-
+    thisPhy->tx_chanswitch_wait = FALSE;
+    thisPhy->rx_chanswitch_wait = FALSE;
+    thisPhy->is_tx = FALSE;
 
 
 #ifdef ADDON_NGCNMS
