@@ -813,6 +813,9 @@ void MacDot11NetworkLayerChanswitch(
                 PHY_StartListeningToChannel(node,phyIndex,newChannel);
             }
             PHY_SetTransmissionChannel(node,phyIndex,newChannel);
+
+        //save the old channel
+        thisPhy->prev_channel = oldChannel;
     
         //Start the tx_chanswitch_waiting timer
         thisPhy->tx_chanswitch_wait = TRUE;
@@ -1900,7 +1903,29 @@ void MacDot11ProcessMyFrame(
         case DOT11_MESH_DATA:
         case DOT11_CF_DATA_ACK: {
 
-            printf("got data for me on node %d \n", node->nodeId);
+            int phyIndex = dot11->myMacData->phyNumber;
+            PhyData *thisPhy = node->phyData[phyIndex];
+            if(node->nodeId < 3){
+                clocktype stamp = getSimTime(node);
+                char clockStr[20];
+                TIME_PrintClockInSecond(stamp, clockStr);
+                printf("got data for me on node %d at time %s \n", node->nodeId, clockStr);
+                thisPhy->last_rx = stamp;
+            }
+
+            if(thisPhy->is_rx = FALSE){
+              thisPhy->is_rx = TRUE;
+              //start pkt dropped checker
+                clocktype delay = DOT11_RX_DISCONNECT_PROBE * SECOND;
+
+                MacDot11StationStartTimerOfGivenType(
+                node,
+                dot11,
+                delay,
+                MSG_MAC_DOT11_ChanSwitchRxProbe);  
+
+            }
+
 //---------------------------Power-Save-Mode-Updates---------------------//
             if(MacDot11IsIBSSStationSupportPSMode(dot11)){
                 MacDot11SetExchangeVariabe(node, dot11, msg);
