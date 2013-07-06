@@ -178,7 +178,8 @@ struct DOT11s_Data;
 #define DOT11_RX_PROBE_CHAN_SAMPLE_TIME 1 //simulation time (in seconds) to look at interference on each channel
 #define DOT11_INTNOISE_SAMPLE_WEIGHT 0.1 //weight given to new interference + noise sample in rolling average
 #define DOT11_CHANSWITCH_MASTER FALSE
-#define DOT11_TX_CHANSWITCH_DELAY 3     //time (seconds) between channel switch when queue is full
+#define DOT11_TX_CHANSWITCH_DELAY 3     //time (seconds) between TX node channel switch when queue is full
+#define DOT11_RX_DISCONNECT_PROBE 1     //how often RX nodes should check to see if they've been disconnected
 
 //---------------------------Power-Save-Mode-Updates---------------------//
 // defalut listen interval for STAs in PS mode

@@ -260,6 +260,8 @@ struct PhyData {
     BOOL      tx_chanswitch_wait; //true if tx is waiting
     BOOL      rx_chanswitch_wait; //true if rx is looking (before changing back to original channel)
     BOOL      is_rx;               //true if we ever received something 
+    clocktype  last_rx;              //timestamp of last received data pkt
+    int        prev_channel;        //the previous channel we were on
 
 };
 
