@@ -1905,16 +1905,16 @@ void MacDot11ProcessMyFrame(
 
             int phyIndex = dot11->myMacData->phyNumber;
             PhyData *thisPhy = node->phyData[phyIndex];
-            if(node->nodeId < 3){
-                clocktype stamp = getSimTime(node);
-                char clockStr[20];
-                TIME_PrintClockInSecond(stamp, clockStr);
-                printf("got data for me on node %d at time %s \n", node->nodeId, clockStr);
-                thisPhy->last_rx = stamp;
-            }
 
+            clocktype stamp = getSimTime(node);
+            char clockStr[20];
+            TIME_PrintClockInSecond(stamp, clockStr);
+            //printf("got data for me on node %d at time %s \n", node->nodeId, clockStr);
+            thisPhy->last_rx = stamp;
+        
             if(thisPhy->is_rx = FALSE){
               thisPhy->is_rx = TRUE;
+              printf("timer start check node %d \n", node->nodeId);
               //start pkt dropped checker
                 clocktype delay = DOT11_RX_DISCONNECT_PROBE * SECOND;
 
@@ -1924,7 +1924,8 @@ void MacDot11ProcessMyFrame(
                 delay,
                 MSG_MAC_DOT11_ChanSwitchRxProbe);  
 
-            }
+                }
+            
 
 //---------------------------Power-Save-Mode-Updates---------------------//
             if(MacDot11IsIBSSStationSupportPSMode(dot11)){
@@ -3047,7 +3048,6 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
     }
 
     case MSG_MAC_DOT11_ChanSwitchTxDelay: {
-        Int8 buf[MAX_STRING_LENGTH];
 
         if (DEBUG_PS_TIMERS) {
             MacDot11Trace(
@@ -3063,10 +3063,55 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
             "MacDot11Layer: Received invalid timer message.\n");
 
-        printf("test: MSG_MAC_DOT11_ChanSwitchTxDelay \n");
         int phyIndex = dot11->myMacData->phyNumber;
         PhyData *thisPhy = node->phyData[phyIndex];
         thisPhy->tx_chanswitch_wait = FALSE;
+        MESSAGE_Free(node, msg);
+        break;
+    }
+
+    case MSG_MAC_DOT11_ChanSwitchRxProbe: {
+
+        if (DEBUG_PS_TIMERS) {
+            MacDot11Trace(
+                node,
+                dot11,
+                NULL,
+                "MSG_MAC_DOT11_ChanSwitchRxProbe Timer expired");
+        }
+
+
+        unsigned timerSequenceNumber =
+            (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
+        ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
+            "MacDot11Layer: Received invalid timer message.\n");
+
+        int phyIndex = dot11->myMacData->phyNumber;
+        PhyData *thisPhy = node->phyData[phyIndex];
+        char clockStr[20];
+        double last_rx, now;
+
+        clocktype stamp = thisPhy->last_rx;
+        TIME_PrintClockInSecond(stamp, clockStr);
+        last_rx = atof(clockStr);
+
+        stamp = getSimTime(node);
+        TIME_PrintClockInSecond(stamp, clockStr);        
+        now = atof(clockStr);
+
+        double diff = now - last_rx;
+
+        printf("the last received data at node %d was at %4.2f (%4.2f ago) \n",node->nodeId,last_rx,diff);
+
+        //start another timer
+        clocktype delay = DOT11_RX_DISCONNECT_PROBE * SECOND;
+
+        MacDot11StationStartTimerOfGivenType(
+        node,
+        dot11,
+        delay,
+        MSG_MAC_DOT11_ChanSwitchRxProbe);  
+
         MESSAGE_Free(node, msg);
         break;
     }
