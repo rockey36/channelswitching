@@ -1906,6 +1906,7 @@ void MacDot11ProcessMyFrame(
             int phyIndex = dot11->myMacData->phyNumber;
             PhyData *thisPhy = node->phyData[phyIndex];
 
+            //Eventually for CHANSWITCH_MASTERs only.
             clocktype stamp = getSimTime(node);
             char clockStr[20];
             TIME_PrintClockInSecond(stamp, clockStr);
@@ -3102,6 +3103,70 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         double diff = now - last_rx;
 
         printf("the last received data at node %d was at %4.2f (%4.2f ago) \n",node->nodeId,last_rx,diff);
+
+        if(diff >= (1.0 * DOT11_RX_DISCONNECT_PROBE)){
+            printf("last pkt was over %4.2f seconds ago! \n", (1.0 * DOT11_RX_DISCONNECT_PROBE));
+            int oldChannel, newChannel;
+            int numberChannels = PROP_NumberChannels(node);
+            PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+
+            if(thisPhy->rx_try_next_channel == FALSE){
+
+                //Check the PHY state
+                if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
+                        MacDot11StationCancelTimer(node, dot11);
+                }
+    
+                PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+
+                for (int i = 1; i < numberChannels+1; i++) {
+                    newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
+                    if (thisPhy->channelSwitch[newChannel]) {
+                        break;
+                    }
+                }
+            
+                if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
+                    PHY_StartListeningToChannel(node,phyIndex,newChannel);
+                    }
+                PHY_SetTransmissionChannel(node,phyIndex,newChannel);
+                printf("Moving from channel %d to channel %d to find TX node. \n", oldChannel,newChannel);
+
+                //save the old channel
+                thisPhy->prev_channel = oldChannel;
+
+                //trying the next channel
+                thisPhy->rx_try_next_channel = TRUE;
+
+            }
+            //rx_try_next_channel == TRUE
+            else{
+                newChannel = thisPhy->prev_channel;
+                //printf("Couldn't find the TX node on channel %d.  Returning to channel %d.\n", oldChannel, newChannel);
+                printf("Couldn't find the TX node on channel %d.  Not returning to channel %d. :) \n", oldChannel, newChannel);
+
+                //Check the PHY state
+                /*
+                if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
+                        MacDot11StationCancelTimer(node, dot11);
+                }
+    
+                PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+            
+                if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
+                    PHY_StartListeningToChannel(node,phyIndex,newChannel);
+                    }
+                PHY_SetTransmissionChannel(node,phyIndex,newChannel);
+                */
+                //thisPhy->rx_try_next_channel = FALSE;
+                
+            }
+
+        }
+        //diff < 1.0 * DOT11_RX_DISCONNECT_PROBE
+        else{
+            thisPhy->rx_try_next_channel = FALSE;
+        }
 
         //start another timer
         clocktype delay = DOT11_RX_DISCONNECT_PROBE * SECOND;

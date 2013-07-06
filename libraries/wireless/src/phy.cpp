@@ -272,6 +272,9 @@ void PHY_CreateAPhyForMac(
     thisPhy->tx_chanswitch_wait = FALSE;
     thisPhy->rx_chanswitch_wait = FALSE;
     thisPhy->is_rx = FALSE;
+    thisPhy->last_rx = (clocktype) 0;
+    thisPhy->prev_channel = 6;
+    thisPhy->rx_try_next_channel = FALSE;
 
 
 #ifdef ADDON_NGCNMS
