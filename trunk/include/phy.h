@@ -262,6 +262,7 @@ struct PhyData {
     BOOL      is_rx;               //true if we ever received something 
     clocktype  last_rx;              //timestamp of last received data pkt
     int        prev_channel;        //the previous channel we were on
+    BOOL       rx_try_next_channel; //testing the next channel to see if the TX switched
 
 };
 
