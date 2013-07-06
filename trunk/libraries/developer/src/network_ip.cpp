@@ -13851,7 +13851,7 @@ NetworkIpQueueInsert(
     int maxBytes = (*scheduler).sizeOfQueue(0);
     double filled = 100 * ((double)bytes / (double)maxBytes);
     if(filled > CHANSWITCH_THRESHOLD){
-        printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
+        //printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
         MAC_NetworkLayerChanswitch(node, outgoingInterface);
 
     }
