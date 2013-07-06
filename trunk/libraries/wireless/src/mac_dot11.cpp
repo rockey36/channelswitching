@@ -1912,10 +1912,10 @@ void MacDot11ProcessMyFrame(
             //printf("got data for me on node %d at time %s \n", node->nodeId, clockStr);
             thisPhy->last_rx = stamp;
         
-            if(thisPhy->is_rx = FALSE){
-              thisPhy->is_rx = TRUE;
-              printf("timer start check node %d \n", node->nodeId);
-              //start pkt dropped checker
+            if(thisPhy->is_rx == FALSE){
+                thisPhy->is_rx = TRUE;
+                printf("timer start check node %d \n", node->nodeId);
+                //start pkt dropped checker
                 clocktype delay = DOT11_RX_DISCONNECT_PROBE * SECOND;
 
                 MacDot11StationStartTimerOfGivenType(
@@ -1924,7 +1924,7 @@ void MacDot11ProcessMyFrame(
                 delay,
                 MSG_MAC_DOT11_ChanSwitchRxProbe);  
 
-                }
+            }
             
 
 //---------------------------Power-Save-Mode-Updates---------------------//
