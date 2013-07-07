@@ -5,7 +5,15 @@
     <variable name="Listening Channel Mask" key="PHY-LISTENING-CHANNEL-MASK" type="Mask" default="1" help="Channels the radio is currently listening to.  Can be changed during run time." format="MaskArray" length="PROPAGATION-CHANNEL-FREQUENCY.length" addon="wireless" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'"/>
     <variable name="Channel Switching Channel Mask" key="PHY-CHANSWITCH-CHANNEL-MASK" type="Mask" default="01000010000100" help="Channels to be used for channel switching." format="MaskArray" length="PROPAGATION-CHANNEL-FREQUENCY.length" addon="wireless" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'"/>
     <variable key="MAC-DOT11-CHANSWITCH-INTERVAL" type="Fixed" name="Channel Switching Interval (seconds)" default="5" />
-    <variable key="MAC-DOT11-CHANSWITCH-MASTER" type="Selection" name="Channel Switching Master" default="NO">
+    <variable key="MAC-DOT11-CHANSWITCH-MASTER" type="Selection" name="Channel Switching Master Switch" default="NO">
+      <option value="NO" name="No" />
+      <option value="YES" name="Yes" />
+    </variable>
+    <variable key="MAC-DOT11-CHANSWITCH-INITIAL" type="Selection" name="Initial Channel Switch Using SINR" default="NO">
+      <option value="NO" name="No" />
+      <option value="YES" name="Yes" />
+    </variable>
+    <variable key="MAC-DOT11-CHANSWITCH-AFTER-START" type="Selection" name="Switch Channels After Start" default="NO">
       <option value="NO" name="No" />
       <option value="YES" name="Yes" />
     </variable>
