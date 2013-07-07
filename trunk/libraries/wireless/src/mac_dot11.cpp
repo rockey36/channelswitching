@@ -1194,107 +1194,102 @@ void MacDot11HandleSinrProbeChanSwitch(
     int oldChannel, newChannel;
     Int8 buf[MAX_STRING_LENGTH];
     PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*)(thisPhy->phyVar);
-    if(dot11->chanswitchMaster && dot11->chanswitchInitial){
-        //move to the next channel on chanswitch
 
 
-                //Check the PHY state
-        if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
-                MacDot11StationCancelTimer(node, dot11);
+    //Check the PHY state
+    if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
+            MacDot11StationCancelTimer(node, dot11);
+    }
+
+
+    // //fix for transmitting state errors
+    // if ((MacDot11StationPhyStatus(node,dot11) == PHY_TRANSMITTING) || (dot11->state != DOT11_S_IDLE)){
+    //     sprintf(buf, "Node %d is not idle (phy status %d, mac state %d): Wait to try and change channels. \n",node->nodeId,MacDot11StationPhyStatus(node,dot11),dot11->state);
+    //     ERROR_ReportWarning(buf);
+
+    //     //start another timer
+    //     clocktype wait = 100 * MILLI_SECOND;
+        
+    //     MacDot11StationStartTimerOfGivenType(
+    //                 node,
+    //                 dot11,
+    //                 wait,
+    //                 MSG_MAC_DOT11_ChanSwitchWaitForTX);
+    //     return;
+    // }
+
+    PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+
+    //we've checked it
+    phychanswitch->channelChecked[oldChannel] = TRUE;
+
+
+    for (int i = 1; i < numberChannels+1; i++) {
+        newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
+        if (thisPhy->channelSwitch[newChannel]) {
+            break;
         }
+    }
 
+     //if we haven't checked them all switch and start another timer
+    if(phychanswitch->channelChecked[newChannel] == FALSE){
+        sprintf(buf,"SinrProbeChanSwitch: Changing from channel %d to channel %d on node %d... \n ",
+                oldChannel, newChannel,node->nodeId);
+        ERROR_ReportWarning(buf);
 
-        // //fix for transmitting state errors
-        // if ((MacDot11StationPhyStatus(node,dot11) == PHY_TRANSMITTING) || (dot11->state != DOT11_S_IDLE)){
-        //     sprintf(buf, "Node %d is not idle (phy status %d, mac state %d): Wait to try and change channels. \n",node->nodeId,MacDot11StationPhyStatus(node,dot11),dot11->state);
-        //     ERROR_ReportWarning(buf);
+        PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 
-        //     //start another timer
-        //     clocktype wait = 100 * MILLI_SECOND;
-            
-        //     MacDot11StationStartTimerOfGivenType(
-        //                 node,
-        //                 dot11,
-        //                 wait,
-        //                 MSG_MAC_DOT11_ChanSwitchWaitForTX);
-        //     return;
-        // }
+        if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
+            PHY_StartListeningToChannel(node,phyIndex,newChannel);
+        }
+        PHY_SetTransmissionChannel(node,phyIndex,newChannel);
 
-        PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+        clocktype delay = DOT11_RX_PROBE_CHAN_SAMPLE_TIME * SECOND;
 
-        //we've checked it
-        phychanswitch->channelChecked[oldChannel] = TRUE;
+        MacDot11StationStartTimerOfGivenType(
+        node,
+        dot11,
+        delay,
+        MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch);  
 
+    }
+    //if we have checked them all pick the channel
+    else{
 
+        int lowest_int_channel = oldChannel;
+        int highest_int_channel = oldChannel;
+        float lowest_int = 0.0;
+        float highest_int = -100.0;
+        float this_channel_int = -90.0;
         for (int i = 1; i < numberChannels+1; i++) {
             newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
             if (thisPhy->channelSwitch[newChannel]) {
-                break;
-            }
-        }
-
-         //if we haven't checked them all switch and start another timer
-        if(phychanswitch->channelChecked[newChannel] == FALSE){
-            sprintf(buf,"SinrProbeChanSwitch: Changing from channel %d to channel %d on node %d... \n ",
-                    oldChannel, newChannel,node->nodeId);
-            ERROR_ReportWarning(buf);
-
-            PHY_StopListeningToChannel(node,phyIndex,oldChannel);
-
-            if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
-                PHY_StartListeningToChannel(node,phyIndex,newChannel);
-            }
-            PHY_SetTransmissionChannel(node,phyIndex,newChannel);
-
-            clocktype delay = DOT11_RX_PROBE_CHAN_SAMPLE_TIME * SECOND;
-
-            MacDot11StationStartTimerOfGivenType(
-            node,
-            dot11,
-            delay,
-            MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch);  
-
-        }
-        //if we have checked them all pick the channel
-        else{
-
-            int lowest_int_channel = oldChannel;
-            int highest_int_channel = oldChannel;
-            float lowest_int = 0.0;
-            float highest_int = -100.0;
-            float this_channel_int = -90.0;
-            for (int i = 1; i < numberChannels+1; i++) {
-                newChannel = (i + oldChannel) % numberChannels; //start at old channel+1, cycle through all
-                if (thisPhy->channelSwitch[newChannel]) {
-                    this_channel_int = thisPhy->worst_intnoise_dB[newChannel];
-                    if(this_channel_int < lowest_int){
-                        lowest_int = this_channel_int;
-                        lowest_int_channel = newChannel;
-                    }
-                    if(this_channel_int > highest_int){
-                        highest_int = this_channel_int;
-                        highest_int_channel = newChannel;
-                    }
+                this_channel_int = thisPhy->worst_intnoise_dB[newChannel];
+                if(this_channel_int < lowest_int){
+                    lowest_int = this_channel_int;
+                    lowest_int_channel = newChannel;
+                }
+                if(this_channel_int > highest_int){
+                    highest_int = this_channel_int;
+                    highest_int_channel = newChannel;
                 }
             }
-            sprintf(buf, "SinrProbeChanSwitch: worst int is %f dB on channel %d, best is %f dB on channel %d for node %d \n", 
-                highest_int,highest_int_channel, lowest_int, lowest_int_channel, node->nodeId);
-            ERROR_ReportWarning(buf);
-            sprintf(buf,"SinrProbeChanSwitch: Selecting channel %d on node %d...\n",lowest_int_channel,node->nodeId);
-            ERROR_ReportWarning(buf);
-
-            phychanswitch->isProbing = FALSE;
-
-            PHY_StopListeningToChannel(node,phyIndex,oldChannel);
-
-            if(!PHY_IsListeningToChannel(node,phyIndex,lowest_int_channel)){
-                PHY_StartListeningToChannel(node,phyIndex,lowest_int_channel);
-            }
-            PHY_SetTransmissionChannel(node,phyIndex,lowest_int_channel);
         }
+        sprintf(buf, "SinrProbeChanSwitch: worst int is %f dB on channel %d, best is %f dB on channel %d for node %d \n", 
+            highest_int,highest_int_channel, lowest_int, lowest_int_channel, node->nodeId);
+        ERROR_ReportWarning(buf);
+        sprintf(buf,"SinrProbeChanSwitch: Selecting channel %d on node %d...\n",lowest_int_channel,node->nodeId);
+        ERROR_ReportWarning(buf);
 
+        phychanswitch->isProbing = FALSE;
+
+        PHY_StopListeningToChannel(node,phyIndex,oldChannel);
+
+        if(!PHY_IsListeningToChannel(node,phyIndex,lowest_int_channel)){
+            PHY_StartListeningToChannel(node,phyIndex,lowest_int_channel);
+        }
+        PHY_SetTransmissionChannel(node,phyIndex,lowest_int_channel);
     }
-
 }
 //--------------------------------------------------------------------------
 //  NAME:        MacDot11MgmtQueueHasPacketToSend
@@ -3183,7 +3178,6 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
 
     case MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch: {
         Int8 buf[MAX_STRING_LENGTH];
-
         if (DEBUG_PS_TIMERS) {
             MacDot11Trace(
                 node,
@@ -3197,6 +3191,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
         ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
             "MacDot11Layer: Received invalid timer message.\n");
+
 
         MacDot11HandleSinrProbeChanSwitch(node,dot11);
         MESSAGE_Free(node, msg);
@@ -3217,11 +3212,11 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
                 "MacDot11Layer: Received invalid timer message.\n");
 			MacDot11HandleChannelSwitchTimerAfterPkt(node,dot11);
-
+            MESSAGE_Free(node, msg);
+            break; 
 
        }
-       MESSAGE_Free(node, msg);
-       break; 
+
 
 //---------------------------Power-Save-Mode-Updates---------------------//
         case MSG_MAC_DOT11_Beacon: {
@@ -5002,7 +4997,7 @@ void MacDot11Init(
 
 	//If the type is Channel Switching, send the first message
     //Also send the first RX probe
-	if (phyModel == PHY_CHANSWITCH && dot11->chanswitchMaster && dot11->chanswitchInitial){
+	if (dot11->chanswitchMaster && dot11->chanswitchInitial){
         clocktype delay;
 
         //Commented out - currently not testing timed chanswitch
