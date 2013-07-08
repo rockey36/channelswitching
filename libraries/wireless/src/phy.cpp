@@ -265,9 +265,11 @@ void PHY_CreateAPhyForMac(
 	thisPhy->channelSwitch =  new D_BOOL[numberChannels];
     thisPhy->avg_intnoise_dB = new double[numberChannels];
     thisPhy->worst_intnoise_dB = new double[numberChannels];
+    thisPhy->channelChecked = new D_BOOL[numberChannels];
     for(i=0; i < numberChannels; i++){
         thisPhy->avg_intnoise_dB[i] = -90.0;
         thisPhy->worst_intnoise_dB[i] = -100.0;
+        thisPhy->channelChecked[i] = FALSE;
     }
     thisPhy->tx_chanswitch_wait = FALSE;
     thisPhy->rx_chanswitch_wait = FALSE;
@@ -275,6 +277,7 @@ void PHY_CreateAPhyForMac(
     thisPhy->last_rx = (clocktype) 0;
     thisPhy->prev_channel = 6;
     thisPhy->rx_try_next_channel = FALSE;
+    thisPhy->isProbing = FALSE;
 
 
 #ifdef ADDON_NGCNMS

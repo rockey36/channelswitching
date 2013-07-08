@@ -965,15 +965,15 @@ void PhyChanSwitchInit(
     phychanswitch->stats.energyConsumed = 0.0;
     phychanswitch->stats.turnOnTime = getSimTime(node);
 
-    //add the channel checked array
-    phychanswitch->channelChecked =  new D_BOOL[numChannels];
-    for(i=0;i<numChannels;i++){
-        phychanswitch->channelChecked[i] = FALSE;
+    // //add the channel checked array
+    // phychanswitch->channelChecked =  new D_BOOL[numChannels];
+    // for(i=0;i<numChannels;i++){
+    //     phychanswitch->channelChecked[i] = FALSE;
 
-    }
+    // }
 
-    //probe disabled by default
-    phychanswitch->isProbing = FALSE;
+    // //probe disabled by default
+    // phychanswitch->isProbing = FALSE;
 
 
     //
