@@ -1221,7 +1221,7 @@ void MacDot11HandleSinrProbeChanSwitch(
     PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 
     //we've checked it
-    phychanswitch->channelChecked[oldChannel] = TRUE;
+    thisPhy->channelChecked[oldChannel] = TRUE;
 
 
     for (int i = 1; i < numberChannels+1; i++) {
@@ -1232,10 +1232,10 @@ void MacDot11HandleSinrProbeChanSwitch(
     }
 
      //if we haven't checked them all switch and start another timer
-    if(phychanswitch->channelChecked[newChannel] == FALSE){
-        sprintf(buf,"SinrProbeChanSwitch: Changing from channel %d to channel %d on node %d... \n ",
+    if(thisPhy->channelChecked[newChannel] == FALSE){
+        printf("SinrProbeChanSwitch: Changing from channel %d to channel %d on node %d... \n ",
                 oldChannel, newChannel,node->nodeId);
-        ERROR_ReportWarning(buf);
+        //ERROR_ReportWarning(buf);
 
         PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 
@@ -1275,13 +1275,13 @@ void MacDot11HandleSinrProbeChanSwitch(
                 }
             }
         }
-        sprintf(buf, "SinrProbeChanSwitch: worst int is %f dB on channel %d, best is %f dB on channel %d for node %d \n", 
+        printf("SinrProbeChanSwitch: worst int is %f dB on channel %d, best is %f dB on channel %d for node %d \n", 
             highest_int,highest_int_channel, lowest_int, lowest_int_channel, node->nodeId);
-        ERROR_ReportWarning(buf);
-        sprintf(buf,"SinrProbeChanSwitch: Selecting channel %d on node %d...\n",lowest_int_channel,node->nodeId);
-        ERROR_ReportWarning(buf);
 
-        phychanswitch->isProbing = FALSE;
+        printf("SinrProbeChanSwitch: Selecting channel %d on node %d...\n",lowest_int_channel,node->nodeId);
+
+
+        thisPhy->isProbing = FALSE;
 
         PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 
@@ -3016,9 +3016,9 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         double intnoise_dB = IN_DB(phychanswitch->interferencePower_mW + noise);
         PHY_GetTransmissionChannel(node,phyIndex,&channel);
         //compute the new rolling average
-        thisPhy->avg_intnoise_dB[channel] =
-            (1 - 0.1) * thisPhy->avg_intnoise_dB[channel] + 
-            0.1 * intnoise_dB; 
+        // thisPhy->avg_intnoise_dB[channel] =
+        //     (1 - 0.1) * thisPhy->avg_intnoise_dB[channel] + 
+        //     0.1 * intnoise_dB; 
         //compute the new worst interference
             if(intnoise_dB > thisPhy->worst_intnoise_dB[channel]) {
                 thisPhy->worst_intnoise_dB[channel] = intnoise_dB;
@@ -3031,7 +3031,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
            node->nodeId,channel,thisPhy->worst_intnoise_dB[channel]);
         clocktype delay = DOT11_RX_PROBE_INTERVAL;
 
-        if(phychanswitch->isProbing){
+        if(thisPhy->isProbing){
                 MacDot11StationStartTimerOfGivenType(
                             node,
                             dot11,
@@ -5013,7 +5013,7 @@ void MacDot11Init(
         int phyIndex = dot11->myMacData->phyNumber;    
         PhyData *thisPhy = node->phyData[phyIndex];    
         PhyDataChanSwitch *phychanswitch = (PhyDataChanSwitch *)thisPhy->phyVar;
-        phychanswitch->isProbing = TRUE;
+        thisPhy->isProbing = TRUE;
         delay = DOT11_RX_PROBE_BEGIN_TIME * SECOND;
 
         

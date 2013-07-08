@@ -254,15 +254,18 @@ struct PhyData {
     EnergyModelGeneric genericEnergyModelParameters;
 #endif //WIRELESS_LIB
     double    noiseFactor;  //added for 802.16
-  	D_BOOL*		channelSwitch; //index of channels used by PHY_CHANSWITCH   
-    double*   avg_intnoise_dB; //average interference + noise per channel
-    double*   worst_intnoise_dB; //worst int+noise measured on this channel
     BOOL      tx_chanswitch_wait; //true if tx is waiting
     BOOL      rx_chanswitch_wait; //true if rx is looking (before changing back to original channel)
     BOOL      is_rx;               //true if we ever received something 
     clocktype  last_rx;              //timestamp of last received data pkt
     int        prev_channel;        //the previous channel we were on
     BOOL       rx_try_next_channel; //testing the next channel to see if the TX switched
+    BOOL      isProbing; //are we currently probing the SINR?
+    D_BOOL*   channelSwitch; //index of channels used by PHY_CHANSWITCH   
+    double*   avg_intnoise_dB; //average interference + noise per channel
+    double*   worst_intnoise_dB; //worst int+noise measured on this channel
+    D_BOOL*   channelChecked; //channels for which interference was measured
+
 
 };
 
