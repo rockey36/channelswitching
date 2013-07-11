@@ -269,6 +269,9 @@
 
 #define NoECN_DEBUG_TEST
 
+//percentage of queue-fill at which to switch channels
+#define CHANSWITCH_THRESHOLD 75.0
+
 /*
  * Change this value to the number of drops required
  * e.g. #define ECN_TEST_PKT_MARK 3 for 3 drops
@@ -8162,15 +8165,15 @@ ReturnPriorityForPHB(
     NetworkDataIp *ip = (NetworkDataIp *) node->networkData.networkVar;
     int i;
 
-#ifdef DEBUG
-    //printf("#%d: ReturnPriorityForPHB(%d) = ", node->nodeId, tos);
+#ifdef DEBUG2
+    printf("#%d: ReturnPriorityForPHB(%d) = ", node->nodeId, tos);
 #endif
 
     for (i = 0; i < ip->numPhbInfo; i++)
     {
         if (ip->phbInfo[i].ds == tos >> 2)
         {
-#ifdef DEBUG
+#ifdef DEBUG2
     printf("%d\n", ip->phbInfo[i].priority);
 #endif
             return ip->phbInfo[i].priority;
@@ -8185,7 +8188,7 @@ ReturnPriorityForPHB(
         {
             if (ip->phbInfo[i].ds == DIFFSERV_DS_CLASS_BE)
             {
-#ifdef DEBUG
+#ifdef DEBUG2
                 printf("%d\n", ip->phbInfo[i].priority);
 #endif
                 return ip->phbInfo[i].priority;
@@ -8194,7 +8197,7 @@ ReturnPriorityForPHB(
     }
 #endif // ENTERPRISE_LIB
 
-#ifdef DEBUG
+#ifdef DEBUG2
     printf("%d\n", (QueuePriorityType) tos >> 5);
 #endif
     return ((QueuePriorityType) (tos >> 5));
