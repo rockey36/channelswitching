@@ -261,6 +261,7 @@ struct PhyData {
     int        prev_channel;        //the previous channel we were on
     BOOL       rx_try_next_channel; //testing the next channel to see if the TX switched
     BOOL      isProbing; //are we currently probing the SINR?
+    BOOL      isInitWaiting; //are we currently sticking to the initial channel?
     D_BOOL*   channelSwitch; //index of channels used by PHY_CHANSWITCH   
     double*   avg_intnoise_dB; //average interference + noise per channel
     double*   worst_intnoise_dB; //worst int+noise measured on this channel

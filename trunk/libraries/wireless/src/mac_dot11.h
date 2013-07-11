@@ -181,6 +181,7 @@ struct DOT11s_Data;
 #define DOT11_TX_CHANSWITCH_DELAY 15.0     //time (seconds) between TX node channel switch when queue is full
 #define DOT11_RX_DISCONNECT_PROBE 1.0     //how often RX nodes should check to see if they've been disconnected
 #define DOT11_CHANSWITCH_THRESHOLD 75.0 //percentage of queue filled to change channels
+#define DOT11_CHANSWITCH_INITIAL_DELAY 3.0 //time to stay on the initial SINR selected channel
 
 //---------------------------Power-Save-Mode-Updates---------------------//
 // defalut listen interval for STAs in PS mode
@@ -1771,6 +1772,9 @@ struct MacDataDot11 {
     double chanswitchRxDisconnectProbe;
     //determine how long TX should wait on new channel
     double chanswitchTxDelay;
+    //time to stay on the first channel picked based on SINR
+    double chanswitchInitialDelay;
+    
 
 };
 

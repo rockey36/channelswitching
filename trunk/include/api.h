@@ -128,6 +128,7 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
 	// Message Type for DOT11 channel switching
+    MSG_MAC_DOT11_ChanSwitchInitialDelay        = 393,
     MSG_MAC_DOT11_ChanSwitchRxProbe             = 394,
     MSG_MAC_DOT11_ChanSwitchTxDelay             = 395,
     MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch = 396,
