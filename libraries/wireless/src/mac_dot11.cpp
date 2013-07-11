@@ -799,13 +799,12 @@ void MacDot11NetworkLayerChanswitch(
             }
         }
         if(thisPhy->tx_chanswitch_wait == FALSE) {
-            printf("MacDot11NetworkLayerChanswitch: IP Queue %4.2 %% full. Change from channel %d to channel %d \n",
-                dot11->chanswitchThreshold, oldChannel,newChannel);
+            printf("MacDot11NetworkLayerChanswitch: IP Queue %4.2f %% full. Change from channel %d to channel %d \n",
+                dot11->chanswitchThreshold,oldChannel,newChannel);
             //Check the PHY state
                 if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
                         MacDot11StationCancelTimer(node, dot11);
                 }
-        
                 
                 PHY_StopListeningToChannel(node,phyIndex,oldChannel);
         
@@ -816,6 +815,7 @@ void MacDot11NetworkLayerChanswitch(
     
             //save the old channel
             thisPhy->prev_channel = oldChannel;
+
         
             //Start the tx_chanswitch_waiting timer
             thisPhy->tx_chanswitch_wait = TRUE;
@@ -3028,8 +3028,8 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         sinr = (phychanswitch->rxMsgPower_mW /
                 (phychanswitch->interferencePower_mW + noise));
 
-        printf("node %d chan %d: %f \n",
-           node->nodeId,channel,thisPhy->worst_intnoise_dB[channel]);
+        //printf("node %d chan %d: %f \n",
+        //   node->nodeId,channel,thisPhy->worst_intnoise_dB[channel]);
         clocktype delay = DOT11_RX_PROBE_INTERVAL;
 
         if(thisPhy->isProbing){
