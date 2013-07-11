@@ -278,6 +278,7 @@ void PHY_CreateAPhyForMac(
     thisPhy->prev_channel = 6;
     thisPhy->rx_try_next_channel = FALSE;
     thisPhy->isProbing = FALSE;
+    thisPhy->isInitWaiting = FALSE;
 
 
 #ifdef ADDON_NGCNMS

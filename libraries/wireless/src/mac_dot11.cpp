@@ -798,7 +798,7 @@ void MacDot11NetworkLayerChanswitch(
                 break;
             }
         }
-        if(thisPhy->tx_chanswitch_wait == FALSE) {
+        if(thisPhy->tx_chanswitch_wait == FALSE && thisPhy->isInitWaiting == FALSE) {
             printf("MacDot11NetworkLayerChanswitch: IP Queue %4.2f %% full. Change from channel %d to channel %d \n",
                 dot11->chanswitchThreshold,oldChannel,newChannel);
             //Check the PHY state
@@ -1283,6 +1283,7 @@ void MacDot11HandleSinrProbeChanSwitch(
 
 
         thisPhy->isProbing = FALSE;
+        thisPhy->isInitWaiting = TRUE;
 
         PHY_StopListeningToChannel(node,phyIndex,oldChannel);
 
@@ -1290,6 +1291,16 @@ void MacDot11HandleSinrProbeChanSwitch(
             PHY_StartListeningToChannel(node,phyIndex,lowest_int_channel);
         }
         PHY_SetTransmissionChannel(node,phyIndex,lowest_int_channel);
+
+        //set the timer to deactivate initial wait
+        clocktype delay = dot11->chanswitchInitialDelay * SECOND;
+    
+            MacDot11StationStartTimerOfGivenType(
+            node,
+            dot11,
+            delay,
+            MSG_MAC_DOT11_ChanSwitchInitialDelay); 
+
     }
 }
 //--------------------------------------------------------------------------
@@ -3067,6 +3078,30 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         break;
     }
 
+    case MSG_MAC_DOT11_ChanSwitchInitialDelay: {
+
+        if (DEBUG_PS_TIMERS) {
+            MacDot11Trace(
+                node,
+                dot11,
+                NULL,
+                "MSG_MAC_DOT11_ChanSwitchInitialDelay Timer expired");
+        }
+
+
+        unsigned timerSequenceNumber =
+            (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
+        ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
+            "MacDot11Layer: Received invalid timer message.\n");
+
+        int phyIndex = dot11->myMacData->phyNumber;
+        PhyData *thisPhy = node->phyData[phyIndex];
+        thisPhy->isInitWaiting = FALSE;
+        printf("test: node %d done waiting on the initial channel \n", node->nodeId);
+        MESSAGE_Free(node, msg);
+        break;
+    }
+
     case MSG_MAC_DOT11_ChanSwitchRxProbe: {
 
         if (DEBUG_PS_TIMERS) {
@@ -3106,7 +3141,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             int numberChannels = PROP_NumberChannels(node);
             PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 
-            if(thisPhy->rx_try_next_channel == FALSE){
+            if(thisPhy->rx_try_next_channel == FALSE && thisPhy->isInitWaiting == FALSE){
 
                 //Check the PHY state
                 if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
@@ -4657,6 +4692,24 @@ void MacDot11Init(
     }
     else {
         dot11->chanswitchTxDelay = DOT11_TX_CHANSWITCH_DELAY;
+
+    }
+
+    //Determine how long to stay on the initial channel (SINR selection)
+    IO_ReadDouble(
+         node->nodeId,
+         &address,
+         nodeInput,
+         "MAC-DOT11-CHANSWITCH-INITIAL-DELAY",
+         &wasFound,
+         &aDouble);
+
+    if (wasFound) {
+        assert(aDouble >= 0.0);
+        dot11->chanswitchInitialDelay = aDouble;
+    }
+    else {
+        dot11->chanswitchInitialDelay = DOT11_CHANSWITCH_INITIAL_DELAY;
 
     }
 
