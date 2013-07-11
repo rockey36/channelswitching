@@ -4600,6 +4600,28 @@ void MacDot11Init(
     {
         dot11->chanswitchAfterStart = TRUE;
     }
+
+    //Determine the queue fiiled threshold for changing channels.
+
+    double queuethreshold;
+    //Choose whether to change channels mid-stream
+
+    IO_ReadDouble(
+         node->nodeId,
+         &address,
+         nodeInput,
+         "MAC-DOT11-CHANSWITCH-THRESHOLD",
+         &wasFound,
+         &queuethreshold);
+
+    if (wasFound) {
+        assert(queuethreshold >= 0.0);
+        dot11->chanswitchThreshold = queuethreshold;
+    }
+    else {
+        dot11->chanswitchThreshold = DOT11_CHANSWITCH_THRESHOLD;
+
+    }
 	
     // Read short retry count.
     // Format is :
