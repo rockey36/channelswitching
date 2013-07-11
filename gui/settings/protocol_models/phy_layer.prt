@@ -17,6 +17,8 @@
       <option value="NO" name="No" />
       <option value="YES" name="Yes">
         <variable key="MAC-DOT11-CHANSWITCH-THRESHOLD" type="Fixed" name="Queue Threshold for Channel Switch" default="75.0" />
+        <variable key="MAC-DOT11-CHANSWITCH-RX-DISCONNECT-PROBE" type="Fixed" name="RX Node Disconnect Probe Time" default="1.0" />
+        <variable key="MAC-DOT11-TX-CHANSWITCH-DELAY" type="Fixed" name="TX Node Channel Switch Delay" default="15.0" />
       </option>
     </variable>
     <variable name="Radio Type" key="PHY-MODEL" type="Selection" default="PHY802.11b" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'">

@@ -13854,7 +13854,7 @@ NetworkIpQueueInsert(
     if(node->macData[outgoingInterface]->macProtocol == MAC_PROTOCOL_DOT11){
         MacDataDot11 *dot11 = (MacDataDot11 *) node->macData[outgoingInterface]->macVar;
         if(filled > dot11->chanswitchThreshold){
-            printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
+            // printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
             MAC_NetworkLayerChanswitch(node, outgoingInterface);
         }
     }
