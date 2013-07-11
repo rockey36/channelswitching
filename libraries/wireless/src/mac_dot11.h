@@ -180,6 +180,7 @@ struct DOT11s_Data;
 #define DOT11_CHANSWITCH_MASTER FALSE
 #define DOT11_TX_CHANSWITCH_DELAY 15     //time (seconds) between TX node channel switch when queue is full
 #define DOT11_RX_DISCONNECT_PROBE 1     //how often RX nodes should check to see if they've been disconnected
+#define DOT11_CHANSWITCH_THRESHOLD 75.0 //percentage of queue filled to change channels
 
 //---------------------------Power-Save-Mode-Updates---------------------//
 // defalut listen interval for STAs in PS mode
@@ -1764,6 +1765,8 @@ struct MacDataDot11 {
     BOOL chanswitchInitial;
     //determine if we do the switch from the queue filling up
     BOOL chanswitchAfterStart;
+    //determine the percentage of queue fill when we switch packets
+    double chanswitchThreshold;
 
 };
 

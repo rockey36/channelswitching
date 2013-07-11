@@ -78,6 +78,7 @@
 #include "routing_zrp.h"
 #include "routing_dymo.h"
 #include "manet_packet.h"
+#include "mac_dot11.h"
 #endif // WIRELESS_LIB
 
 #ifdef ENTERPRISE_LIB
@@ -267,9 +268,6 @@
 //-----------------------------------------------------------------------------
 
 #define NoECN_DEBUG_TEST
-
-//percentage of queue-fill at which to switch channels
-#define CHANSWITCH_THRESHOLD 75.0
 
 /*
  * Change this value to the number of drops required
@@ -8165,7 +8163,7 @@ ReturnPriorityForPHB(
     int i;
 
 #ifdef DEBUG
-    printf("#%d: ReturnPriorityForPHB(%d) = ", node->nodeId, tos);
+    //printf("#%d: ReturnPriorityForPHB(%d) = ", node->nodeId, tos);
 #endif
 
     for (i = 0; i < ip->numPhbInfo; i++)
@@ -13850,12 +13848,13 @@ NetworkIpQueueInsert(
     int bytes = (*scheduler).bytesInQueue(0);
     int maxBytes = (*scheduler).sizeOfQueue(0);
     double filled = 100 * ((double)bytes / (double)maxBytes);
-    if(filled > CHANSWITCH_THRESHOLD){
-        //printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
-        MAC_NetworkLayerChanswitch(node, outgoingInterface);
-
+    if(node->macData[outgoingInterface]->macProtocol == MAC_PROTOCOL_DOT11){
+        MacDataDot11 *dot11 = (MacDataDot11 *) node->macData[outgoingInterface]->macVar;
+        if(filled > dot11->chanswitchThreshold){
+            printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
+            MAC_NetworkLayerChanswitch(node, outgoingInterface);
+        }
     }
-
     ipHeader = (IpHeaderType*) MESSAGE_ReturnPacket(msg);
 
     // Tack on the nextHopAddress to the message using the insidious "info"

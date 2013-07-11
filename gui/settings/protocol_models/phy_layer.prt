@@ -15,7 +15,9 @@
     </variable>
     <variable key="MAC-DOT11-CHANSWITCH-AFTER-START" type="Selection" name="Switch Channels After Start" default="NO">
       <option value="NO" name="No" />
-      <option value="YES" name="Yes" />
+      <option value="YES" name="Yes">
+        <variable key="MAC-DOT11-CHANSWITCH-THRESHOLD" type="Fixed" name="Queue Threshold for Channel Switch" default="75.0" />
+      </option>
     </variable>
     <variable name="Radio Type" key="PHY-MODEL" type="Selection" default="PHY802.11b" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'">
       <option value="None" name="None" />
