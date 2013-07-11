@@ -178,8 +178,8 @@ struct DOT11s_Data;
 #define DOT11_RX_PROBE_CHAN_SAMPLE_TIME 1 //simulation time (in seconds) to look at interference on each channel
 #define DOT11_INTNOISE_SAMPLE_WEIGHT 0.1 //weight given to new interference + noise sample in rolling average
 #define DOT11_CHANSWITCH_MASTER FALSE
-#define DOT11_TX_CHANSWITCH_DELAY 15     //time (seconds) between TX node channel switch when queue is full
-#define DOT11_RX_DISCONNECT_PROBE 1     //how often RX nodes should check to see if they've been disconnected
+#define DOT11_TX_CHANSWITCH_DELAY 15.0     //time (seconds) between TX node channel switch when queue is full
+#define DOT11_RX_DISCONNECT_PROBE 1.0     //how often RX nodes should check to see if they've been disconnected
 #define DOT11_CHANSWITCH_THRESHOLD 75.0 //percentage of queue filled to change channels
 
 //---------------------------Power-Save-Mode-Updates---------------------//
@@ -1767,6 +1767,10 @@ struct MacDataDot11 {
     BOOL chanswitchAfterStart;
     //determine the percentage of queue fill when we switch packets
     double chanswitchThreshold;
+    //determine time in seconds when RX node should look for TX node
+    double chanswitchRxDisconnectProbe;
+    //determine how long TX should wait on new channel
+    double chanswitchTxDelay;
 
 };
 

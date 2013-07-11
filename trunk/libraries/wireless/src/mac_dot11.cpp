@@ -799,7 +799,8 @@ void MacDot11NetworkLayerChanswitch(
             }
         }
         if(thisPhy->tx_chanswitch_wait == FALSE) {
-            printf("MAC layer got the channel change notification - try to change from channel %d to channel %d \n",oldChannel,newChannel);
+            printf("MacDot11NetworkLayerChanswitch: IP Queue %4.2 %% full. Change from channel %d to channel %d \n",
+                dot11->chanswitchThreshold, oldChannel,newChannel);
             //Check the PHY state
                 if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
                         MacDot11StationCancelTimer(node, dot11);
@@ -819,7 +820,7 @@ void MacDot11NetworkLayerChanswitch(
             //Start the tx_chanswitch_waiting timer
             thisPhy->tx_chanswitch_wait = TRUE;
     
-            clocktype delay = DOT11_TX_CHANSWITCH_DELAY * SECOND;
+            clocktype delay = dot11->chanswitchTxDelay * SECOND;
     
             MacDot11StationStartTimerOfGivenType(
             node,
@@ -1909,9 +1910,9 @@ void MacDot11ProcessMyFrame(
             
                 if(thisPhy->is_rx == FALSE){
                     thisPhy->is_rx = TRUE;
-                    printf("timer start check node %d \n", node->nodeId);
+                    //printf("timer start check node %d \n", node->nodeId);
                     //start pkt dropped checker
-                    clocktype delay = DOT11_RX_DISCONNECT_PROBE * SECOND;
+                    clocktype delay = dot11->chanswitchRxDisconnectProbe * SECOND;
     
                     MacDot11StationStartTimerOfGivenType(
                     node,
@@ -3099,8 +3100,8 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
 
         printf("the last received data at node %d was at %4.2f (%4.2f ago) \n",node->nodeId,last_rx,diff);
 
-        if(diff >= (1.0 * DOT11_RX_DISCONNECT_PROBE)){
-            printf("last pkt was over %4.2f seconds ago! \n", (1.0 * DOT11_RX_DISCONNECT_PROBE));
+        if(diff >= (1.0 * dot11->chanswitchRxDisconnectProbe)){
+            printf("last pkt was over %4.2f seconds ago! \n", (1.0 * dot11->chanswitchRxDisconnectProbe));
             int oldChannel, newChannel;
             int numberChannels = PROP_NumberChannels(node);
             PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
@@ -3158,13 +3159,13 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             }
 
         }
-        //diff < 1.0 * DOT11_RX_DISCONNECT_PROBE
+        //diff < 1.0 * dot11->chanswitchRxDisconnectProbe
         else{
             thisPhy->rx_try_next_channel = FALSE;
         }
 
         //start another timer
-        clocktype delay = DOT11_RX_DISCONNECT_PROBE * SECOND;
+        clocktype delay = dot11->chanswitchRxDisconnectProbe * SECOND;
 
         MacDot11StationStartTimerOfGivenType(
         node,
@@ -4603,7 +4604,7 @@ void MacDot11Init(
 
     //Determine the queue fiiled threshold for changing channels.
 
-    double queuethreshold;
+    double aDouble;
     //Choose whether to change channels mid-stream
 
     IO_ReadDouble(
@@ -4612,17 +4613,53 @@ void MacDot11Init(
          nodeInput,
          "MAC-DOT11-CHANSWITCH-THRESHOLD",
          &wasFound,
-         &queuethreshold);
+         &aDouble);
 
     if (wasFound) {
-        assert(queuethreshold >= 0.0);
-        dot11->chanswitchThreshold = queuethreshold;
+        assert(aDouble >= 0.0);
+        dot11->chanswitchThreshold = aDouble;
     }
     else {
         dot11->chanswitchThreshold = DOT11_CHANSWITCH_THRESHOLD;
 
     }
 	
+    //Determine when RX node looks for TX node.
+    IO_ReadDouble(
+         node->nodeId,
+         &address,
+         nodeInput,
+         "MAC-DOT11-CHANSWITCH-RX-DISCONNECT-PROBE",
+         &wasFound,
+         &aDouble);
+
+    if (wasFound) {
+        assert(aDouble >= 0.0);
+        dot11->chanswitchRxDisconnectProbe = aDouble;
+    }
+    else {
+        dot11->chanswitchRxDisconnectProbe = DOT11_RX_DISCONNECT_PROBE;
+
+    }
+
+    //Determine how long TX node waits on new channel before it can change again.
+    IO_ReadDouble(
+         node->nodeId,
+         &address,
+         nodeInput,
+         "MAC-DOT11-TX-CHANSWITCH-DELAY",
+         &wasFound,
+         &aDouble);
+
+    if (wasFound) {
+        assert(aDouble >= 0.0);
+        dot11->chanswitchTxDelay = aDouble;
+    }
+    else {
+        dot11->chanswitchTxDelay = DOT11_TX_CHANSWITCH_DELAY;
+
+    }
+
     // Read short retry count.
     // Format is :
     // MAC-DOT11-SHORT-PACKET-TRANSMIT-LIMIT <value>
