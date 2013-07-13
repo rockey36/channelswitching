@@ -3141,7 +3141,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             int numberChannels = PROP_NumberChannels(node);
             PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
 
-            if(thisPhy->rx_try_next_channel == FALSE && thisPhy->isInitWaiting == FALSE){
+            if(thisPhy->rx_try_next_channel == FALSE && thisPhy->isInitWaiting == FALSE && thisPhy->is_rx == TRUE){
 
                 //Check the PHY state
                 if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
@@ -3169,28 +3169,15 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
                 //trying the next channel
                 thisPhy->rx_try_next_channel = TRUE;
 
-            }
-            //rx_try_next_channel == TRUE
-            else{
-                newChannel = thisPhy->prev_channel;
-                //printf("Couldn't find the TX node on channel %d.  Returning to channel %d.\n", oldChannel, newChannel);
-                printf("Couldn't find the TX node on channel %d.  Not returning to channel %d. :) \n", oldChannel, newChannel);
+                //set a timer for returning to previous channel
+                clocktype delay = dot11->chanswitchRxReturnPrevChannel * SECOND;
 
-                //Check the PHY state
-                /*
-                if ((MacDot11StationPhyStatus(node, dot11) != PHY_IDLE) || (MacDot11StationPhyStatus(node, dot11) != PHY_TRANSMITTING)){
-                        MacDot11StationCancelTimer(node, dot11);
-                }
-    
-                PHY_StopListeningToChannel(node,phyIndex,oldChannel);
-            
-                if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
-                    PHY_StartListeningToChannel(node,phyIndex,newChannel);
-                    }
-                PHY_SetTransmissionChannel(node,phyIndex,newChannel);
-                */
-                //thisPhy->rx_try_next_channel = FALSE;
-                
+                MacDot11StationStartTimerOfGivenType(
+                node,
+                dot11,
+                delay,
+                MSG_MAC_DOT11_ChanSwitchRxReturnPrevChannel);  
+
             }
 
         }
@@ -3207,6 +3194,43 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         dot11,
         delay,
         MSG_MAC_DOT11_ChanSwitchRxProbe);  
+
+        MESSAGE_Free(node, msg);
+        break;
+    }
+
+    case MSG_MAC_DOT11_ChanSwitchRxReturnPrevChannel: {
+        Int8 buf[MAX_STRING_LENGTH];
+        if (DEBUG_PS_TIMERS) {
+            MacDot11Trace(
+                node,
+                dot11,
+                NULL,
+                "MSG_MAC_DOT11_ChanSwitchRxReturnPrevChannel Timer expired");
+        }
+
+
+        unsigned timerSequenceNumber =
+            (unsigned)(*(int*)(MESSAGE_ReturnInfo(msg)));
+        ERROR_Assert(timerSequenceNumber <= dot11->timerSequenceNumber,
+            "MacDot11Layer: Received invalid timer message.\n");
+
+        int phyIndex = dot11->myMacData->phyNumber;
+        PhyData *thisPhy = node->phyData[phyIndex];
+        int oldChannel, newChannel;
+        PHY_GetTransmissionChannel(node,phyIndex,&oldChannel);
+        newChannel = thisPhy->prev_channel;
+
+        if(oldChannel != newChannel){
+            if(!PHY_IsListeningToChannel(node,phyIndex,newChannel)){
+                PHY_StartListeningToChannel(node,phyIndex,newChannel);
+            }
+            PHY_SetTransmissionChannel(node,phyIndex,newChannel);
+            printf("TX node not found by node %d - returning to channel %d from channel %d \n", node->nodeId, newChannel, oldChannel);
+        }
+
+        thisPhy->rx_try_next_channel = FALSE;
+        thisPhy->is_rx = FALSE;
 
         MESSAGE_Free(node, msg);
         break;
@@ -4710,6 +4734,24 @@ void MacDot11Init(
     }
     else {
         dot11->chanswitchInitialDelay = DOT11_CHANSWITCH_INITIAL_DELAY;
+
+    }
+
+    //Determine how long RX should look for TX before changing back
+    IO_ReadDouble(
+         node->nodeId,
+         &address,
+         nodeInput,
+         "MAC-DOT11-CHANSWITCH-RX-RETURN-PREV-CHANNEL",
+         &wasFound,
+         &aDouble);
+
+    if (wasFound) {
+        assert(aDouble >= 0.0);
+        dot11->chanswitchRxReturnPrevChannel = aDouble;
+    }
+    else {
+        dot11->chanswitchRxReturnPrevChannel = DOT11_CHANSWITCH_RX_RETURN_PREV_CHANNEL;
 
     }
 
