@@ -3830,6 +3830,10 @@ DOT11_ApInfo* MacDot11ManagementFindBestAp(
             {
                 bestAp = apInfo;
             }
+
+        printf("AP Info at node %d: MAC Address %X, Channel %d, SINR %4.2f dB, RSS %4.2f dBm \n",
+            node->nodeId, apInfo->bssAddr, apInfo->channelId, apInfo->cinrMean, apInfo->rssMean);
+
         }
         apInfo = apInfo->next;
     }
