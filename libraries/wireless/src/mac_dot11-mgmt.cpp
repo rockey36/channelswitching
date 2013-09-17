@@ -2696,7 +2696,13 @@ int MacDot11ManagementProcessProbeResponse(
         }
     }
     //Update signal strength
-    MacDot11StationUpdateAPMeasurement(node, dot11, apInfo, rxFrame);
+    Message* msg = (Message*)rxFrame;
+    PhySignalMeasurement* signalMeaInfo;
+    signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(rxFrame);
+    // printf("MacDot11ManagementProcessProbeResponse: rss %f, snr %f, cinr %f \n", 
+    //         signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr);
+
+    MacDot11StationUpdateAPMeasurement(node, dot11, apInfo, msg);
 
     mngmtVars->probeResponseRecieved = TRUE;
 
@@ -3831,12 +3837,13 @@ DOT11_ApInfo* MacDot11ManagementFindBestAp(
                 bestAp = apInfo;
             }
 
-        printf("AP Info at node %d: MAC Address %X, Channel %d, SINR %4.2f dB, RSS %4.2f dBm \n",
-            node->nodeId, apInfo->bssAddr, apInfo->channelId, apInfo->cinrMean, apInfo->rssMean);
-
         }
+//        printf("AP at node %d: MAC Address %12X, Channel %d, SINR %e dB, RSS %e dBm \n",
+  //          node->nodeId, apInfo->bssAddr, apInfo->channelId, apInfo->cinrMean , apInfo->rssMean);
         apInfo = apInfo->next;
     }
+
+
 
     return bestAp;
 }
