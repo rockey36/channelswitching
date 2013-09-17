@@ -1528,6 +1528,9 @@ void Phy802_11SignalEndFromChannel(
         sigMeasure.cinr = IN_DB(phy802_11->rxMsgPower_mW /
                              (phy802_11->interferencePower_mW + noise));
 
+        // printf("Phy802_11SignalEndFromChannel: rss %f, snr %f, cinr %f \n", 
+        //     sigMeasure.rss, sigMeasure.snr, sigMeasure.cinr);
+
 		//pasted from forum
 		//------------------------
 		/*

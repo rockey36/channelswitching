@@ -1511,6 +1511,11 @@ void MacDot11ProcessAnyFrame(
     DOT11_ShortControlFrame* hdr =
         (DOT11_ShortControlFrame*) MESSAGE_ReturnPacket(msg);
 
+    // PhySignalMeasurement* signalMeaInfo;
+    // signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
+    // printf("MacDot11ProcessAnyFrame: rss %f, snr %f, cinr %f \n", 
+    //         signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr);
+
     switch (hdr->frameType) {
         case DOT11_DATA:
         case DOT11_QOS_DATA:
@@ -2269,6 +2274,11 @@ void MacDot11ReceivePacketFromPhy(
         "MacDot11ReceivePacketFromPhy: "
         "Cannot receive packet while in transmit state.\n");
 
+    // PhySignalMeasurement* signalMeaInfo;
+    // signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
+    // printf("MacDot11ReceivePacketFromPhy: rss %f, snr %f, cinr %f \n", 
+    //         signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr);
+
 
     // Check if we're in CFP
     if (MacDot11IsInCfp(dot11->state)) {
@@ -2299,10 +2309,10 @@ void MacDot11ReceivePacketFromPhy(
     }
     if (isMyAddr) {
     //if (dot11->selfAddr == hdr->destAddr) {
-        MacDot11ProcessMyFrame (node, dot11, msg);
+        MacDot11ProcessMyFrame(node, dot11, msg);
     }
     else if (hdr->destAddr == ANY_MAC802) {
-        MacDot11ProcessAnyFrame (node, dot11, msg);
+        MacDot11ProcessAnyFrame(node, dot11, msg);
     }
     else {
         // Does not belong to this node
