@@ -9,9 +9,13 @@
       <option value="NO" name="No" />
       <option value="YES" name="Yes" />
     </variable>
+    <variable key="MAC-DOT11-CHANSWITCH-TYPE" type="Selection" name="Channel Switch Type" default="SIMPLE">
+        <option value="SIMPLE" name="Simple Queue-Based Channel Switch"/>
+        <option value="AP-PROBE" name="Queue-Based Channel Switch with AP Probing"/> 
+    </variable>
     <variable key="MAC-DOT11-CHANSWITCH-INITIAL" type="Selection" name="Initial Channel Switch Using SINR" default="NO">
-      <option value="NO" name="No" />
-      <option value="YES" name="Yes">
+      <option value="NO" name="Off" />
+      <option value="YES" name="On">
         <variable key="MAC-DOT11-CHANSWITCH-INITIAL-DELAY" type="Fixed" name="Time to Stay on Initial Channel" default="3.0" />
       </option>
     </variable>

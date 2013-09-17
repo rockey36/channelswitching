@@ -4668,6 +4668,7 @@ void MacDot11ManagementStartJoin(
     MacDataDot11* dot11)
 {
 
+    printf("MacDot11ManagementStartJoin start\n");
     // Start scanning first
     // Set state
     MacDot11ManagementSetState(

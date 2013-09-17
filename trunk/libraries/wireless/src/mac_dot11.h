@@ -183,6 +183,9 @@ struct DOT11s_Data;
 #define DOT11_CHANSWITCH_THRESHOLD 75.0 //percentage of queue filled to change channels
 #define DOT11_CHANSWITCH_INITIAL_DELAY 3.0 //time to stay on the initial SINR selected channel
 #define DOT11_CHANSWITCH_RX_RETURN_PREV_CHANNEL 5.0 //time when RX returns to original channel if TX cannot be found
+#define DOT11_CHANSWITCH_TYPE_SIMPLE            0 //simple chanswitch - no communication, just move to next channel
+#define DOT11_CHANSWITCH_TYPE_AP_PROBE          1 //chanswitch based on ap probe and communication pkts
+
 
 //---------------------------Power-Save-Mode-Updates---------------------//
 // defalut listen interval for STAs in PS mode
@@ -1757,8 +1760,10 @@ struct MacDataDot11 {
 
 	//timed channel switch parameter
 	int chanswitchInterval;
-	//determine if this 802.11 is a master (initiator) for channel switching
+	//master switch to enable channel switch
 	BOOL chanswitchMaster;
+    //type of chanswitch
+    int chanswitchType;
 	//mac address of last destination node (used to send chanswitch alert)
 	Mac802Address chanswitchDestNode;
 	//to handle special case: need to change channels while phy state is PHY_TRANSMITTING
@@ -1777,7 +1782,8 @@ struct MacDataDot11 {
     double chanswitchInitialDelay;
     //time when RX node should return if TX node not found
     double chanswitchRxReturnPrevChannel;
-    
+
+    //AP active probing method
 
 };
 
