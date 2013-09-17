@@ -4765,6 +4765,25 @@ void MacDot11Init(
 
     }
 
+    //Determine channel switch type (simple, AP-probe based)
+    IO_ReadString(
+    node->nodeId,
+    &address,
+    nodeInput,
+    "MAC-DOT11-CHANSWITCH-TYPE",
+    &wasFound,
+    retString);
+
+    if ((!wasFound) || (strcmp(retString, "SIMPLE") == 0))
+    {
+        dot11->chanswitchType = DOT11_CHANSWITCH_TYPE_SIMPLE;
+    }
+    else if (strcmp(retString, "AP-PROBE") == 0)
+    {
+        dot11->chanswitchType = DOT11_CHANSWITCH_TYPE_AP_PROBE;
+    }
+
+
     // Read short retry count.
     // Format is :
     // MAC-DOT11-SHORT-PACKET-TRANSMIT-LIMIT <value>
