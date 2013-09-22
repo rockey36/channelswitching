@@ -4112,6 +4112,182 @@ void MacDot11BssDynamicInit(
 
 }// MacDot11BssDynamicInit
 
+//--------------------------------------------------------------------------
+//  NAME:        MacDot11IbssDynamicInit
+//  PURPOSE:     Initialize a dynamic IBSS related variables.
+//               (To force probing on an ad-hoc node for chanswitch!)
+//  PARAMETERS:  Node* node
+//                  Pointer to current node
+//               const NodeInput* nodeInput
+//                  Pointer to node input
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//               SubnetMemberData* subnetList
+//                  Pointer to subnet list
+//               int nodesInSubnet
+//                  Number of nodes in subnet
+//               int subnetListIndex
+//                  Subnet list index
+//               NodeAddress subnetAddress
+//                  Subnet address
+//               int numHostBits
+//                  Number of host bits
+//  RETURN:      None
+//  ASSUMPTION:  None
+//--------------------------------------------------------------------------
+static //inline//
+void MacDot11IbssDynamicInit(
+    Node* node,
+    const NodeInput* nodeInput,
+    MacDataDot11* dot11,
+    SubnetMemberData* subnetList,
+    int nodesInSubnet,
+    int subnetListIndex,
+    NodeAddress subnetAddress,
+    int numHostBits,
+    NetworkType networkType = NETWORK_IPV4,
+    in6_addr* ipv6SubnetAddr = 0,
+    unsigned int prefixLength = 0)
+{
+    char retString[MAX_STRING_LENGTH];
+    BOOL wasFound = FALSE;
+
+    // For an infrastructure network, the access point is given by
+    // MAC-DOT11-AP e.g.
+    // [25] MAC-DOT11-AP YES
+    // would indicate that node 25 was the access point.
+    //
+    Address address;
+    NetworkGetInterfaceInfo(
+                node,
+                dot11->myMacData->interfaceIndex,
+                &address,
+                networkType);
+
+    IO_ReadString(
+        node->nodeId,
+        &address,
+        nodeInput,
+        "MAC-DOT11-AP",
+        &wasFound,
+        retString);
+
+    // dot11s. MP (non-MAPs) behave as APs for beaconing etc.
+    //Shouldn't ever see this
+    if (dot11->isMP)
+    {
+        if ((wasFound) && (strcmp(retString, "YES") == 0))
+        {
+            dot11->isMAP = TRUE;
+        }
+        else
+        {
+            dot11->isMAP = FALSE;
+            wasFound = TRUE;
+            strcpy(retString , "YES");
+        }
+    }
+
+    //IBSS is never AP so this should never happen!
+    if ((wasFound) && (strcmp(retString, "YES") == 0))
+    {
+        printf("node %d: MacDot11IbssDynamicInit: I'm not an AP! You should never see this! \n", node->nodeId);
+        dot11->stationType = DOT11_STA_AP;
+        // Init access point variables
+        if (networkType == NETWORK_IPV6)
+        {
+            MacDot11ApInit(node, nodeInput, dot11,
+                subnetList, nodesInSubnet, subnetListIndex,
+                0, 0, networkType, ipv6SubnetAddr, prefixLength);
+        }
+        else
+        {
+            MacDot11ApInit(node, nodeInput, dot11,
+                subnetList, nodesInSubnet, subnetListIndex,
+                subnetAddress, numHostBits, networkType);
+        }
+        // Set inital state
+        MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+    }
+    else
+    {
+        printf("node %d: MacDot11IbssDynamicInit: Configured station type as IBSS \n", node->nodeId);
+        dot11->stationType = DOT11_STA_IBSS;
+//---------------------------Power-Save-Mode-Updates---------------------//
+        IO_ReadString(
+            node->nodeId,
+            &address,
+            nodeInput,
+            "MAC-DOT11-STA-PS-MODE-ENABLED",
+            &wasFound,
+            retString);
+
+        if(wasFound){
+            int listenInterval;
+            if (strcmp(retString, "YES") == 0){
+                dot11->isPSModeEnabled = TRUE;
+            }
+            else if(strcmp(retString, "NO") != 0){
+                ERROR_ReportError("MacDot11BssDynamicInit: "
+                    "Invalid value for MAC-DOT11-STA-PS-MODE-ENABLED "
+                    "in configuration file.\n"
+                    "Expecting YES or NO.\n");
+            }
+            IO_ReadInt(
+                node->nodeId,
+                &address,
+                nodeInput,
+                "MAC-DOT11-STA-PS-MODE-LISTEN-INTERVAL",
+                &wasFound,
+                &listenInterval);
+            if(wasFound){
+                dot11->listenIntervals = listenInterval;
+                ERROR_Assert(dot11->listenIntervals >= 0
+                    && dot11->listenIntervals <= 32767,
+                    "MacDot11BssDynamicInit: "
+                    "Value of MAC-DOT11-STA-PS-MODE-LISTEN-INTERVAL "
+                        "is negative.or greater then 32767\n");
+            }
+
+            IO_ReadString(
+                node->nodeId,
+                &address,
+                nodeInput,
+                "MAC-DOT11-STA-PS-MODE-LISTEN-DTIM-FRAME",
+                &wasFound,
+                retString);
+            if(wasFound){
+                if (strcmp(retString, "NO") == 0){
+                    dot11->isReceiveDTIMFrame = FALSE;
+                }
+                else if(strcmp(retString, "YES") != 0){
+                    ERROR_ReportError("MacDot11BssDynamicInit: Invalid value"
+                        " for MAC-DOT11-STA-PS-MODE-LISTEN-DTIM-FRAME "
+                        "in configuration file.\n"
+                        "Expecting YES or NO.\n");
+                }
+            }
+        }
+//---------------------------Power-Save-Mode-End-Updates-----------------//
+
+        // Set inital state
+        //Set IDLE in place of WFJOIN so that DCF state machine
+        //works correctly
+        //MacDot11StationSetState(node, dot11, DOT11_S_WFJOIN);
+        MacDot11StationSetState(node, dot11, DOT11_S_IDLE);
+    }
+
+    // Init and start beacon.
+    //MacDot11BeaconInit(node, nodeInput, dot11, networkType);
+
+    // Init MIBs
+    MacDot11MibInit(node, nodeInput, dot11, networkType);
+
+    // Init station management
+    MacDot11ManagementInit(node, nodeInput, dot11, networkType);
+
+}// MacDot11IbssDynamicInit
+
 
 //---------------------DOT11e--Updates------------------------------------//
 
@@ -5180,41 +5356,52 @@ void MacDot11Init(
 
 	//If the type is Channel Switching, send the first message
     //Also send the first RX probe
-	if (dot11->chanswitchMaster && dot11->chanswitchInitial){
-        clocktype delay;
-
-        //Commented out - currently not testing timed chanswitch
-		
-		// delay = dot11->chanswitchInterval * SECOND;
-
-		// MacDot11StationStartTimerOfGivenType(
-		// 				node,
-		// 				dot11,
-		// 				delay,
-		// 				MSG_MAC_DOT11_ChanSwitchTimerExpired);	
-
-        int phyIndex = dot11->myMacData->phyNumber;    
-        PhyData *thisPhy = node->phyData[phyIndex];    
-        PhyDataChanSwitch *phychanswitch = (PhyDataChanSwitch *)thisPhy->phyVar;
-        thisPhy->isProbing = TRUE;
-        delay = DOT11_RX_PROBE_BEGIN_TIME * SECOND;
-
+	if (dot11->chanswitchMaster){
+        if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_SIMPLE){
+            printf("node %d: Chanswitch type Simple\n", node->nodeId);
+            if(dot11->chanswitchInitial){
+                clocktype delay;
         
-        MacDot11StationStartTimerOfGivenType(
-                        node,
-                        dot11,
-                        delay,
-                        MSG_MAC_DOT11_ChanSwitchSinrProbe);  
-
-
-        delay = (DOT11_RX_PROBE_BEGIN_TIME + DOT11_RX_PROBE_CHAN_SAMPLE_TIME) * SECOND;
+                //Commented out - currently not testing timed chanswitch
+                
+                // delay = dot11->chanswitchInterval * SECOND;
         
-        MacDot11StationStartTimerOfGivenType(
-                        node,
-                        dot11,
-                        delay,
-                        MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch);  
-
+                // MacDot11StationStartTimerOfGivenType(
+                //                 node,
+                //                 dot11,
+                //                 delay,
+                //                 MSG_MAC_DOT11_ChanSwitchTimerExpired);    
+        
+                int phyIndex = dot11->myMacData->phyNumber;    
+                PhyData *thisPhy = node->phyData[phyIndex];    
+                PhyDataChanSwitch *phychanswitch = (PhyDataChanSwitch *)thisPhy->phyVar;
+                thisPhy->isProbing = TRUE;
+                delay = DOT11_RX_PROBE_BEGIN_TIME * SECOND;
+        
+                
+                MacDot11StationStartTimerOfGivenType(
+                                node,
+                                dot11,
+                                delay,
+                                MSG_MAC_DOT11_ChanSwitchSinrProbe);  
+        
+        
+                delay = (DOT11_RX_PROBE_BEGIN_TIME + DOT11_RX_PROBE_CHAN_SAMPLE_TIME) * SECOND;
+                
+                MacDot11StationStartTimerOfGivenType(
+                                node,
+                                dot11,
+                                delay,
+                                MSG_MAC_DOT11_ChanSwitchSinrProbeChanSwitch);
+            }  
+        }
+        else if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
+            printf("node %d: Chanswitch type AP Probe \n", node->nodeId);
+            //init as IBSS
+            MacDot11IbssDynamicInit(node, nodeInput, dot11,
+                subnetList, nodesInSubnet, subnetListIndex,
+                subnetAddress, numHostBits);
+        }
 	}
 
 
