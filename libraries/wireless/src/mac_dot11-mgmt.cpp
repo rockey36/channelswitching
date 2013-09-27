@@ -1850,6 +1850,7 @@ void MacDot11TransmitProbeRequestFrame(Node* node,MacDataDot11* dot11)
 {
     DOT11_ProbeReqFrame* probeFrame;
     //int result = DOT11_R_FAILED;
+    printf("node %d: sending probe request frame \n", node->nodeId);
 
     // Allocate new probe Request frame
     Message* msg = MESSAGE_Alloc(node, 0, 0, 0);
@@ -1863,7 +1864,7 @@ void MacDot11TransmitProbeRequestFrame(Node* node,MacDataDot11* dot11)
     probeFrame = (DOT11_ProbeReqFrame*)MESSAGE_ReturnPacket(msg);
     memset(probeFrame, 0, sizeof(DOT11_ProbeReqFrame));
 
-    if (MacDot11IsAp(dot11)) {  // ACCESS POINT
+    if (MacDot11IsAp(dot11)) {  // ACCESS Point
 
         ERROR_Assert(probeFrame == NULL,
             "MacDot11TransmitProbeRequestFrame: "
@@ -2536,6 +2537,7 @@ int MacDot11ManagementProcessProbeRequest(
     DOT11_Frame* rxFrame)
 {
     int result = DOT11_R_FAILED;
+    printf("node %d: MacDot11ManagementProcessProbeRequest \n", node->nodeId);
 
     DOT11_FrameInfo* frameInfo = NULL;
 
@@ -3264,6 +3266,7 @@ void MacDot11ManagementProcessFrame(
 
     if(MacDot11IsAp(dot11))
     {
+        // printf("AP node %d - got a management frame \n", node->nodeId);
 
         DOT11_ApStationListItem* stationItem =
         MacDot11ApStationListGetItemWithGivenAddress(
@@ -3319,6 +3322,7 @@ void MacDot11ManagementProcessFrame(
         }
         case DOT11_PROBE_REQ:
         {
+            // printf("node %d: case DOT11_PROBE_REQ \n", node->nodeId);
             dot11->mgmtSendResponse = TRUE;
             if(MacDot11IsAp(dot11))
             {
@@ -3823,6 +3827,10 @@ DOT11_ApInfo* MacDot11ManagementFindBestAp(
 
     apInfo = mgmtVars->channelInfo->headAPList;
 
+    if(apInfo == NULL){
+        printf("node %d: MacDot11ManagementFindBestAp: apInfo = NULL \n", node->nodeId);
+    }
+
     while (apInfo != NULL)
     {
         if((apInfo->lastMeaTime >= mgmtVars->channelInfo->scanStartTime)
@@ -3838,8 +3846,9 @@ DOT11_ApInfo* MacDot11ManagementFindBestAp(
             }
 
         }
-//        printf("AP at node %d: MAC Address %12X, Channel %d, SINR %e dB, RSS %e dBm \n",
-  //          node->nodeId, apInfo->bssAddr, apInfo->channelId, apInfo->cinrMean , apInfo->rssMean);
+       printf("MacDot11ManagementFindBestAp: Channel %d, SINR %f dB, RSS %f dBm, AP at node %d: MAC Address %d \n",
+            apInfo->channelId, apInfo->cinrMean , apInfo->rssMean, node->nodeId, apInfo->bssAddr);
+
         apInfo = apInfo->next;
     }
 
@@ -3872,7 +3881,8 @@ void MacDot11ManagementScanCompleted(
 
     //added: 
     if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-        printf("node %d, channel %d: Ad-hoc AP probe chanswitch mode, do not associate \n", node->nodeId, mgmtVars->currentChannel);
+        printf("node %d, channel %d, BSS %d: Ad-hoc AP probe chanswitch mode, do not associate \n", node->nodeId, mgmtVars->currentChannel,
+            dot11->bssAddr);
 
         MacDot11ManagementChangeToChannel(
                 node,
@@ -4046,7 +4056,6 @@ int MacDot11ManagementScanStart(
     Node* node,
     MacDataDot11* dot11)
 {
-    printf("node %d: MacDot11ManagementScanStart start\n", node->nodeId);
 
     int result = DOT11_R_FAILED;
 
@@ -4127,8 +4136,12 @@ int MacDot11ManagementScanStart(
         }
         else if(mngmtVars->scanType == DOT11_SCAN_ACTIVE)
         {
-            dot11->bssAddr = dot11->selfAddr;
+            printf("node %d, bss %d: MacDot11ManagementScanStart active scan start\n", node->nodeId, dot11->bssAddr);
 
+            //bss shouldn't change for ad-hoc chanswitch nodes
+            if(dot11->chanswitchType != DOT11_CHANSWITCH_TYPE_AP_PROBE){
+                dot11->bssAddr = dot11->selfAddr;
+            }
              // Set first channel
             MacDot11ManagementChangeToChannel(
                 node,
@@ -4682,7 +4695,7 @@ void MacDot11ManagementStartJoin(
     MacDataDot11* dot11)
 {
 
-    printf("node %d: MacDot11ManagementStartJoin start\n", node->nodeId);
+    // printf("node %d: MacDot11ManagementStartJoin start\n", node->nodeId);
     // Start scanning first
     // Set state
     MacDot11ManagementSetState(
@@ -5391,7 +5404,7 @@ int MacDot11ManagementEnable(
 
     int result = DOT11_R_FAILED;
 
-    printf("node %d: MacDot11ManagementEnable \n", node->nodeId);
+    // printf("node %d: MacDot11ManagementEnable \n", node->nodeId);
 
 
     DOT11_ManagementVars* mngmtVars =
@@ -5411,6 +5424,7 @@ int MacDot11ManagementEnable(
     if (MacDot11IsAp(dot11)) {  // ACCESS POINT
         // Set the BSSID to the same as our MAC in MIB
         // like dot11->stationMIB->dot11StationID = dot11->selfAddr;
+        printf("node %d: MacDot11ManagementEnable for AP \n", node->nodeId);
 
         // Ap should just start beaconing
         MacDot11ManagementSetState(
@@ -5451,7 +5465,7 @@ int MacDot11ManagementEnable(
 
         //IBSS and AP_PROBE chanswitch mode
         else if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-            printf("node %d: MacDot11ManagementEnable attempt StartJoin \n", node->nodeId); 
+            // printf("node %d: MacDot11ManagementEnable attempt StartJoin \n", node->nodeId); 
             MacDot11ManagementStartJoin(
                 node,
                 dot11);
@@ -5593,6 +5607,31 @@ void MacDot11ManagementInit(
     if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
         printf("node %d: MacDot11Init: enable active scanning for AP probe chanswitch \n", node->nodeId);
         mngmtVars->scanType = DOT11_SCAN_ACTIVE;
+        int longScanTimer = 0;
+        Address address;
+        NetworkGetInterfaceInfo(
+                    node,
+                    dot11->myMacData->interfaceIndex,
+                    &address,
+                    networkType);
+        IO_ReadInt(
+                   node->nodeId,
+                   &address,
+                   nodeInput,
+                   "MAC-DOT11-SCAN-MAX-CHANNEL-TIME",
+                   &wasFound,
+                   &longScanTimer);
+
+        if (!wasFound)
+        {
+            mngmtVars->longScanTimer = DOT11_LONG_SCAN_TIMER_DEFAULT;
+        }
+        else
+        {
+            mngmtVars->longScanTimer =
+                    MacDot11TUsToClocktype((unsigned short)longScanTimer);
+        }
+
 
     }else if ((!wasFound) || (strcmp(retString, "DISABLED") == 0)) {
         mngmtVars->scanType = DOT11_SCAN_DISABLED;
@@ -5774,9 +5813,19 @@ void MacDot11ManagementInit(
         }
     }
 
-    // // Enable station management
-    MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
-                                    MSG_MAC_DOT11_Enable_Management_Timer);
+    // Enable station management
+    //delay for AP setup if in chanswitch AP probe mode
+    if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
+        clocktype delay = (100 + node->nodeId) * MILLI_SECOND;
+        MacDot11ManagementStartTimerOfGivenType(node, dot11, delay,
+                MSG_MAC_DOT11_Enable_Management_Timer);
+    }
+
+    else{
+       MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
+                                    MSG_MAC_DOT11_Enable_Management_Timer); 
+        }
+
 }// MacDot11ManagementInit
 //---------------------------Power-Save-Mode-Updates---------------------//
 //--------------------------------------------------------------------------

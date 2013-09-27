@@ -841,8 +841,8 @@ void MacDot11StationUpdateAPMeasurement(Node* node,
     currMsgMea = (PhySignalMeasurement*) MESSAGE_ReturnInfo(newmsg);
     // printf("MacDot11StationUpdateAPMeasurement: node %d, AP %X, rss %f, snr %f, cinr %f \n", 
             // node->nodeId, apInfo->bssAddr, currMsgMea->rss, currMsgMea->snr, currMsgMea->cinr);
-        printf("MacDot11StationUpdateAPMeasurement: rss %f, snr %f, cinr %f, node %d, AP %X \n", 
-            currMsgMea->rss, currMsgMea->snr, currMsgMea->cinr, node->nodeId, apInfo->bssAddr);
+        // printf("MacDot11StationUpdateAPMeasurement: rss %f, snr %f, cinr %f, node %d, AP %X \n", 
+        //     currMsgMea->rss, currMsgMea->snr, currMsgMea->cinr, node->nodeId, apInfo->bssAddr);
 
     if (currMsgMea == NULL)
     {
