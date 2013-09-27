@@ -1511,6 +1511,7 @@ void MacDot11ProcessAnyFrame(
     DOT11_ShortControlFrame* hdr =
         (DOT11_ShortControlFrame*) MESSAGE_ReturnPacket(msg);
 
+
     // PhySignalMeasurement* signalMeaInfo;
     // signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
     // printf("MacDot11ProcessAnyFrame: rss %f, snr %f, cinr %f \n", 
@@ -2278,6 +2279,10 @@ void MacDot11ReceivePacketFromPhy(
     // signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
     // printf("MacDot11ReceivePacketFromPhy: rss %f, snr %f, cinr %f \n", 
     //         signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr);
+
+    if(MacDot11IsAp(dot11)){
+        // printf("node %d - got a packet from PHY \n", node->nodeId);
+    }
 
 
     // Check if we're in CFP
@@ -4017,6 +4022,7 @@ void MacDot11BssDynamicInit(
 
     if ((wasFound) && (strcmp(retString, "YES") == 0))
     {
+        // printf("node %d: MacDot11BssDynamicInit - station type = DOT11_STA_AP \n", node->nodeId);
         dot11->stationType = DOT11_STA_AP;
         // Init access point variables
         if (networkType == NETWORK_IPV6)
@@ -4036,6 +4042,7 @@ void MacDot11BssDynamicInit(
     }
     else
     {
+        // printf("node %d: MacDot11BssDynamicInit - station type = DOT11_STA_BSS \n", node->nodeId);
         dot11->stationType = DOT11_STA_BSS;
 //---------------------------Power-Save-Mode-Updates---------------------//
         IO_ReadString(
@@ -4191,7 +4198,9 @@ void MacDot11IbssDynamicInit(
     //IBSS is never AP so this should never happen!
     if ((wasFound) && (strcmp(retString, "YES") == 0))
     {
-        printf("node %d: MacDot11IbssDynamicInit: I'm not an AP! You should never see this! \n", node->nodeId);
+        ERROR_ReportError("MacDot11BssDynamicInit: "
+                    "I'm not an AP!! "
+                    "You should never see this.\n");
         dot11->stationType = DOT11_STA_AP;
         // Init access point variables
         if (networkType == NETWORK_IPV6)
