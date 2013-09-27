@@ -5816,7 +5816,7 @@ void MacDot11ManagementInit(
     // Enable station management
     //delay for AP setup if in chanswitch AP probe mode
     if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-        clocktype delay = (100 + node->nodeId) * MILLI_SECOND;
+        clocktype delay = (50 + node->nodeId) * MILLI_SECOND;
         MacDot11ManagementStartTimerOfGivenType(node, dot11, delay,
                 MSG_MAC_DOT11_Enable_Management_Timer);
     }
