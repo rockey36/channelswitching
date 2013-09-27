@@ -4198,8 +4198,8 @@ void MacDot11IbssDynamicInit(
     //IBSS is never AP so this should never happen!
     if ((wasFound) && (strcmp(retString, "YES") == 0))
     {
-        ERROR_ReportError("MacDot11BssDynamicInit: "
-                    "I'm not an AP!! "
+        ERROR_ReportError("MacDot11BssDynamicInit: \n"
+                    "I'm not an AP!! \n"
                     "You should never see this.\n");
         dot11->stationType = DOT11_STA_AP;
         // Init access point variables
