@@ -193,13 +193,16 @@ AppDataVideoClient* AppVideoClientInit(Node *node,					///< Node pointer
 {
 	AppTimer			*timer;
 	AppDataVideoClient	*VideoClientPtr;
-	char client[MAX_STRING_LENGTH];
-	char server[MAX_STRING_LENGTH];
-	
+	char clientStr[MAX_STRING_LENGTH];
+	char serverStr[MAX_STRING_LENGTH];
+	IO_ConvertIpAddressToString(GetIPv4Address(clientAddr),
+                                clientStr);
+	IO_ConvertIpAddressToString(GetIPv4Address(serverAddr),
+                                serverStr);
 
 	printf("Video Service Initializing at Node %d \n",node->nodeId);
-	printf("Video Init parameters client=[%d] server =[%d] DX=[%s], GRF=[%s], QOS=[%s] \n",
-		GetIPv4Address(clientAddr),GetIPv4Address(serverAddr),strDXManagerPath,strGRFPath,strQoSPath);
+	printf("Video Init parameters client=[%s] server =[%s] DX=[%s], GRF=[%s], QOS=[%s] \n",
+		clientStr,serverStr,strDXManagerPath,strGRFPath,strQoSPath);
 
 	VideoClientPtr = GetNewAppVideoClient(node, clientAddr, clientNodeAddr,
 		serverAddr, ServerNodeAddr,nFPS,nJitter,nWidth,nHeight, strDXManagerPath,strGRFPath, strQoSPath);
@@ -443,6 +446,7 @@ bool AppVideoCreateDXManager(Node *node,							///< The pointer of node
 	}
 
 	//execute DX Manager
+	
 	VideoClientPtr->hDXConnector = ExcuteDXManager(
 		VideoClientPtr->strDXManagerPath,
 		VideoClientPtr->strGRFPath,
@@ -873,13 +877,17 @@ int SendDataToDirectShowConnector(Node *node, AppDataVideoServer* appVideoServer
 	tip.cbData = nByte;
 	tip.lpData = p_buffer;
 
+
 	if(IsWindow( (HWND) appVideoServer->VideoClientAppData->hDXConnector )) {
 
 		SendMessage( (HWND) appVideoServer->VideoClientAppData->hDXConnector, WM_COPYDATA, 
 		(WPARAM)NULL, (LPARAM)&tip );
 	}
 	else {
-		ERROR_Assert(FALSE,"Finding DIrectShow Connector is failed!");
+		char errStr[MAX_STRING_LENGTH];
+		sprintf(errStr, "DirectShow connector not found. Attempted window handle = %d \n", 
+			(int) appVideoServer->VideoClientAppData->hDXConnector);
+		ERROR_Assert(FALSE,errStr);
 		return	-1;
 	}
 

@@ -2321,7 +2321,10 @@ void MacDot11ReceivePacketFromPhy(
     }
     else {
         // Does not belong to this node
-
+    PhySignalMeasurement* signalMeaInfo;
+    signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
+    printf("MacDot11ReceivePacketFromPhy (not my frame): node %d, rss %f, snr %f, cinr %f, addr %d \n", 
+            node->nodeId,signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr, hdr->destAddr);
 //--------------------HCCA-Updates Start---------------------------------//
         MacDot11ProcessNotMyFrame(
             node, dot11, MacDot11MicroToNanosecond(hdr->duration),
