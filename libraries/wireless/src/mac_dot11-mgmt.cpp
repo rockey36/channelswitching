@@ -373,6 +373,8 @@ DOT11_VisibleNodeInfo* MacDot11ManagementAddVisibleNode(
     
     DOT11_VisibleNodeInfo* nodeInfo;
 
+    //TODO: if AP was added as non-AP, update it
+
     // don't add myself to the list
     if(bssAddr == dot11->bssAddr){
         return nodeInfo;
@@ -390,7 +392,19 @@ DOT11_VisibleNodeInfo* MacDot11ManagementAddVisibleNode(
         nodeInfo = nodeInfo->next;
     }
 
-    if (nodeInfo == NULL)
+    //Update info if AP was added from ProcessAnyFrame
+    if(nodeInfo != NULL && !(nodeInfo->isAP) && isAP){
+        nodeInfo->channelId = channelId;
+        nodeInfo->bssAddr = bssAddr;
+        nodeInfo->signalStrength = signalStrength;
+        nodeInfo->isAP = isAP; //always true
+
+        printf("MacDot11ManagementAddVisibleNode at node %d (node update): channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+            node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+
+    }
+
+    else if (nodeInfo == NULL)
     {
         // not in neighbor list, create it
         nodeInfo = (DOT11_VisibleNodeInfo*) MEM_malloc(sizeof(DOT11_VisibleNodeInfo));
@@ -404,7 +418,7 @@ DOT11_VisibleNodeInfo* MacDot11ManagementAddVisibleNode(
         printf("MacDot11ManagementAddVisibleNode at node %d: channel %d, signal strength %f dBm, isAP %d, bss %d \n",
             node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
 
-        // add AP in the list
+        // add visible node in the list
         nodeInfo->next = dot11->visibleNodeList;
         dot11->visibleNodeList = nodeInfo;
 
