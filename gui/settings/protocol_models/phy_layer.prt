@@ -3,7 +3,7 @@
   <subcategory name="Physical Layer" class="interface,device,atmdevice">
     <variable name="Listenable Channel Mask" key="PHY-LISTENABLE-CHANNEL-MASK" type="Mask" default="1" help="Channels the radio is capable of listening to." format="MaskArray" length="PROPAGATION-CHANNEL-FREQUENCY.length" addon="wireless" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'"/>
     <variable name="Listening Channel Mask" key="PHY-LISTENING-CHANNEL-MASK" type="Mask" default="1" help="Channels the radio is currently listening to.  Can be changed during run time." format="MaskArray" length="PROPAGATION-CHANNEL-FREQUENCY.length" addon="wireless" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'"/>
-    <variable name="Channel Switching Channel Mask" key="PHY-CHANSWITCH-CHANNEL-MASK" type="Mask" default="01000010000100" help="Channels to be used for channel switching." format="MaskArray" length="PROPAGATION-CHANNEL-FREQUENCY.length" addon="wireless" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'"/>
+    <variable name="Channel Switching Channel Mask" key="PHY-CHANSWITCH-CHANNEL-MASK" type="Mask" default="1" help="Channels to be used for channel switching." format="MaskArray" length="PROPAGATION-CHANNEL-FREQUENCY.length" addon="wireless" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'"/>
     <!--
     <variable key="MAC-DOT11-CHANSWITCH-INTERVAL" type="Fixed" name="Channel Switching Interval (seconds)" default="5" />
   -->
@@ -32,7 +32,7 @@
         </variable>
       </option>
     </variable>
-    <variable name="Radio Type" key="PHY-MODEL" type="Selection" default="PHY802.11b" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'">
+    <variable name="Radio Type" key="PHY-MODEL" type="Selection" default="PHY802.11a" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'">
       <option value="None" name="None" />
       <option value="PHY802.11a" name="802.11a/g Radio" addon="wireless">
         <variable key="PHY802.11-AUTO-RATE-FALLBACK" type="Selection" name="Enable Auto Rate Fallback" default="NO">
@@ -120,7 +120,7 @@
       <option value="PHY802.11b" name="802.11b Radio" addon="wireless">
         <variable key="PHY802.11-AUTO-RATE-FALLBACK" type="Selection" name="Enable Auto Rate Fallback" default="NO">
           <option value="NO" name="No">
-            <variable key="PHY802.11-DATA-RATE" type="Fixed multiplier" name="Data Rate" default="2 Mbps" help="bandwidth in bps. supported data rates: 1Mbps, 2Mbps, 5.5Mbps, 11Mbps" unit="bps" maxunit="Gbps" minunit="bps" />
+            <variable key="PHY802.11-DATA-RATE" type="Fixed multiplier" name="Data Rate" default="11 Mbps" help="bandwidth in bps. supported data rates: 1Mbps, 2Mbps, 5.5Mbps, 11Mbps" unit="bps" maxunit="Gbps" minunit="bps" />
           </option>
           <option value="YES" name="Yes">
             <variable key="DUMMY-PHY802.11-DATA-RATE-FOR-BROADCAST" type="Selection" name="Specify Broadcast Data Rate" default="NO">

@@ -361,6 +361,60 @@ DOT11_ApInfo* MacDot11ManagementGetAPInfo(
 
     return apInfo;
 }
+
+//Add a new node to the visible node list.
+DOT11_VisibleNodeInfo* MacDot11ManagementAddVisibleNode(
+    Node* node,
+    MacDataDot11* dot11,
+    int channelId,
+    Mac802Address bssAddr,
+    double signalStrength,
+    BOOL isAP){
+    
+    DOT11_VisibleNodeInfo* nodeInfo;
+
+    // don't add myself to the list
+    if(bssAddr == dot11->bssAddr){
+        return nodeInfo;
+    }
+
+    // check if the neighbor already in the list
+    nodeInfo = dot11->visibleNodeList;
+    while (nodeInfo != NULL)
+    {
+        if (nodeInfo->bssAddr == bssAddr)
+        {
+            break;
+        }
+
+        nodeInfo = nodeInfo->next;
+    }
+
+    if (nodeInfo == NULL)
+    {
+        // not in neighbor list, create it
+        nodeInfo = (DOT11_VisibleNodeInfo*) MEM_malloc(sizeof(DOT11_VisibleNodeInfo));
+        ERROR_Assert(nodeInfo != NULL, "MAC 802.11: Out of memory!");
+        memset((char*) nodeInfo, 0, sizeof(DOT11_VisibleNodeInfo)); 
+        nodeInfo->channelId = channelId;
+        nodeInfo->bssAddr = bssAddr;
+        nodeInfo->signalStrength = signalStrength;
+        nodeInfo->isAP = isAP;
+
+        printf("MacDot11ManagementAddVisibleNode at node %d: channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+            node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+
+        // add AP in the list
+        nodeInfo->next = dot11->visibleNodeList;
+        dot11->visibleNodeList = nodeInfo;
+
+
+    }
+
+    return nodeInfo;
+
+
+}
 //--------------------------------------------------------------------------
 // Build Management Frame Functions
 //--------------------------------------------------------------------------
@@ -3828,7 +3882,7 @@ DOT11_ApInfo* MacDot11ManagementFindBestAp(
     apInfo = mgmtVars->channelInfo->headAPList;
 
     if(apInfo == NULL){
-        printf("node %d: MacDot11ManagementFindBestAp: apInfo = NULL \n", node->nodeId);
+        // printf("node %d: MacDot11ManagementFindBestAp: apInfo = NULL \n", node->nodeId);
     }
 
     while (apInfo != NULL)
@@ -3846,16 +3900,20 @@ DOT11_ApInfo* MacDot11ManagementFindBestAp(
             }
 
         }
-       printf("MacDot11ManagementFindBestAp: Channel %d, SINR %f dB, RSS %f dBm, AP at node %d: MAC Address %d \n",
-            apInfo->channelId, apInfo->cinrMean , apInfo->rssMean, node->nodeId, apInfo->bssAddr);
+       // printf("MacDot11ManagementFindBestAp at node %d: Channel %d, SINR %f dB, RSS %f dBm: MAC Address %d \n",
+            // node->nodeId,apInfo->channelId, apInfo->cinrMean, apInfo->rssMean, apInfo->bssAddr);
+       //put it into the list of visible nodes
+       MacDot11ManagementAddVisibleNode(node,dot11,apInfo->channelId,apInfo->bssAddr,apInfo->rssMean,TRUE);
 
-        apInfo = apInfo->next;
+       apInfo = apInfo->next;
     }
 
 
 
     return bestAp;
 }
+
+
 //--------------------Activity completed----------------------------------
 //--------------------------------------------------------------------------
 /*!
