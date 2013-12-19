@@ -1512,10 +1512,22 @@ void MacDot11ProcessAnyFrame(
         (DOT11_ShortControlFrame*) MESSAGE_ReturnPacket(msg);
 
 
-    // PhySignalMeasurement* signalMeaInfo;
-    // signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
-    // printf("MacDot11ProcessAnyFrame: rss %f, snr %f, cinr %f \n", 
-    //         signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr);
+    PhySignalMeasurement* signalMeaInfo;
+    signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
+
+    int phyIndex = dot11->myMacData->phyNumber;
+    int channelId;
+    PHY_GetTransmissionChannel(node,phyIndex,&channelId);
+
+    Mac802Address sourceAddr =
+    ((DOT11_FrameHdr*)MESSAGE_ReturnPacket(msg))->sourceAddr;
+
+    // printf("MacDot11ProcessAnyFrame at node %d: channel %d, rss %f, bss %d \n", 
+            // node->nodeId,channelId,signalMeaInfo->rss,sourceAddr);
+    //add the visible non-AP nodes while scanning
+    if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
+        MacDot11ManagementAddVisibleNode(node,dot11,channelId,sourceAddr,signalMeaInfo->rss,FALSE);
+    }
 
     switch (hdr->frameType) {
         case DOT11_DATA:
@@ -2323,8 +2335,8 @@ void MacDot11ReceivePacketFromPhy(
         // Does not belong to this node
     PhySignalMeasurement* signalMeaInfo;
     signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
-    printf("MacDot11ReceivePacketFromPhy (not my frame): node %d, rss %f, snr %f, cinr %f, addr %d \n", 
-            node->nodeId,signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr, hdr->destAddr);
+    // printf("MacDot11ReceivePacketFromPhy (not my frame): node %d, rss %f, snr %f, cinr %f, addr %d \n", 
+    //         node->nodeId,signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr, hdr->destAddr);
 //--------------------HCCA-Updates Start---------------------------------//
         MacDot11ProcessNotMyFrame(
             node, dot11, MacDot11MicroToNanosecond(hdr->duration),
