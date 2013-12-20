@@ -1056,20 +1056,27 @@ void PhyChanSwitchChannelListeningSwitchNotification(
 
 
 void PhyChanSwitchTransmissionEnd(Node *node, int phyIndex) {
-    if (DEBUG)
-    {
-        char clockStr[20];
-        TIME_PrintClockInSecond(getSimTime(node), clockStr);
-        printf("PHY_ChanSwitch: node %d transmission end at time %s\n",
-               node->nodeId, clockStr);
-    }
     PhyData* thisPhy = node->phyData[phyIndex];
     PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch *)thisPhy->phyVar;
     int channelIndex;
+    char clockStr[20];
+    TIME_PrintClockInSecond(getSimTime(node), clockStr);
+
+    if (DEBUG)
+    {   
+        printf("PHY_ChanSwitch: node %d transmission end at time %s, mode %d \n",
+               node->nodeId, clockStr, phychanswitch->mode);
+    }
+
 
     PHY_GetTransmissionChannel(node, phyIndex, &channelIndex);
 
-    assert(phychanswitch->mode == PHY_TRANSMITTING);
+    Int8 buf[MAX_STRING_LENGTH];
+    sprintf(buf, "PhyChanSwitchTransmissionEnd: failed on node %d, time %s, mode %d \n",
+            node->nodeId, clockStr, phychanswitch->mode);
+    ERROR_Assert(phychanswitch->mode == PHY_TRANSMITTING, buf);
+
+    // assert(phychanswitch->mode == PHY_TRANSMITTING);
 
     phychanswitch->txEndTimer = NULL;
     //GuiStart
@@ -1221,8 +1228,27 @@ void PhyChanSwitchSignalArrivalFromChannel(
 {
     PhyData *thisPhy = node->phyData[phyIndex];
     PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*) thisPhy->phyVar;
-		PhyChanSwitchChangeState(node,phyIndex,PHY_IDLE);
-    assert(phychanswitch->mode != PHY_TRANSMITTING);
+	// PhyChanSwitchChangeState(node,phyIndex,PHY_IDLE);
+    char clockStr[20];
+    TIME_PrintClockInSecond(getSimTime(node), clockStr);
+    Int8 buf[MAX_STRING_LENGTH];
+
+    if(phychanswitch->mode == PHY_TRANSMITTING){
+        printf("PhyChanSwitchSignalArrivalFromChannel: terminating transmission at node %d, time %s \n",
+            node->nodeId,clockStr);
+        PhyChanSwitchTerminateCurrentTransmission(node,phyIndex);
+        PhyChanSwitchChangeState(node,phyIndex, PHY_IDLE);
+
+        if(phychanswitch->previousMode != phychanswitch->mode)
+            PhyChanSwitchReportStatusToMac(node, phyIndex, phychanswitch->mode);
+    }
+
+    sprintf(buf, "PhyChanSwitchSignalArrivalFromChannel: failed on node %d, time %s, mode %d \n",
+            node->nodeId, clockStr, phychanswitch->mode);
+    ERROR_Assert(phychanswitch->mode != PHY_TRANSMITTING, buf);
+
+    // assert(phychanswitch->mode != PHY_TRANSMITTING);
+
 
     if (DEBUG)
     {
@@ -1795,15 +1821,15 @@ void StartTransmittingSignal(
     BOOL sendDirectionally,
     double azimuthAngle)
 {
-    if (DEBUG)
-    {
+    // if (DEBUG)
+    // {
         char clockStr[20];
         TIME_PrintClockInSecond(getSimTime(node), clockStr);
         printf("ChanSwitch.cpp: node %d start transmitting at time %s "
                "originated from node %d at time %15" TYPES_64BITFMT "d\n",
                node->nodeId, clockStr,
                packet->originatingNodeId, packet->packetCreationTime);
-    }
+    // }
 
     clocktype delayUntilAirborne = initDelayUntilAirborne;
     PhyData* thisPhy = node->phyData[phyIndex];
