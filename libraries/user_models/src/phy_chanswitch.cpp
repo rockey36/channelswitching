@@ -1228,7 +1228,6 @@ void PhyChanSwitchSignalArrivalFromChannel(
 {
     PhyData *thisPhy = node->phyData[phyIndex];
     PhyDataChanSwitch* phychanswitch = (PhyDataChanSwitch*) thisPhy->phyVar;
-	// PhyChanSwitchChangeState(node,phyIndex,PHY_IDLE);
     char clockStr[20];
     TIME_PrintClockInSecond(getSimTime(node), clockStr);
     Int8 buf[MAX_STRING_LENGTH];
@@ -1821,15 +1820,15 @@ void StartTransmittingSignal(
     BOOL sendDirectionally,
     double azimuthAngle)
 {
-    // if (DEBUG)
-    // {
+    if (DEBUG)
+    {
         char clockStr[20];
         TIME_PrintClockInSecond(getSimTime(node), clockStr);
         printf("ChanSwitch.cpp: node %d start transmitting at time %s "
                "originated from node %d at time %15" TYPES_64BITFMT "d\n",
                node->nodeId, clockStr,
                packet->originatingNodeId, packet->packetCreationTime);
-    // }
+    }
 
     clocktype delayUntilAirborne = initDelayUntilAirborne;
     PhyData* thisPhy = node->phyData[phyIndex];
