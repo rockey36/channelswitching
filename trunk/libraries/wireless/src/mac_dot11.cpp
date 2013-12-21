@@ -392,6 +392,7 @@ void MacDot11ProcessNotMyFrame(
     BOOL navHasChanged = FALSE;
     clocktype NewNAV;
 
+
     if (duration == DOT11_CF_FRAME_DURATION * MICRO_SECOND) {
         return;
     }
@@ -545,6 +546,10 @@ void MacDot11ProcessFrame(
     DOT11_FrameHdr* hdr = (DOT11_FrameHdr*)MESSAGE_ReturnPacket(frame);
     Mac802Address sourceAddr = hdr->sourceAddr;
     int flag = FALSE;
+
+    PhySignalMeasurement* signalMeaInfo;
+    signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(frame);
+
 
     if ((dot11->state != DOT11_S_WFDATA) &&
         (MacDot11IsWaitingForResponseState(dot11->state)))
@@ -1522,13 +1527,6 @@ void MacDot11ProcessAnyFrame(
     Mac802Address sourceAddr =
     ((DOT11_FrameHdr*)MESSAGE_ReturnPacket(msg))->sourceAddr;
 
-    // printf("MacDot11ProcessAnyFrame at node %d: channel %d, rss %f, bss %d \n", 
-            // node->nodeId,channelId,signalMeaInfo->rss,sourceAddr);
-    //add the visible non-AP nodes while scanning
-    if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-        MacDot11ManagementAddVisibleNode(node,dot11,channelId,sourceAddr,signalMeaInfo->rss,FALSE);
-    }
-
     switch (hdr->frameType) {
         case DOT11_DATA:
         case DOT11_QOS_DATA:
@@ -2279,6 +2277,22 @@ void MacDot11ReceivePacketFromPhy(
     int phyIndex = dot11->myMacData->phyNumber;
     PhyData *thisPhy = node->phyData[phyIndex];
 
+    //Added - look at this frame
+    int channelId;
+    PHY_GetTransmissionChannel(node,phyIndex,&channelId);
+
+    Mac802Address sourceAddr =
+    ((DOT11_FrameHdr*)MESSAGE_ReturnPacket(msg))->sourceAddr;
+
+    PhySignalMeasurement* signalMeaInfo;
+    signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
+    
+    //add the visible non-AP nodes while scanning
+    if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
+        MacDot11ManagementAddVisibleNode(node,dot11,channelId,sourceAddr,signalMeaInfo->rss,FALSE);
+    }
+    //End of added
+
     // Since in QualNet it's possible to have two events occurring
     // at the same time, enforce the fact that when a node is
     // transmitting, a node can't be receiving a frame at the same time.
@@ -2333,10 +2347,11 @@ void MacDot11ReceivePacketFromPhy(
     }
     else {
         // Does not belong to this node
-    PhySignalMeasurement* signalMeaInfo;
-    signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
+
     // printf("MacDot11ReceivePacketFromPhy (not my frame): node %d, rss %f, snr %f, cinr %f, addr %d \n", 
     //         node->nodeId,signalMeaInfo->rss, signalMeaInfo->snr, signalMeaInfo->cinr, hdr->destAddr);
+
+
 //--------------------HCCA-Updates Start---------------------------------//
         MacDot11ProcessNotMyFrame(
             node, dot11, MacDot11MicroToNanosecond(hdr->duration),
