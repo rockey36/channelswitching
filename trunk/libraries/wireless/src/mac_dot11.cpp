@@ -2281,16 +2281,29 @@ void MacDot11ReceivePacketFromPhy(
     int channelId;
     PHY_GetTransmissionChannel(node,phyIndex,&channelId);
 
-    Mac802Address sourceAddr =
-    ((DOT11_FrameHdr*)MESSAGE_ReturnPacket(msg))->sourceAddr;
+    Mac802Address sourceAddr = INVALID_802ADDRESS;
+
+    if (hdr->frameType == DOT11_RTS) {
+        sourceAddr =
+            ((DOT11_LongControlFrame*)MESSAGE_ReturnPacket(msg))
+            ->sourceAddr;
+    }
+    else if (hdr->frameType == DOT11_DATA
+          || hdr->frameType == DOT11_MESH_DATA)   // dot11s
+    {
+        sourceAddr =
+            ((DOT11_FrameHdr*)MESSAGE_ReturnPacket(msg))
+            ->sourceAddr;
+    }
 
     PhySignalMeasurement* signalMeaInfo;
     signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
     
-    // //add the visible non-AP nodes while scanning
-    // if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-    //     MacDot11ManagementAddVisibleNode(node,dot11,channelId,sourceAddr,signalMeaInfo->rss,FALSE);
-    // }
+    //add the visible non-AP nodes while scanning
+    if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE && sourceAddr != INVALID_802ADDRESS){
+        // printf("attempt to add visible node at node %d \n", node->nodeId);
+        MacDot11ManagementAddVisibleNode(node,dot11,channelId,sourceAddr,signalMeaInfo->rss,FALSE);
+    }
     //End of added
 
     // Since in QualNet it's possible to have two events occurring
