@@ -2287,10 +2287,10 @@ void MacDot11ReceivePacketFromPhy(
     PhySignalMeasurement* signalMeaInfo;
     signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
     
-    //add the visible non-AP nodes while scanning
-    if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-        MacDot11ManagementAddVisibleNode(node,dot11,channelId,sourceAddr,signalMeaInfo->rss,FALSE);
-    }
+    // //add the visible non-AP nodes while scanning
+    // if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
+    //     MacDot11ManagementAddVisibleNode(node,dot11,channelId,sourceAddr,signalMeaInfo->rss,FALSE);
+    // }
     //End of added
 
     // Since in QualNet it's possible to have two events occurring
