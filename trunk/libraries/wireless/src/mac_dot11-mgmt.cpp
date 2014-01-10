@@ -373,8 +373,6 @@ DOT11_VisibleNodeInfo* MacDot11ManagementAddVisibleNode(
     
     DOT11_VisibleNodeInfo* nodeInfo;
 
-    //TODO: if AP was added as non-AP, update it
-
     // don't add myself to the list
     if(bssAddr == dot11->bssAddr){
         return nodeInfo;
@@ -399,8 +397,8 @@ DOT11_VisibleNodeInfo* MacDot11ManagementAddVisibleNode(
         nodeInfo->signalStrength = signalStrength;
         nodeInfo->isAP = isAP; //always true
 
-        printf("MacDot11ManagementAddVisibleNode at node %d (node update): channel %d, signal strength %f dBm, isAP %d, bss %d \n",
-            node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+        // printf("MacDot11ManagementAddVisibleNode at node %d (node update): channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+        //     node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
 
     }
 
@@ -415,8 +413,8 @@ DOT11_VisibleNodeInfo* MacDot11ManagementAddVisibleNode(
         nodeInfo->signalStrength = signalStrength;
         nodeInfo->isAP = isAP;
 
-        printf("MacDot11ManagementAddVisibleNode at node %d: channel %d, signal strength %f dBm, isAP %d, bss %d \n",
-            node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+        // printf("MacDot11ManagementAddVisibleNode at node %d: channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+        //     node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
 
         // add visible node in the list
         nodeInfo->next = dot11->visibleNodeList;
@@ -1918,7 +1916,10 @@ void MacDot11TransmitProbeRequestFrame(Node* node,MacDataDot11* dot11)
 {
     DOT11_ProbeReqFrame* probeFrame;
     //int result = DOT11_R_FAILED;
-    printf("node %d: sending probe request frame \n", node->nodeId);
+    int phyIndex = dot11->myMacData->phyNumber;
+    int channelId;
+    PHY_GetTransmissionChannel(node,phyIndex,&channelId);
+    printf("MacDot11TransmitProbeRequestFrame: node %d channel %d \n", node->nodeId, channelId);
 
     // Allocate new probe Request frame
     Message* msg = MESSAGE_Alloc(node, 0, 0, 0);
@@ -3953,8 +3954,24 @@ void MacDot11ManagementScanCompleted(
 
     //added: 
     if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-        printf("node %d, channel %d, BSS %d: Ad-hoc AP probe chanswitch mode, do not associate \n", node->nodeId, mgmtVars->currentChannel,
-            dot11->bssAddr);
+        printf("MacDot11ManagementScanCompleted: node %d, channel %d: Ad-hoc AP probe chanswitch mode (do not associate) \n", 
+            node->nodeId, mgmtVars->currentChannel);
+
+        //print the entire visible node list
+        DOT11_VisibleNodeInfo* nodeInfo = dot11->visibleNodeList;
+        if(nodeInfo == NULL){
+            printf("No visible nodes found at node %d. \n",node->nodeId);
+        }
+        else{
+            printf("Visible Node List at node %d: \n",node->nodeId);
+        }
+
+        while(nodeInfo != NULL){
+        printf("channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+            nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+            nodeInfo = nodeInfo->next;
+        }
+        printf("\n \n");
 
         MacDot11ManagementChangeToChannel(
                 node,
