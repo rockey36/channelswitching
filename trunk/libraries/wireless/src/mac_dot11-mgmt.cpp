@@ -3954,22 +3954,22 @@ void MacDot11ManagementScanCompleted(
 
     //added: 
     if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-        printf("MacDot11ManagementScanCompleted: node %d, channel %d: Ad-hoc AP probe chanswitch mode (do not associate) \n", 
-            node->nodeId, mgmtVars->currentChannel);
+        // printf("MacDot11ManagementScanCompleted: node %d, channel %d: Ad-hoc AP probe chanswitch mode (do not associate) \n", 
+        //     node->nodeId, mgmtVars->currentChannel);
 
         //print the entire visible node list
         DOT11_VisibleNodeInfo* nodeInfo = dot11->visibleNodeList;
         if(nodeInfo == NULL){
-            printf("No visible nodes found at node %d. \n",node->nodeId);
+            printf("\n No visible nodes found at node %d. \n",node->nodeId);
         }
         else{
-            printf("Visible Node List at node %d: \n",node->nodeId);
+            printf("\n Visible Node List at node %d: \n",node->nodeId);
         }
 
         while(nodeInfo != NULL){
         printf("channel %d, signal strength %f dBm, isAP %d, bss %d \n",
             nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
-            nodeInfo = nodeInfo->next;
+            nodeInfo = nodeInfo->next;  
         }
         printf("\n \n");
 
