@@ -258,7 +258,7 @@ AppChanswitchClientSendNextItem(Node *node, AppDataChanswitchClient *clientPtr)
                 clientPtr->connectionId,
                 (char *)"c",
                 1,
-                TRACE_CHANSWITCH);
+                TRACE_APP_CHANSWITCH);
         }
 
         clientPtr->sessionIsClosed = TRUE;
@@ -307,7 +307,7 @@ AppChanswitchClientSendNextPacket(Node *node, AppDataChanswitchClient *clientPtr
                 clientPtr->connectionId,
                 payload,
                 itemSize,
-                TRACE_CHANSWITCH);
+                TRACE_APP_CHANSWITCH);
     }
     MEM_free(payload);
 }
@@ -504,7 +504,7 @@ AppChanswitchServerSendCtrlPkt(Node *node, AppDataChanswitchServer *serverPtr)
                 serverPtr->connectionId,
                 payload,
                 pktSize,
-                TRACE_CHANSWITCH);
+                TRACE_APP_CHANSWITCH);
     }
      MEM_free(payload);
 }

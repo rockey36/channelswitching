@@ -226,7 +226,7 @@ typedef enum
     TRACE_802_11a,
     TRACE_802_11b,
 		//channel switching
-		TRACE_CHANSWITCH,
+		//TRACE_CHANSWITCH,
 
     TRACE_TRAFFIC_GEN,
     TRACE_TRAFFIC_TRACE,
@@ -366,7 +366,8 @@ typedef enum
 
     TRACE_VIDEO,
 	TRACE_WBEST,
-  TRACE_CHANSWITCH,
+  TRACE_PHY_CHANSWITCH,
+  TRACE_APP_CHANSWITCH,
       // Must be last one!!!
     TRACE_ANY_PROTOCOL
 }TraceProtocolType;

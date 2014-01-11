@@ -60,7 +60,7 @@ void PhyChanSwitchReportExtendedStatusToMac(
             node,
             potentialIncomingPacket,
             sizeof(PhyChanSwitchPlcpHeader),
-            TRACE_CHANSWITCH);
+            TRACE_PHY_CHANSWITCH);
     }
 
     MAC_ReceivePhyStatusChangeNotification(
@@ -73,7 +73,7 @@ void PhyChanSwitchReportExtendedStatusToMac(
             node,
             potentialIncomingPacket,
             sizeof(PhyChanSwitchPlcpHeader),
-            TRACE_CHANSWITCH);
+            TRACE_PHY_CHANSWITCH);
     }
 }
 
@@ -1558,7 +1558,7 @@ void PhyChanSwitchSignalEndFromChannel(
             newMsg = MESSAGE_Duplicate(node, propRxInfo->txMsg);
 
             MESSAGE_RemoveHeader(
-                node, newMsg, sizeof(PhyChanSwitchPlcpHeader), TRACE_CHANSWITCH);
+                node, newMsg, sizeof(PhyChanSwitchPlcpHeader), TRACE_PHY_CHANSWITCH);
 
             PhySignalMeasurement* signalMeaInfo;		
             MESSAGE_InfoAlloc(node,
@@ -1894,7 +1894,7 @@ void StartTransmittingSignal(
             thisPhy, phychanswitch->txDataRateType, packetsize);
 
     MESSAGE_AddHeader(node, packet, sizeof(PhyChanSwitchPlcpHeader),
-                      TRACE_CHANSWITCH);
+                      TRACE_PHY_CHANSWITCH);
 
     char *plcp1 = MESSAGE_ReturnPacket(packet);
     memcpy(plcp1,&phychanswitch->txDataRateType,sizeof(int));
