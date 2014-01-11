@@ -17,7 +17,7 @@
 
 /*
  * This file contains initialization function, message processing
- * function, and finalize function used by the ftp application.
+ * function, and finalize function used by the chanswitch application.
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,35 +29,35 @@
 #include "transport_tcp.h"
 #include "tcpapps.h"
 #include "app_util.h"
-#include "app_ftp.h"
+#include "app_chanswitch.h"
 
 /*
  * Static Functions
  */
 
 /*
- * NAME:        AppFtpClientGetFtpClient.
- * PURPOSE:     search for a ftp client data structure.
+ * NAME:        AppChanswitchClientGetChanswitchClient.
+ * PURPOSE:     search for a chanswitch client data structure.
  * PARAMETERS:  node - pointer to the node.
- *              connId - connection ID of the ftp client.
- * RETURN:      the pointer to the ftp client data structure,
+ *              connId - connection ID of the chanswitch client.
+ * RETURN:      the pointer to the chanswitch client data structure,
  *              NULL if nothing found.
  */
-AppDataFtpClient *
-AppFtpClientGetFtpClient(Node *node, int connId)
+AppDataChanswitchClient *
+AppChanswitchClientGetChanswitchClient(Node *node, int connId)
 {
     AppInfo *appList = node->appData.appPtr;
-    AppDataFtpClient *ftpClient;
+    AppDataChanswitchClient *chanswitchClient;
 
     for (; appList != NULL; appList = appList->appNext)
     {
-        if (appList->appType == APP_FTP_CLIENT)
+        if (appList->appType == APP_CHANSWITCH_CLIENT)
         {
-            ftpClient = (AppDataFtpClient *) appList->appDetail;
+            chanswitchClient = (AppDataChanswitchClient *) appList->appDetail;
 
-            if (ftpClient->connectionId == connId)
+            if (chanswitchClient->connectionId == connId)
             {
-                return ftpClient;
+                return chanswitchClient;
             }
         }
     }
@@ -66,45 +66,45 @@ AppFtpClientGetFtpClient(Node *node, int connId)
 }
 
 /*
- * NAME:        AppFtpClientUpdateFtpClient.
- * PURPOSE:     update existing ftp client data structure by including
+ * NAME:        AppChanswitchClientUpdateChanswitchClient.
+ * PURPOSE:     update existing chanswitch client data structure by including
  *              connection id.
  * PARAMETERS:  node - pointer to the node.
  *              openResult - result of the open request.
- * RETRUN:      the pointer to the created ftp client data structure,
+ * RETRUN:      the pointer to the created chanswitch client data structure,
  *              NULL if no data structure allocated.
  */
-AppDataFtpClient *
-AppFtpClientUpdateFtpClient(Node *node,
+AppDataChanswitchClient *
+AppChanswitchClientUpdateChanswitchClient(Node *node,
                             TransportToAppOpenResult *openResult)
 {
     AppInfo *appList = node->appData.appPtr;
-    AppDataFtpClient *tmpFtpClient = NULL;
-    AppDataFtpClient *ftpClient = NULL;
+    AppDataChanswitchClient *tmpChanswitchClient = NULL;
+    AppDataChanswitchClient *chanswitchClient = NULL;
 
     for (; appList != NULL; appList = appList->appNext)
     {
-        if (appList->appType == APP_FTP_CLIENT)
+        if (appList->appType == APP_CHANSWITCH_CLIENT)
         {
-            tmpFtpClient = (AppDataFtpClient *) appList->appDetail;
+            tmpChanswitchClient = (AppDataChanswitchClient *) appList->appDetail;
 
 #ifdef DEBUG
-            printf("FTP Client: Node %d comparing uniqueId "
+            printf("CHANSWITCH Client: Node %d comparing uniqueId "
                    "%d with %d\n",
                    node->nodeId,
-                   tmpFtpClient->uniqueId,
+                   tmpChanswitchClient->uniqueId,
                    openResult->uniqueId);
 #endif /* DEBUG */
 
-            if (tmpFtpClient->uniqueId == openResult->uniqueId)
+            if (tmpChanswitchClient->uniqueId == openResult->uniqueId)
             {
-                ftpClient = tmpFtpClient;
+                chanswitchClient = tmpChanswitchClient;
                 break;
             }
         }
     }
 
-    if (ftpClient == NULL)
+    if (chanswitchClient == NULL)
     {
         assert(FALSE);
     }
@@ -112,93 +112,93 @@ AppFtpClientUpdateFtpClient(Node *node,
     /*
      * fill in connection id, etc.
      */
-    ftpClient->connectionId = openResult->connectionId;
-    ftpClient->localAddr = openResult->localAddr;
-    ftpClient->remoteAddr = openResult->remoteAddr;
-    ftpClient->sessionStart = getSimTime(node);
-    ftpClient->sessionFinish = getSimTime(node);
-    ftpClient->lastTime = 0;
-    ftpClient->sessionIsClosed = FALSE;
-    ftpClient->bytesRecvdDuringThePeriod = 0;
+    chanswitchClient->connectionId = openResult->connectionId;
+    chanswitchClient->localAddr = openResult->localAddr;
+    chanswitchClient->remoteAddr = openResult->remoteAddr;
+    chanswitchClient->sessionStart = getSimTime(node);
+    chanswitchClient->sessionFinish = getSimTime(node);
+    chanswitchClient->lastTime = 0;
+    chanswitchClient->sessionIsClosed = FALSE;
+    chanswitchClient->bytesRecvdDuringThePeriod = 0;
 #ifdef DEBUG
     char addrStr[MAX_STRING_LENGTH];
-    printf("FTP Client: Node %d updating ftp client structure\n",
+    printf("CHANSWITCH Client: Node %d updating chanswitch client structure\n",
             node->nodeId);
-    printf("    connectionId = %d\n", ftpClient->connectionId);
-    IO_ConvertIpAddressToString(&ftpClient->localAddr, addrStr);
+    printf("    connectionId = %d\n", chanswitchClient->connectionId);
+    IO_ConvertIpAddressToString(&chanswitchClient->localAddr, addrStr);
     printf("    localAddr = %s\n", addrStr);
-    IO_ConvertIpAddressToString(&ftpClient->remoteAddr, addrStr);
+    IO_ConvertIpAddressToString(&chanswitchClient->remoteAddr, addrStr);
     printf("    remoteAddr = %s\n", addrStr);
-    printf("    itemsToSend = %d\n", ftpClient->itemsToSend);
+    printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
 #endif /* DEBUG */
 
-    return ftpClient;
+    return chanswitchClient;
 }
 
 /*
- * NAME:        AppFtpClientNewFtpClient.
- * PURPOSE:     create a new ftp client data structure, place it
+ * NAME:        AppChanswitchClientNewChanswitchClient.
+ * PURPOSE:     create a new chanswitch client data structure, place it
  *              at the beginning of the application list.
  * PARAMETERS:  node - pointer to the node.
  *              clientAddr - address of this client.
- *              serverAddr - ftp server to this client.
- *              itemsToSend - number of ftp items to send in simulation.
- * RETRUN:      the pointer to the created ftp client data structure,
+ *              serverAddr - chanswitch server to this client.
+ *              itemsToSend - number of chanswitch items to send in simulation.
+ * RETRUN:      the pointer to the created chanswitch client data structure,
  *              NULL if no data structure allocated.
  */
-AppDataFtpClient *
-AppFtpClientNewFtpClient(Node *node,
+AppDataChanswitchClient *
+AppChanswitchClientNewChanswitchClient(Node *node,
                          Address clientAddr,
                          Address serverAddr,
                          int itemsToSend)
 {
-    AppDataFtpClient *ftpClient;
+    AppDataChanswitchClient *chanswitchClient;
 
-    ftpClient = (AppDataFtpClient *)
-                MEM_malloc(sizeof(AppDataFtpClient));
+    chanswitchClient = (AppDataChanswitchClient *)
+                MEM_malloc(sizeof(AppDataChanswitchClient));
 
-    memset(ftpClient, 0, sizeof(AppDataFtpClient));
+    memset(chanswitchClient, 0, sizeof(AppDataChanswitchClient));
 
     /*
      * fill in connection id, etc.
      */
-    ftpClient->connectionId = -1;
-    ftpClient->uniqueId = node->appData.uniqueId++;
+    chanswitchClient->connectionId = -1;
+    chanswitchClient->uniqueId = node->appData.uniqueId++;
 
-    ftpClient->localAddr = clientAddr;
-    ftpClient->remoteAddr = serverAddr;
+    chanswitchClient->localAddr = clientAddr;
+    chanswitchClient->remoteAddr = serverAddr;
 
     // Make unique seed.
-    RANDOM_SetSeed(ftpClient->seed,
+    RANDOM_SetSeed(chanswitchClient->seed,
                    node->globalSeed,
                    node->nodeId,
-                   APP_FTP_CLIENT,
-                   ftpClient->uniqueId);
+                   APP_CHANSWITCH_CLIENT,
+                   chanswitchClient->uniqueId);
 
     if (itemsToSend > 0)
     {
-        ftpClient->itemsToSend = itemsToSend;
+        chanswitchClient->itemsToSend = itemsToSend;
     }
     else
     {
-        ftpClient->itemsToSend = AppFtpClientItemsToSend(ftpClient);
+        chanswitchClient->itemsToSend = AppChanswitchClientItemsToSend(chanswitchClient);
     }
 
-    ftpClient->itemSizeLeft = 0;
-    ftpClient->numBytesSent = 0;
-    ftpClient->numBytesRecvd = 0;
-    ftpClient->lastItemSent = 0;
+    chanswitchClient->itemSizeLeft = 0;
+    chanswitchClient->numBytesSent = 0;
+    chanswitchClient->numBytesRecvd = 0;
+    chanswitchClient->lastItemSent = 0;
 
 #ifdef DEBUG
     char addrStr[MAX_STRING_LENGTH];
-    printf("FTP Client: Node %d creating new ftp "
+    printf("CHANSWITCH Client: Node %d creating new chanswitch "
            "client structure\n", node->nodeId);
-    printf("    connectionId = %d\n", ftpClient->connectionId);
-    IO_ConvertIpAddressToString(&ftpClient->localAddr, addrStr);
+    printf("    connectionId = %d\n", chanswitchClient->connectionId);
+    IO_ConvertIpAddressToString(&chanswitchClient->localAddr, addrStr);
     printf("    localAddr = %s\n", addrStr);
-    IO_ConvertIpAddressToString(&ftpClient->remoteAddr, addrStr);
+    IO_ConvertIpAddressToString(&chanswitchClient->remoteAddr, addrStr);
     printf("    remoteAddr = %s\n", addrStr);
-    printf("    itemsToSend = %d\n", ftpClient->itemsToSend);
+    printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
 #endif /* DEBUG */
 
     #ifdef DEBUG_OUTPUT_FILE
@@ -207,7 +207,7 @@ AppFtpClientNewFtpClient(Node *node,
         FILE *fp;
         char dataBuf[MAX_STRING_LENGTH];
 
-        sprintf(fileName, "FTP_Throughput_%d", node->nodeId);
+        sprintf(fileName, "CHANSWITCH_Throughput_%d", node->nodeId);
 
         /*
          * Open a data file to accumulate different statistics
@@ -223,30 +223,30 @@ AppFtpClientNewFtpClient(Node *node,
     }
     #endif
 
-    APP_RegisterNewApp(node, APP_FTP_CLIENT, ftpClient);
+    APP_RegisterNewApp(node, APP_CHANSWITCH_CLIENT, chanswitchClient);
 
 
-    return ftpClient;
+    return chanswitchClient;
 }
 
 /*
- * NAME:        AppFtpClientSendNextItem.
+ * NAME:        AppChanswitchClientSendNextItem.
  * PURPOSE:     Send the next item.
  * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the ftp client data structure.
+ *              clientPtr - pointer to the chanswitch client data structure.
  * RETRUN:      none.
  */
 void
-AppFtpClientSendNextItem(Node *node, AppDataFtpClient *clientPtr)
+AppChanswitchClientSendNextItem(Node *node, AppDataChanswitchClient *clientPtr)
 {
     assert(clientPtr->itemSizeLeft == 0);
 
     if (clientPtr->itemsToSend > 0)
     {
-        clientPtr->itemSizeLeft = AppFtpClientItemSize(clientPtr);
-        clientPtr->itemSizeLeft += AppFtpClientCtrlPktSize(clientPtr);
+        clientPtr->itemSizeLeft = AppChanswitchClientItemSize(clientPtr);
+        clientPtr->itemSizeLeft += AppChanswitchClientCtrlPktSize(clientPtr);
 
-        AppFtpClientSendNextPacket(node, clientPtr);
+        AppChanswitchClientSendNextPacket(node, clientPtr);
         clientPtr->itemsToSend --;
     }
     else
@@ -258,7 +258,7 @@ AppFtpClientSendNextItem(Node *node, AppDataFtpClient *clientPtr)
                 clientPtr->connectionId,
                 (char *)"c",
                 1,
-                TRACE_FTP);
+                TRACE_CHANSWITCH);
         }
 
         clientPtr->sessionIsClosed = TRUE;
@@ -268,14 +268,14 @@ AppFtpClientSendNextItem(Node *node, AppDataFtpClient *clientPtr)
 }
 
 /*
- * NAME:        AppFtpClientSendNextPacket.
+ * NAME:        AppChanswitchClientSendNextPacket.
  * PURPOSE:     Send the remaining data.
  * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the ftp client data structure.
+ *              clientPtr - pointer to the chanswitch client data structure.
  * RETRUN:      none.
  */
 void
-AppFtpClientSendNextPacket(Node *node, AppDataFtpClient *clientPtr)
+AppChanswitchClientSendNextPacket(Node *node, AppDataChanswitchClient *clientPtr)
 {
     int itemSize;
     char *payload;
@@ -307,67 +307,67 @@ AppFtpClientSendNextPacket(Node *node, AppDataFtpClient *clientPtr)
                 clientPtr->connectionId,
                 payload,
                 itemSize,
-                TRACE_FTP);
+                TRACE_CHANSWITCH);
     }
     MEM_free(payload);
 }
 
 /*
- * NAME:        AppFtpClientItemsToSend.
- * PURPOSE:     call tcplib function ftp_nitems() to get the
- *              number of items to send in an ftp session.
+ * NAME:        AppChanswitchClientItemsToSend.
+ * PURPOSE:     call tcplib function chanswitch_nitems() to get the
+ *              number of items to send in an chanswitch session.
  * PARAMETERS:  node - pointer to the node.
  * RETRUN:      amount of items to send.
  */
 int
-AppFtpClientItemsToSend(AppDataFtpClient *clientPtr)
+AppChanswitchClientItemsToSend(AppDataChanswitchClient *clientPtr)
 {
     int items;
 
-    items = ftp_nitems(clientPtr->seed);
+    items = chanswitch_nitems(clientPtr->seed);
 
 #ifdef DEBUG
-    printf("FTP nitems = %d\n", items);
+    printf("CHANSWITCH nitems = %d\n", items);
 #endif /* DEBUG */
 
     return items;
 }
 
 /*
- * NAME:        AppFtpClientItemSize.
- * PURPOSE:     call tcplib function ftp_itemsize() to get the size
+ * NAME:        AppChanswitchClientItemSize.
+ * PURPOSE:     call tcplib function chanswitch_itemsize() to get the size
  *              of each item.
  * PARAMETERS:  node - pointer to the node.
  * RETRUN:      size of an item.
  */
 int
-AppFtpClientItemSize(AppDataFtpClient *clientPtr)
+AppChanswitchClientItemSize(AppDataChanswitchClient *clientPtr)
 {
     int size;
 
-    size = ftp_itemsize(clientPtr->seed);
+    size = chanswitch_itemsize(clientPtr->seed);
 
 #ifdef DEBUG
-    printf("FTP item size = %d\n", size);
+    printf("CHANSWITCH item size = %d\n", size);
 #endif /* DEBUG */
 
     return size;
 }
 
 /*
- * NAME:        AppFtpClientCtrlPktSize.
- * PURPOSE:     call tcplib function ftp_ctlsize().
+ * NAME:        AppChanswitchClientCtrlPktSize.
+ * PURPOSE:     call tcplib function chanswitch_ctlsize().
  * PARAMETERS:  node - pointer to the node.
- * RETRUN:      ftp control packet size.
+ * RETRUN:      chanswitch control packet size.
  */
 int
-AppFtpClientCtrlPktSize(AppDataFtpClient *clientPtr)
+AppChanswitchClientCtrlPktSize(AppDataChanswitchClient *clientPtr)
 {
     int ctrlPktSize;
-    ctrlPktSize = ftp_ctlsize(clientPtr->seed);
+    ctrlPktSize = chanswitch_ctlsize(clientPtr->seed);
 
 #ifdef DEBUG
-    printf("FTP: Node %d ftp control pktsize = %d\n",
+    printf("CHANSWITCH: Node %d chanswitch control pktsize = %d\n",
            ctrlPktSize);
 #endif /* DEBUG */
 
@@ -375,28 +375,28 @@ AppFtpClientCtrlPktSize(AppDataFtpClient *clientPtr)
 }
 
 /*
- * NAME:        AppFtpServerGetFtpServer.
- * PURPOSE:     search for a ftp server data structure.
+ * NAME:        AppChanswitchServerGetChanswitchServer.
+ * PURPOSE:     search for a chanswitch server data structure.
  * PARAMETERS:  appList - link list of applications,
- *              connId - connection ID of the ftp server.
- * RETURN:      the pointer to the ftp server data structure,
+ *              connId - connection ID of the chanswitch server.
+ * RETURN:      the pointer to the chanswitch server data structure,
  *              NULL if nothing found.
  */
-AppDataFtpServer *
-AppFtpServerGetFtpServer(Node *node, int connId)
+AppDataChanswitchServer *
+AppChanswitchServerGetChanswitchServer(Node *node, int connId)
 {
     AppInfo *appList = node->appData.appPtr;
-    AppDataFtpServer *ftpServer;
+    AppDataChanswitchServer *chanswitchServer;
 
     for (; appList != NULL; appList = appList->appNext)
     {
-        if (appList->appType == APP_FTP_SERVER)
+        if (appList->appType == APP_CHANSWITCH_SERVER)
         {
-            ftpServer = (AppDataFtpServer *) appList->appDetail;
+            chanswitchServer = (AppDataChanswitchServer *) appList->appDetail;
 
-            if (ftpServer->connectionId == connId)
+            if (chanswitchServer->connectionId == connId)
             {
-                return ftpServer;
+                return chanswitchServer;
             }
         }
     }
@@ -406,45 +406,45 @@ AppFtpServerGetFtpServer(Node *node, int connId)
 
 
 /*
- * NAME:        AppFtpServerNewFtpServer.
- * PURPOSE:     create a new ftp server data structure, place it
+ * NAME:        AppChanswitchServerNewChanswitchServer.
+ * PURPOSE:     create a new chanswitch server data structure, place it
  *              at the beginning of the application list.
  * PARAMETERS:  node - pointer to the node.
  *              openResult - result of the open request.
- * RETRUN:      the pointer to the created ftp server data structure,
+ * RETRUN:      the pointer to the created chanswitch server data structure,
  *              NULL if no data structure allocated.
  */
-AppDataFtpServer *
-AppFtpServerNewFtpServer(Node *node,
+AppDataChanswitchServer *
+AppChanswitchServerNewChanswitchServer(Node *node,
                          TransportToAppOpenResult *openResult)
 {
-    AppDataFtpServer *ftpServer;
+    AppDataChanswitchServer *chanswitchServer;
 
-    ftpServer = (AppDataFtpServer *)
-                MEM_malloc(sizeof(AppDataFtpServer));
+    chanswitchServer = (AppDataChanswitchServer *)
+                MEM_malloc(sizeof(AppDataChanswitchServer));
 
     /*
      * fill in connection id, etc.
      */
-    ftpServer->connectionId = openResult->connectionId;
-    ftpServer->localAddr = openResult->localAddr;
-    ftpServer->remoteAddr = openResult->remoteAddr;
-    ftpServer->sessionStart = getSimTime(node);
-    ftpServer->sessionFinish = getSimTime(node);
-    ftpServer->lastTime = 0;
-    ftpServer->sessionIsClosed = FALSE;
-    ftpServer->numBytesSent = 0;
-    ftpServer->numBytesRecvd = 0;
-    ftpServer->bytesRecvdDuringThePeriod = 0;
-    ftpServer->lastItemSent = 0;
+    chanswitchServer->connectionId = openResult->connectionId;
+    chanswitchServer->localAddr = openResult->localAddr;
+    chanswitchServer->remoteAddr = openResult->remoteAddr;
+    chanswitchServer->sessionStart = getSimTime(node);
+    chanswitchServer->sessionFinish = getSimTime(node);
+    chanswitchServer->lastTime = 0;
+    chanswitchServer->sessionIsClosed = FALSE;
+    chanswitchServer->numBytesSent = 0;
+    chanswitchServer->numBytesRecvd = 0;
+    chanswitchServer->bytesRecvdDuringThePeriod = 0;
+    chanswitchServer->lastItemSent = 0;
 
-    RANDOM_SetSeed(ftpServer->seed,
+    RANDOM_SetSeed(chanswitchServer->seed,
                    node->globalSeed,
                    node->nodeId,
-                   APP_FTP_SERVER,
-                   ftpServer->connectionId);
+                   APP_CHANSWITCH_SERVER,
+                   chanswitchServer->connectionId);
 
-    APP_RegisterNewApp(node, APP_FTP_SERVER, ftpServer);
+    APP_RegisterNewApp(node, APP_CHANSWITCH_SERVER, chanswitchServer);
 
     #ifdef DEBUG_OUTPUT_FILE
     {
@@ -452,7 +452,7 @@ AppFtpServerNewFtpServer(Node *node,
         FILE *fp;
         char dataBuf[MAX_STRING_LENGTH];
 
-        sprintf(fileName, "FTP_Throughput_%d", node->nodeId);
+        sprintf(fileName, "CHANSWITCH_Throughput_%d", node->nodeId);
 
         /*
          * Open a data file to accumulate different statistics
@@ -468,24 +468,24 @@ AppFtpServerNewFtpServer(Node *node,
     }
     #endif
 
-    return ftpServer;
+    return chanswitchServer;
 }
 
 /*
- * NAME:        AppFtpServerSendCtrlPkt.
- * PURPOSE:     call AppFtpCtrlPktSize() to get the response packet
+ * NAME:        AppChanswitchServerSendCtrlPkt.
+ * PURPOSE:     call AppChanswitchCtrlPktSize() to get the response packet
  *              size, and send the packet.
  * PARAMETERS:  node - pointer to the node,
  *              serverPtr - pointer to the server data structure.
  * RETRUN:      none.
  */
 void
-AppFtpServerSendCtrlPkt(Node *node, AppDataFtpServer *serverPtr)
+AppChanswitchServerSendCtrlPkt(Node *node, AppDataChanswitchServer *serverPtr)
 {
     int pktSize;
     char *payload;
 
-    pktSize = AppFtpServerCtrlPktSize(serverPtr);
+    pktSize = AppChanswitchServerCtrlPktSize(serverPtr);
 
     if (pktSize > APP_MAX_DATA_SIZE)
     {
@@ -504,25 +504,25 @@ AppFtpServerSendCtrlPkt(Node *node, AppDataFtpServer *serverPtr)
                 serverPtr->connectionId,
                 payload,
                 pktSize,
-                TRACE_FTP);
+                TRACE_CHANSWITCH);
     }
      MEM_free(payload);
 }
 
 /*
- * NAME:        AppFtpServerCtrlPktSize.
- * PURPOSE:     call tcplib function ftp_ctlsize().
+ * NAME:        AppChanswitchServerCtrlPktSize.
+ * PURPOSE:     call tcplib function chanswitch_ctlsize().
  * PARAMETERS:  node - pointer to the node.
- * RETRUN:      ftp control packet size.
+ * RETRUN:      chanswitch control packet size.
  */
 int
-AppFtpServerCtrlPktSize(AppDataFtpServer *serverPtr)
+AppChanswitchServerCtrlPktSize(AppDataChanswitchServer *serverPtr)
 {
     int ctrlPktSize;
-    ctrlPktSize = ftp_ctlsize(serverPtr->seed);
+    ctrlPktSize = chanswitch_ctlsize(serverPtr->seed);
 
 #ifdef DEBUG
-    printf("FTP: Node ftp control pktsize = %d\n",
+    printf("CHANSWITCH: Node chanswitch control pktsize = %d\n",
            ctrlPktSize);
 #endif /* DEBUG */
 
@@ -534,18 +534,18 @@ AppFtpServerCtrlPktSize(AppDataFtpServer *serverPtr)
  */
 
 /*
- * NAME:        AppLayerFtpClient.
- * PURPOSE:     Models the behaviour of Ftp Client on receiving the
+ * NAME:        AppLayerChanswitchClient.
+ * PURPOSE:     Models the behaviour of Chanswitch Client on receiving the
  *              message encapsulated in msg.
  * PARAMETERS:  node - pointer to the node which received the message.
  *              msg - message received by the layer
  * RETURN:      none.
  */
 void
-AppLayerFtpClient(Node *node, Message *msg)
+AppLayerChanswitchClient(Node *node, Message *msg)
 {
     char buf[MAX_STRING_LENGTH];
-    AppDataFtpClient *clientPtr;
+    AppDataChanswitchClient *clientPtr;
 
     ctoa(getSimTime(node), buf);
 
@@ -558,7 +558,7 @@ AppLayerFtpClient(Node *node, Message *msg)
             openResult = (TransportToAppOpenResult *)MESSAGE_ReturnInfo(msg);
 
 #ifdef DEBUG
-            printf("%s: FTP Client node %u got OpenResult\n", buf, node->nodeId);
+            printf("%s: CHANSWITCH Client node %u got OpenResult\n", buf, node->nodeId);
 #endif /* DEBUG */
 
             assert(openResult->type == TCP_CONN_ACTIVE_OPEN);
@@ -566,7 +566,7 @@ AppLayerFtpClient(Node *node, Message *msg)
             if (openResult->connectionId < 0)
             {
 #ifdef DEBUG
-                printf("%s: FTP Client node %u connection failed!\n",
+                printf("%s: CHANSWITCH Client node %u connection failed!\n",
                        buf, node->nodeId);
 #endif /* DEBUG */
 
@@ -574,13 +574,13 @@ AppLayerFtpClient(Node *node, Message *msg)
             }
             else
             {
-                AppDataFtpClient *clientPtr;
+                AppDataChanswitchClient *clientPtr;
 
-                clientPtr = AppFtpClientUpdateFtpClient(node, openResult);
+                clientPtr = AppChanswitchClientUpdateChanswitchClient(node, openResult);
 
                 assert(clientPtr != NULL);
 
-                AppFtpClientSendNextItem(node, clientPtr);
+                AppChanswitchClientSendNextItem(node, clientPtr);
             }
 
             break;
@@ -592,11 +592,11 @@ AppLayerFtpClient(Node *node, Message *msg)
             dataSent = (TransportToAppDataSent *) MESSAGE_ReturnInfo(msg);
 
 #ifdef DEBUG
-            printf("%s: FTP Client node %u sent data %d\n",
+            printf("%s: CHANSWITCH Client node %u sent data %d\n",
                    buf, node->nodeId, dataSent->length);
 #endif /* DEBUG */
 
-            clientPtr = AppFtpClientGetFtpClient(node,
+            clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  dataSent->connectionId);
 
             assert(clientPtr != NULL);
@@ -613,7 +613,7 @@ AppLayerFtpClient(Node *node, Message *msg)
 
                 clientPtr->bytesRecvdDuringThePeriod += dataSent->length;
 
-                sprintf(fileName, "FTP_Throughput_%d", node->nodeId);
+                sprintf(fileName, "CHANSWITCH_Throughput_%d", node->nodeId);
 
                 fp = fopen(fileName, "a");
                 if (fp)
@@ -642,7 +642,7 @@ AppLayerFtpClient(Node *node, Message *msg)
 
             if (clientPtr->itemSizeLeft > 0)
             {
-                AppFtpClientSendNextPacket(node, clientPtr);
+                AppChanswitchClientSendNextPacket(node, clientPtr);
             }
             else if (clientPtr->itemsToSend == 0
                      && clientPtr->sessionIsClosed == TRUE)
@@ -662,11 +662,11 @@ AppLayerFtpClient(Node *node, Message *msg)
                          MESSAGE_ReturnInfo(msg);
 
 #ifdef DEBUG
-            printf("%s: FTP Client node %u received data %d\n",
+            printf("%s: CHANSWITCH Client node %u received data %d\n",
                    buf, node->nodeId, msg->packetSize);
 #endif /* DEBUG */
 
-            clientPtr = AppFtpClientGetFtpClient(node,
+            clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  dataRecvd->connectionId);
 
             assert(clientPtr != NULL);
@@ -678,7 +678,7 @@ AppLayerFtpClient(Node *node, Message *msg)
             if ((clientPtr->sessionIsClosed == FALSE) &&
                 (clientPtr->itemSizeLeft == 0))
             {
-                AppFtpClientSendNextItem(node, clientPtr);
+                AppChanswitchClientSendNextItem(node, clientPtr);
             }
 
             break;
@@ -691,11 +691,11 @@ AppLayerFtpClient(Node *node, Message *msg)
                           MESSAGE_ReturnInfo(msg);
 
 #ifdef DEBUG
-            printf("%s: FTP Client node %u got close result\n",
+            printf("%s: CHANSWITCH Client node %u got close result\n",
                    buf, node->nodeId);
 #endif /* DEBUG */
 
-            clientPtr = AppFtpClientGetFtpClient(node,
+            clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  closeResult->connectionId);
 
             assert(clientPtr != NULL);
@@ -710,7 +710,7 @@ AppLayerFtpClient(Node *node, Message *msg)
         }
         default:
             ctoa(getSimTime(node), buf);
-            printf("Time %s: FTP Client node %u received message of unknown"
+            printf("Time %s: CHANSWITCH Client node %u received message of unknown"
                    " type %d.\n", buf, node->nodeId, msg->eventType);
             assert(FALSE);
     }
@@ -719,8 +719,8 @@ AppLayerFtpClient(Node *node, Message *msg)
 }
 
 /*
- * NAME:        AppFtpClientInit.
- * PURPOSE:     Initialize a Ftp session.
+ * NAME:        AppChanswitchClientInit.
+ * PURPOSE:     Initialize a Chanswitch session.
  * PARAMETERS:  node - pointer to the node,
  *              serverAddr - address of the server,
  *              itemsToSend - number of items to send,
@@ -728,59 +728,59 @@ AppLayerFtpClient(Node *node, Message *msg)
  * RETURN:      none.
  */
 void
-AppFtpClientInit(
+AppChanswitchClientInit(
     Node *node,
     Address clientAddr,
     Address serverAddr,
     int itemsToSend,
     clocktype waitTime)
 {
-    AppDataFtpClient *clientPtr;
+    AppDataChanswitchClient *clientPtr;
 
-    /* Check to make sure the number of ftp items is a correct value. */
+    /* Check to make sure the number of chanswitch items is a correct value. */
 
     if (itemsToSend < 0)
     {
-        printf("FTP Client: Node %d items to send needs to be >= 0\n",
+        printf("CHANSWITCH Client: Node %d items to send needs to be >= 0\n",
                node->nodeId);
 
         exit(0);
     }
 
-    clientPtr = AppFtpClientNewFtpClient(node,
+    clientPtr = AppChanswitchClientNewChanswitchClient(node,
                                          clientAddr,
                                          serverAddr,
                                          itemsToSend);
 
     if (clientPtr == NULL)
     {
-        printf("FTP Client: Node %d cannot allocate "
-               "new ftp client\n", node->nodeId);
+        printf("CHANSWITCH Client: Node %d cannot allocate "
+               "new chanswitch client\n", node->nodeId);
 
         assert(FALSE);
     }
 
     APP_TcpOpenConnectionWithPriority(
         node,
-        APP_FTP_CLIENT,
+        APP_CHANSWITCH_CLIENT,
         clientAddr,
         node->appData.nextPortNum++,
         serverAddr,
-        (short) APP_FTP_SERVER,
+        (short) APP_CHANSWITCH_SERVER,
         clientPtr->uniqueId,
         waitTime,
         APP_DEFAULT_TOS);
 }
 
 /*
- * NAME:        AppFtpClientPrintStats.
- * PURPOSE:     Prints statistics of a Ftp session.
+ * NAME:        AppChanswitchClientPrintStats.
+ * PURPOSE:     Prints statistics of a Chanswitch session.
  * PARAMETERS:  node - pointer to the node.
- *              clientPtr - pointer to the ftp client data structure.
+ *              clientPtr - pointer to the chanswitch client data structure.
  * RETURN:      none.
  */
 void
-AppFtpClientPrintStats(Node *node, AppDataFtpClient *clientPtr)
+AppChanswitchClientPrintStats(Node *node, AppDataChanswitchClient *clientPtr)
 {
     clocktype throughput;
     char addrStr[MAX_STRING_LENGTH];
@@ -827,7 +827,7 @@ AppFtpClientPrintStats(Node *node, AppDataFtpClient *clientPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Client",
+        "CHANSWITCH Client",
         ANY_DEST,
         clientPtr->connectionId,
         buf);
@@ -836,7 +836,7 @@ AppFtpClientPrintStats(Node *node, AppDataFtpClient *clientPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Client",
+        "CHANSWITCH Client",
         ANY_DEST,
         clientPtr->connectionId,
         buf);
@@ -845,7 +845,7 @@ AppFtpClientPrintStats(Node *node, AppDataFtpClient *clientPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Client",
+        "CHANSWITCH Client",
         ANY_DEST,
         clientPtr->connectionId,
         buf);
@@ -854,7 +854,7 @@ AppFtpClientPrintStats(Node *node, AppDataFtpClient *clientPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Client",
+        "CHANSWITCH Client",
         ANY_DEST,
         clientPtr->connectionId,
         buf);
@@ -865,7 +865,7 @@ AppFtpClientPrintStats(Node *node, AppDataFtpClient *clientPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Client",
+        "CHANSWITCH Client",
         ANY_DEST,
         clientPtr->connectionId,
         buf);
@@ -876,7 +876,7 @@ AppFtpClientPrintStats(Node *node, AppDataFtpClient *clientPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Client",
+        "CHANSWITCH Client",
         ANY_DEST,
         clientPtr->connectionId,
         buf);
@@ -885,43 +885,43 @@ AppFtpClientPrintStats(Node *node, AppDataFtpClient *clientPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Client",
+        "CHANSWITCH Client",
         ANY_DEST,
         clientPtr->connectionId,
         buf);
 }
 
 /*
- * NAME:        AppFtpClientFinalize.
- * PURPOSE:     Collect statistics of a Ftp session.
+ * NAME:        AppChanswitchClientFinalize.
+ * PURPOSE:     Collect statistics of a Chanswitch session.
  * PARAMETERS:  node - pointer to the node.
  *              appInfo - pointer to the application info data structure.
  * RETURN:      none.
  */
 void
-AppFtpClientFinalize(Node *node, AppInfo* appInfo)
+AppChanswitchClientFinalize(Node *node, AppInfo* appInfo)
 {
-    AppDataFtpClient *clientPtr = (AppDataFtpClient*)appInfo->appDetail;
+    AppDataChanswitchClient *clientPtr = (AppDataChanswitchClient*)appInfo->appDetail;
 
     if (node->appData.appStats == TRUE)
     {
-        AppFtpClientPrintStats(node, clientPtr);
+        AppChanswitchClientPrintStats(node, clientPtr);
     }
 }
 
 /*
- * NAME:        AppLayerFtpServer.
- * PURPOSE:     Models the behaviour of Ftp Server on receiving the
+ * NAME:        AppLayerChanswitchServer.
+ * PURPOSE:     Models the behaviour of Chanswitch Server on receiving the
  *              message encapsulated in msg.
  * PARAMETERS:  node - pointer to the node which received the message.
  *              msg - message received by the layer
  * RETURN:      none.
  */
 void
-AppLayerFtpServer(Node *node, Message *msg)
+AppLayerChanswitchServer(Node *node, Message *msg)
 {
     char buf[MAX_STRING_LENGTH];
-    AppDataFtpServer *serverPtr;
+    AppDataChanswitchServer *serverPtr;
 
     ctoa(getSimTime(node), buf);
 
@@ -935,7 +935,7 @@ AppLayerFtpServer(Node *node, Message *msg)
                            MESSAGE_ReturnInfo(msg);
 
 #ifdef DEBUG
-            printf("FTP Server: Node %ld at %s got listenResult\n",
+            printf("CHANSWITCH Server: Node %ld at %s got listenResult\n",
                    node->nodeId, buf);
 #endif /* DEBUG */
 
@@ -953,7 +953,7 @@ AppLayerFtpServer(Node *node, Message *msg)
             openResult = (TransportToAppOpenResult *)MESSAGE_ReturnInfo(msg);
 
 #ifdef DEBUG
-            printf("FTP Server: Node %ld at %s got OpenResult\n",
+            printf("CHANSWITCH Server: Node %ld at %s got OpenResult\n",
                    node->nodeId, buf);
 #endif /* DEBUG */
 
@@ -965,8 +965,8 @@ AppLayerFtpServer(Node *node, Message *msg)
             }
             else
             {
-                AppDataFtpServer *serverPtr;
-                serverPtr = AppFtpServerNewFtpServer(node, openResult);
+                AppDataChanswitchServer *serverPtr;
+                serverPtr = AppChanswitchServerNewChanswitchServer(node, openResult);
                 assert(serverPtr != NULL);
             }
 
@@ -980,11 +980,11 @@ AppLayerFtpServer(Node *node, Message *msg)
             dataSent = (TransportToAppDataSent *) MESSAGE_ReturnInfo(msg);
 
 #ifdef DEBUG
-            printf("FTP Server Node %ld at %s sent data %ld\n",
+            printf("CHANSWITCH Server Node %ld at %s sent data %ld\n",
                    node->nodeId, buf, dataSent->length);
 #endif /* DEBUG */
 
-            serverPtr = AppFtpServerGetFtpServer(node,
+            serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                      dataSent->connectionId);
 
             assert(serverPtr != NULL);
@@ -1006,11 +1006,11 @@ AppLayerFtpServer(Node *node, Message *msg)
             packet = MESSAGE_ReturnPacket(msg);
 
 #ifdef DEBUG
-            printf("FTP Server: Node %ld at %s received data size %d\n",
+            printf("CHANSWITCH Server: Node %ld at %s received data size %d\n",
                    node->nodeId, buf, MESSAGE_ReturnPacketSize(msg));
 #endif /* DEBUG */
 
-            serverPtr = AppFtpServerGetFtpServer(node,
+            serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                                  dataRecvd->connectionId);
 
             //assert(serverPtr != NULL);
@@ -1039,7 +1039,7 @@ AppLayerFtpServer(Node *node, Message *msg)
 			{
 				/* Item completely received, now send control info. */
 
-				AppFtpServerSendCtrlPkt(node, serverPtr);
+				AppChanswitchServerSendCtrlPkt(node, serverPtr);
 			}
 			else if (packet[msg->packetSize - 1] == 'c')
 			{
@@ -1070,11 +1070,11 @@ AppLayerFtpServer(Node *node, Message *msg)
                           MESSAGE_ReturnInfo(msg);
 
 #ifdef DEBUG
-            printf("FTP Server: Node %ld at %s got close result\n",
+            printf("CHANSWITCH Server: Node %ld at %s got close result\n",
                    node->nodeId, buf);
 #endif /* DEBUG */
 
-            serverPtr = AppFtpServerGetFtpServer(node,
+            serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                                  closeResult->connectionId);
             assert(serverPtr != NULL);
 
@@ -1089,7 +1089,7 @@ AppLayerFtpServer(Node *node, Message *msg)
 
         default:
             ctoa(getSimTime(node), buf);
-            printf("FTP Server: Node %u at time %s received "
+            printf("CHANSWITCH Server: Node %u at time %s received "
                    "message of unknown type"
                    " %d.\n", node->nodeId, buf, msg->eventType);
             assert(FALSE);
@@ -1099,30 +1099,30 @@ AppLayerFtpServer(Node *node, Message *msg)
 }
 
 /*
- * NAME:        AppFtpServerInit.
- * PURPOSE:     listen on Ftp server port.
+ * NAME:        AppChanswitchServerInit.
+ * PURPOSE:     listen on Chanswitch server port.
  * PARAMETERS:  node - pointer to the node.
  * RETURN:      none.
  */
 void
-AppFtpServerInit(Node *node, Address serverAddr)
+AppChanswitchServerInit(Node *node, Address serverAddr)
 {
     APP_TcpServerListen(
         node,
-        APP_FTP_SERVER,
+        APP_CHANSWITCH_SERVER,
         serverAddr,
-        (short) APP_FTP_SERVER);
+        (short) APP_CHANSWITCH_SERVER);
 }
 
 /*
- * NAME:        AppFtpServerPrintStats.
- * PURPOSE:     Prints statistics of a Ftp session.
+ * NAME:        AppChanswitchServerPrintStats.
+ * PURPOSE:     Prints statistics of a Chanswitch session.
  * PARAMETERS:  node - pointer to the node.
- *              serverPtr - pointer to the ftp server data structure.
+ *              serverPtr - pointer to the chanswitch server data structure.
  * RETURN:      none.
  */
 void
-AppFtpServerPrintStats(Node *node, AppDataFtpServer *serverPtr)
+AppChanswitchServerPrintStats(Node *node, AppDataChanswitchServer *serverPtr)
 {
     clocktype throughput;
     char addrStr[MAX_STRING_LENGTH];
@@ -1169,7 +1169,7 @@ AppFtpServerPrintStats(Node *node, AppDataFtpServer *serverPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Server",
+        "CHANSWITCH Server",
         ANY_DEST,
         serverPtr->connectionId,
         buf);
@@ -1178,7 +1178,7 @@ AppFtpServerPrintStats(Node *node, AppDataFtpServer *serverPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Server",
+        "CHANSWITCH Server",
         ANY_DEST,
         serverPtr->connectionId,
         buf);
@@ -1187,7 +1187,7 @@ AppFtpServerPrintStats(Node *node, AppDataFtpServer *serverPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Server",
+        "CHANSWITCH Server",
         ANY_DEST,
         serverPtr->connectionId,
         buf);
@@ -1196,7 +1196,7 @@ AppFtpServerPrintStats(Node *node, AppDataFtpServer *serverPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Server",
+        "CHANSWITCH Server",
         ANY_DEST,
         serverPtr->connectionId,
         buf);
@@ -1206,7 +1206,7 @@ AppFtpServerPrintStats(Node *node, AppDataFtpServer *serverPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Server",
+        "CHANSWITCH Server",
         ANY_DEST,
         serverPtr->connectionId,
         buf);
@@ -1217,7 +1217,7 @@ AppFtpServerPrintStats(Node *node, AppDataFtpServer *serverPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Server",
+        "CHANSWITCH Server",
         ANY_DEST,
         serverPtr->connectionId,
         buf);
@@ -1226,27 +1226,27 @@ AppFtpServerPrintStats(Node *node, AppDataFtpServer *serverPtr)
     IO_PrintStat(
         node,
         "Application",
-        "FTP Server",
+        "CHANSWITCH Server",
         ANY_DEST,
         serverPtr->connectionId,
         buf);
 }
 
 /*
- * NAME:        AppFtpServerFinalize.
- * PURPOSE:     Collect statistics of a Ftp session.
+ * NAME:        AppChanswitchServerFinalize.
+ * PURPOSE:     Collect statistics of a Chanswitch session.
  * PARAMETERS:  node - pointer to the node.
  *              appInfo - pointer to the application info data structure.
  * RETURN:      none.
  */
 void
-AppFtpServerFinalize(Node *node, AppInfo* appInfo)
+AppChanswitchServerFinalize(Node *node, AppInfo* appInfo)
 {
-    AppDataFtpServer *serverPtr = (AppDataFtpServer*)appInfo->appDetail;
+    AppDataChanswitchServer *serverPtr = (AppDataChanswitchServer*)appInfo->appDetail;
 
     if (node->appData.appStats == TRUE)
     {
-        AppFtpServerPrintStats(node, serverPtr);
+        AppChanswitchServerPrintStats(node, serverPtr);
     }
 }
 

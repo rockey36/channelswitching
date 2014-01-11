@@ -16,17 +16,17 @@
 // software, hardware, product or service.
 
 /*
- * This file contains data structure used by the ftp application and
- * prototypes of functions defined in ftp.c.
+ * This file contains data structure used by the chanswitch application and
+ * prototypes of functions defined in chanswitch.c.
  */
 
-#ifndef FTP_APP_H
-#define FTP_APP_H
+#ifndef CHANSWITCH_APP_H
+#define CHANSWITCH_APP_H
 
 #include "types.h"
 
 typedef
-struct struct_app_ftp_client_str
+struct struct_app_chanswitch_client_str
 {
     int         connectionId;
     Address     localAddr;
@@ -48,10 +48,10 @@ struct struct_app_ftp_client_str
 
     
 }
-AppDataFtpClient;
+AppDataChanswitchClient;
 
 typedef
-struct struct_app_ftp_server_str
+struct struct_app_chanswitch_server_str
 {
     int         connectionId;
     Address     localAddr;
@@ -69,22 +69,22 @@ struct struct_app_ftp_server_str
     BOOL        isLoggedIn;
     int         portForDataConn;
 }
-AppDataFtpServer;
+AppDataChanswitchServer;
 
 /*
- * NAME:        AppLayerFtpClient.
- * PURPOSE:     Models the behaviour of Ftp Client on receiving the
+ * NAME:        AppLayerChanswitchClient.
+ * PURPOSE:     Models the behaviour of Chanswitch Client on receiving the
  *              message encapsulated in msg.
  * PARAMETERS:  nodePtr - pointer to the node which received the message.
  *              msg - message received by the layer
  * RETURN:      none.
  */
 void
-AppLayerFtpClient(Node *nodePtr, Message *msg);
+AppLayerChanswitchClient(Node *nodePtr, Message *msg);
 
 /*
- * NAME:        AppFtpClientInit.
- * PURPOSE:     Initialize a Ftp session.
+ * NAME:        AppChanswitchClientInit.
+ * PURPOSE:     Initialize a Chanswitch session.
  * PARAMETERS:  nodePtr - pointer to the node,
  *              serverAddr - address of the server,
  *              itemsToSend - number of items to send,
@@ -92,7 +92,7 @@ AppLayerFtpClient(Node *nodePtr, Message *msg);
  * RETURN:      none.
  */
 void
-AppFtpClientInit(
+AppChanswitchClientInit(
     Node *nodePtr,
     Address clientAddr,
     Address serverAddr,
@@ -100,200 +100,200 @@ AppFtpClientInit(
     clocktype waitTime);
 
 /*
- * NAME:        AppFtpClientPrintStats.
- * PURPOSE:     Prints statistics of a Ftp session.
+ * NAME:        AppChanswitchClientPrintStats.
+ * PURPOSE:     Prints statistics of a Chanswitch session.
  * PARAMETERS:  nodePtr - pointer to the node.
- *              clientPtr - pointer to the ftp client data structure.
+ *              clientPtr - pointer to the chanswitch client data structure.
  * RETURN:      none.
  */
 void
-AppFtpClientPrintStats(Node *nodePtr, AppDataFtpClient *clientPtr);
+AppChanswitchClientPrintStats(Node *nodePtr, AppDataChanswitchClient *clientPtr);
 
 /*
- * NAME:        AppFtpClientFinalize.
- * PURPOSE:     Collect statistics of a Ftp session.
+ * NAME:        AppChanswitchClientFinalize.
+ * PURPOSE:     Collect statistics of a Chanswitch session.
  * PARAMETERS:  nodePtr - pointer to the node.
  *              appInfo - pointer to the application info data structure.
  * RETURN:      none.
  */
 void
-AppFtpClientFinalize(Node *nodePtr, AppInfo* appInfo);
+AppChanswitchClientFinalize(Node *nodePtr, AppInfo* appInfo);
 
 /*
- * NAME:        AppFtpClientGetFtpClient.
- * PURPOSE:     search for a ftp client data structure.
+ * NAME:        AppChanswitchClientGetChanswitchClient.
+ * PURPOSE:     search for a chanswitch client data structure.
  * PARAMETERS:  nodePtr - pointer to the node.
- *              connId - connection ID of the ftp client.
- * RETURN:      the pointer to the ftp client data structure,
+ *              connId - connection ID of the chanswitch client.
+ * RETURN:      the pointer to the chanswitch client data structure,
  *              NULL if nothing found.
  */
-AppDataFtpClient *
-AppFtpClientGetFtpClient(Node *nodePtr, int connId);
+AppDataChanswitchClient *
+AppChanswitchClientGetChanswitchClient(Node *nodePtr, int connId);
 
 /*
- * NAME:        AppFtpClientUpdateFtpClient.
- * PURPOSE:     update existing ftp client data structure by including
+ * NAME:        AppChanswitchClientUpdateChanswitchClient.
+ * PURPOSE:     update existing chanswitch client data structure by including
  *              connection id.
  * PARAMETERS:  nodePtr - pointer to the node.
  *              openResult - result of the open request.
- * RETRUN:      the pointer to the created ftp client data structure,
+ * RETRUN:      the pointer to the created chanswitch client data structure,
  *              NULL if no data structure allocated.
  */
-AppDataFtpClient *
-AppFtpClientUpdateFtpClient(
+AppDataChanswitchClient *
+AppChanswitchClientUpdateChanswitchClient(
     Node *nodePtr,
     TransportToAppOpenResult *openResult);
 
 /*
- * NAME:        AppFtpClientNewFtpClient.
- * PURPOSE:     create a new ftp client data structure, place it
+ * NAME:        AppChanswitchClientNewChanswitchClient.
+ * PURPOSE:     create a new chanswitch client data structure, place it
  *              at the beginning of the application list.
  * PARAMETERS:  nodePtr - pointer to the node.
  *              clientAddr - address of this client.
- *              serverAddr - ftp server to this client.
- *              itemsToSend - number of ftp items to send in simulation.
- * RETRUN:      the pointer to the created ftp client data structure,
+ *              serverAddr - chanswitch server to this client.
+ *              itemsToSend - number of chanswitch items to send in simulation.
+ * RETRUN:      the pointer to the created chanswitch client data structure,
  *              NULL if no data structure allocated.
  */
-AppDataFtpClient *
-AppFtpClientNewFtpClient(
+AppDataChanswitchClient *
+AppChanswitchClientNewChanswitchClient(
     Node *nodePtr,
     Address clientAddr,
     Address serverAddr,
     int itemsToSend);
 
 /*
- * NAME:        AppFtpClientSendNextItem.
+ * NAME:        AppChanswitchClientSendNextItem.
  * PURPOSE:     Send the next item.
  * PARAMETERS:  nodePtr - pointer to the node,
- *              clientPtr - pointer to the ftp client data structure.
+ *              clientPtr - pointer to the chanswitch client data structure.
  * RETRUN:      none.
  */
 void
-AppFtpClientSendNextItem(Node *nodePtr, AppDataFtpClient *clientPtr);
+AppChanswitchClientSendNextItem(Node *nodePtr, AppDataChanswitchClient *clientPtr);
 
 /*
- * NAME:        AppFtpClientSendNextPacket.
+ * NAME:        AppChanswitchClientSendNextPacket.
  * PURPOSE:     Send the remaining data.
  * PARAMETERS:  nodePtr - pointer to the node,
- *              clientPtr - pointer to the ftp client data structure.
+ *              clientPtr - pointer to the chanswitch client data structure.
  * RETRUN:      none.
  */
 void
-AppFtpClientSendNextPacket(Node *nodePtr, AppDataFtpClient *clientPtr);
+AppChanswitchClientSendNextPacket(Node *nodePtr, AppDataChanswitchClient *clientPtr);
 
 /*
- * NAME:        AppFtpClientItemsToSend.
- * PURPOSE:     call tcplib function ftp_nitems() to get the
- *              number of items to send in an ftp session.
+ * NAME:        AppChanswitchClientItemsToSend.
+ * PURPOSE:     call tcplib function chanswitch_nitems() to get the
+ *              number of items to send in an chanswitch session.
  * PARAMETERS:  nodePtr - pointer to the node.
  * RETRUN:      amount of items to send.
  */
 int
-AppFtpClientItemsToSend(AppDataFtpClient *clientPtr);
+AppChanswitchClientItemsToSend(AppDataChanswitchClient *clientPtr);
 
 /*
- * NAME:        AppFtpClientItemSize.
- * PURPOSE:     call tcplib function ftp_itemsize() to get the size
+ * NAME:        AppChanswitchClientItemSize.
+ * PURPOSE:     call tcplib function chanswitch_itemsize() to get the size
  *              of each item.
  * PARAMETERS:  nodePtr - pointer to the node.
  * RETRUN:      size of an item.
  */
 int
-AppFtpClientItemSize(AppDataFtpClient *clientPtr);
+AppChanswitchClientItemSize(AppDataChanswitchClient *clientPtr);
 
 /*
- * NAME:        AppFtpServerCtrlPktSize.
- * PURPOSE:     call tcplib function ftp_ctlsize().
+ * NAME:        AppChanswitchServerCtrlPktSize.
+ * PURPOSE:     call tcplib function chanswitch_ctlsize().
  * PARAMETERS:  nodePtr - pointer to the node.
- * RETRUN:      ftp control packet size.
+ * RETRUN:      chanswitch control packet size.
  */
 int
-AppFtpClientCtrlPktSize(AppDataFtpClient *clientPtr);
+AppChanswitchClientCtrlPktSize(AppDataChanswitchClient *clientPtr);
 
 /*
- * NAME:        AppLayerFtpServer.
- * PURPOSE:     Models the behaviour of Ftp Server on receiving the
+ * NAME:        AppLayerChanswitchServer.
+ * PURPOSE:     Models the behaviour of Chanswitch Server on receiving the
  *              message encapsulated in msg.
  * PARAMETERS:  nodePtr - pointer to the node which received the message.
  *              msg - message received by the layer
  * RETURN:      none.
  */
 void
-AppLayerFtpServer(Node *nodePtr, Message *msg);
+AppLayerChanswitchServer(Node *nodePtr, Message *msg);
 
 /*
- * NAME:        AppFtpServerInit.
- * PURPOSE:     listen on Ftp server port.
+ * NAME:        AppChanswitchServerInit.
+ * PURPOSE:     listen on Chanswitch server port.
  * PARAMETERS:  nodePtr - pointer to the node.
  * RETURN:      none.
  */
 void
-AppFtpServerInit(Node *nodePtr, Address serverAddr);
+AppChanswitchServerInit(Node *nodePtr, Address serverAddr);
 
 /*
- * NAME:        AppFtpServerPrintStats.
- * PURPOSE:     Prints statistics of a Ftp session.
+ * NAME:        AppChanswitchServerPrintStats.
+ * PURPOSE:     Prints statistics of a Chanswitch session.
  * PARAMETERS:  nodePtr - pointer to the node.
- *              serverPtr - pointer to the ftp server data structure.
+ *              serverPtr - pointer to the chanswitch server data structure.
  * RETURN:      none.
  */
 void
-AppFtpServerPrintStats(Node *nodePtr, AppDataFtpServer *serverPtr);
+AppChanswitchServerPrintStats(Node *nodePtr, AppDataChanswitchServer *serverPtr);
 
 
 /*
- * NAME:        AppFtpServerFinalize.
- * PURPOSE:     Collect statistics of a Ftp session.
+ * NAME:        AppChanswitchServerFinalize.
+ * PURPOSE:     Collect statistics of a Chanswitch session.
  * PARAMETERS:  nodePtr - pointer to the node.
  *              appInfo - pointer to the application info data structure.
  * RETURN:      none.
  */
 void
-AppFtpServerFinalize(Node *nodePtr, AppInfo* appInfo);
+AppChanswitchServerFinalize(Node *nodePtr, AppInfo* appInfo);
 
 /*
- * NAME:        AppFtpServerGetFtpServer.
- * PURPOSE:     search for a ftp server data structure.
+ * NAME:        AppChanswitchServerGetChanswitchServer.
+ * PURPOSE:     search for a chanswitch server data structure.
  * PARAMETERS:  appList - link list of applications,
- *              connId - connection ID of the ftp server.
- * RETURN:      the pointer to the ftp server data structure,
+ *              connId - connection ID of the chanswitch server.
+ * RETURN:      the pointer to the chanswitch server data structure,
  *              NULL if nothing found.
  */
-AppDataFtpServer *
-AppFtpServerGetFtpServer(Node *nodePtr, int connId);
+AppDataChanswitchServer *
+AppChanswitchServerGetChanswitchServer(Node *nodePtr, int connId);
 
 /*
- * NAME:        AppFtpServerNewFtpServer.
- * PURPOSE:     create a new ftp server data structure, place it
+ * NAME:        AppChanswitchServerNewChanswitchServer.
+ * PURPOSE:     create a new chanswitch server data structure, place it
  *              at the beginning of the application list.
  * PARAMETERS:  nodePtr - pointer to the node.
  *              openResult - result of the open request.
- * RETRUN:      the pointer to the created ftp server data structure,
+ * RETRUN:      the pointer to the created chanswitch server data structure,
  *              NULL if no data structure allocated.
  */
-AppDataFtpServer *
-AppFtpServerNewFtpServer(Node *nodePtr,
+AppDataChanswitchServer *
+AppChanswitchServerNewChanswitchServer(Node *nodePtr,
                          TransportToAppOpenResult *openResult);
 
 /*
- * NAME:        AppFtpServerSendCtrlPkt.
- * PURPOSE:     call AppFtpCtrlPktSize() to get the response packet
+ * NAME:        AppChanswitchServerSendCtrlPkt.
+ * PURPOSE:     call AppChanswitchCtrlPktSize() to get the response packet
  *              size, and send the packet.
  * PARAMETERS:  nodePtr - pointer to the node,
  *              serverPtr - pointer to the server data structure.
  * RETRUN:      none.
  */
 void
-AppFtpServerSendCtrlPkt(Node *nodePtr, AppDataFtpServer *serverPtr);
+AppChanswitchServerSendCtrlPkt(Node *nodePtr, AppDataChanswitchServer *serverPtr);
 
 /*
- * NAME:        AppFtpServerCtrlPktSize.
- * PURPOSE:     call tcplib function ftp_ctlsize().
+ * NAME:        AppChanswitchServerCtrlPktSize.
+ * PURPOSE:     call tcplib function chanswitch_ctlsize().
  * PARAMETERS:  nodePtr - pointer to the node.
- * RETRUN:      ftp control packet size.
+ * RETRUN:      chanswitch control packet size.
  */
 int
-AppFtpServerCtrlPktSize(AppDataFtpServer *serverPtr);
+AppChanswitchServerCtrlPktSize(AppDataChanswitchServer *serverPtr);
 
-#endif /* _FTP_APP_H_ */
+#endif /* _CHANSWITCH_APP_H_ */
