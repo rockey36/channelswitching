@@ -364,10 +364,10 @@ typedef enum
     TRACE_UMTS_PHY,
     // end cellular
 
-
-    // Must be last one!!!
     TRACE_VIDEO,
 	TRACE_WBEST,
+  TRACE_CHANSWITCH,
+      // Must be last one!!!
     TRACE_ANY_PROTOCOL
 }TraceProtocolType;
 
