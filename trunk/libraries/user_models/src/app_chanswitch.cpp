@@ -314,7 +314,7 @@ AppChanswitchClientSendNextPacket(Node *node, AppDataChanswitchClient *clientPtr
 
 /*
  * NAME:        AppChanswitchClientItemsToSend.
- * PURPOSE:     call tcplib function chanswitch_nitems() to get the
+ * PURPOSE:     call tcplib function ftp_nitems() to get the
  *              number of items to send in an chanswitch session.
  * PARAMETERS:  node - pointer to the node.
  * RETRUN:      amount of items to send.
@@ -324,7 +324,7 @@ AppChanswitchClientItemsToSend(AppDataChanswitchClient *clientPtr)
 {
     int items;
 
-    items = chanswitch_nitems(clientPtr->seed);
+    items = ftp_nitems(clientPtr->seed);
 
 #ifdef DEBUG
     printf("CHANSWITCH nitems = %d\n", items);
@@ -335,7 +335,7 @@ AppChanswitchClientItemsToSend(AppDataChanswitchClient *clientPtr)
 
 /*
  * NAME:        AppChanswitchClientItemSize.
- * PURPOSE:     call tcplib function chanswitch_itemsize() to get the size
+ * PURPOSE:     call tcplib function ftp_itemsize() to get the size
  *              of each item.
  * PARAMETERS:  node - pointer to the node.
  * RETRUN:      size of an item.
@@ -345,7 +345,7 @@ AppChanswitchClientItemSize(AppDataChanswitchClient *clientPtr)
 {
     int size;
 
-    size = chanswitch_itemsize(clientPtr->seed);
+    size = ftp_itemsize(clientPtr->seed);
 
 #ifdef DEBUG
     printf("CHANSWITCH item size = %d\n", size);
@@ -356,7 +356,7 @@ AppChanswitchClientItemSize(AppDataChanswitchClient *clientPtr)
 
 /*
  * NAME:        AppChanswitchClientCtrlPktSize.
- * PURPOSE:     call tcplib function chanswitch_ctlsize().
+ * PURPOSE:     call tcplib function ftp_ctlsize().
  * PARAMETERS:  node - pointer to the node.
  * RETRUN:      chanswitch control packet size.
  */
@@ -364,10 +364,10 @@ int
 AppChanswitchClientCtrlPktSize(AppDataChanswitchClient *clientPtr)
 {
     int ctrlPktSize;
-    ctrlPktSize = chanswitch_ctlsize(clientPtr->seed);
+    ctrlPktSize = ftp_ctlsize(clientPtr->seed);
 
 #ifdef DEBUG
-    printf("CHANSWITCH: Node %d chanswitch control pktsize = %d\n",
+    printf("CHANSWITCH: Node %d ftp control pktsize = %d\n",
            ctrlPktSize);
 #endif /* DEBUG */
 
@@ -511,7 +511,7 @@ AppChanswitchServerSendCtrlPkt(Node *node, AppDataChanswitchServer *serverPtr)
 
 /*
  * NAME:        AppChanswitchServerCtrlPktSize.
- * PURPOSE:     call tcplib function chanswitch_ctlsize().
+ * PURPOSE:     call tcplib function ftp_ctlsize().
  * PARAMETERS:  node - pointer to the node.
  * RETRUN:      chanswitch control packet size.
  */
@@ -519,7 +519,7 @@ int
 AppChanswitchServerCtrlPktSize(AppDataChanswitchServer *serverPtr)
 {
     int ctrlPktSize;
-    ctrlPktSize = chanswitch_ctlsize(serverPtr->seed);
+    ctrlPktSize = ftp_ctlsize(serverPtr->seed);
 
 #ifdef DEBUG
     printf("CHANSWITCH: Node chanswitch control pktsize = %d\n",
