@@ -11,6 +11,7 @@
         <subcategory name="CBR" icon="cbr.png" tooltip="Constant Bit Rate" categorytype="Applications" type="App" propertytype="CBR" />
         <subcategory name="VIDEO" icon="video.png" tooltip="VIDEO" categorytype="Applications" type="App" propertytype="VIDEO" />
         <subcategory name="Ftp" icon="ftp.png" tooltip="FTP" categorytype="Applications" type="App" propertytype="FTP" />
+         <subcategory name="Chanswitch" icon="chanswitch.png" tooltip="CHANSWITCH" categorytype="Applications" type="App" propertytype="CHANSWITCH" />
         <subcategory name="Telnet" icon="telnet.png" tooltip="TELNET" categorytype="Applications" type="App" propertytype="TELNET" />
         <subcategory name="Ftp-Generic" icon="ftp_gen.png" tooltip="Generic FTP" categorytype="Applications" type="App" propertytype="FTP/GENERIC" />
         <subcategory name="Lookup" icon="lookup.png" tooltip="Lookup Traffic Generator" categorytype="Applications" type="App" propertytype="LOOKUP" />
