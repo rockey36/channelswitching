@@ -3606,6 +3606,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         case MSG_MAC_DOT11_Reassociation_Start_Timer:
         case MSG_MAC_DOT11_Scan_Start_Timer:
         case MSG_MAC_DOT11_Enable_Management_Timer:
+        case MSG_MAC_DOT11_ChanswitchRequest:
         {
             unsigned timerSequenceNumber = *(int*)(MESSAGE_ReturnInfo(msg));
 
@@ -3615,6 +3616,16 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
                  MacDot11ManagementHandleTimeout(node, dot11,msg);
             }
             MESSAGE_Free(node, msg);
+            break;
+        }
+
+        case MSG_MAC_FromAppChanswitchRequest:
+        {
+            //Set a timer so it gets called properly.
+            printf("MSG_MAC_FromAppChanswitchRequest node %d \n", node->nodeId);
+            MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
+                                        MSG_MAC_DOT11_ChanswitchRequest); 
+            MESSAGE_Free(node,msg);
             break;
         }
 
