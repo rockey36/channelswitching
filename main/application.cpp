@@ -1638,7 +1638,8 @@ APP_InitializeApplications(
         {
             char sourceString[MAX_STRING_LENGTH];
             char destString[MAX_STRING_LENGTH];
-            int itemsToSend;
+            // int itemsToSend;
+            // char chanswitchMask[MAX_STRING_LENGTH];
             char startTimeStr[MAX_STRING_LENGTH];
             NodeAddress sourceNodeId;
             Address sourceAddr;
@@ -1646,18 +1647,17 @@ APP_InitializeApplications(
             Address destAddr;
 
             numValues = sscanf(appInput.inputStrings[i],
-                            "%*s %s %s %d %s",
+                            "%*s %s %s %s",
                             sourceString,
                             destString,
-                            &itemsToSend,
                             startTimeStr);
 
-            if (numValues != 4)
+            if (numValues != 3)
             {
                 char errorString[MAX_STRING_LENGTH];
                 sprintf(errorString,
                         "Wrong CHANSWITCH configuration format!\n"
-                        "CHANSWITCH <src> <dest> <items to send> <start time>\n");
+                        "CHANSWITCH <src> <dest> <start time>\n");
                 ERROR_ReportError(errorString);
             }
 
@@ -1684,13 +1684,13 @@ APP_InitializeApplications(
                 printf("  dst nodeId:    %u\n", destNodeId);
                 IO_ConvertIpAddressToString(&destAddr, addrStr);
                 printf("  dst address:   %s\n", addrStr);
-                printf("  items to send: %d\n", itemsToSend);
+                // printf("  chanswitch mask (currently unused): %s\n", chanswitchMask);
                 ctoa(startTime, clockStr);
                 printf("  start time:    %s\n", clockStr);
 #endif /* DEBUG */
 
                 AppChanswitchClientInit(
-                    node, sourceAddr, destAddr, itemsToSend, startTime);
+                    node, sourceAddr, destAddr, startTime);
             }
 
             // Handle Loopback Address

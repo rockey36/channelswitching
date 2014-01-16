@@ -128,6 +128,9 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
 	// Message Type for DOT11 channel switching
+    MSG_APP_FromMacChanswitchRequest            = 389,
+    MSG_APP_FromMacSendAPList                   = 390,                   
+    MSG_MAC_FromAppChangeChannel                = 391,
     MSG_MAC_DOT11_ChanSwitchRxReturnPrevChannel = 392,
     MSG_MAC_DOT11_ChanSwitchInitialDelay        = 393,
     MSG_MAC_DOT11_ChanSwitchRxProbe             = 394,
