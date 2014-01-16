@@ -960,6 +960,16 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                 AppDataChanswitchServer *serverPtr;
                 serverPtr = AppChanswitchServerNewChanswitchServer(node, openResult);
                 assert(serverPtr != NULL);
+                //Tell mac layer to start the scan immediately.
+                Message *macMsg;
+                macMsg = MESSAGE_Alloc(node, 
+                    MAC_LAYER,
+                    MAC_PROTOCOL_DOT11,
+                    MSG_MAC_FromAppChanswitchRequest);
+                MESSAGE_Send(node, macMsg, 0);
+
+
+                //Send the 'start scanning' pkt to client.
             }
 
             break;

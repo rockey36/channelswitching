@@ -4704,6 +4704,14 @@ void MacDot11ManagementHandleTimeout(
                     dot11);
             break;
         }
+
+        case MSG_MAC_DOT11_ChanswitchRequest:
+        {
+            ERROR_Assert(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE,
+            "Error: Channel switching type must be set to AP Probing. \n");   
+            printf("Received request to StartJoin from CHANSWITCH server %d \n", node->nodeId);
+            MacDot11ManagementStartJoin(node, dot11);
+        }
         default:
         {
             ERROR_ReportError("MacDot11Layer: "
@@ -5554,10 +5562,10 @@ int MacDot11ManagementEnable(
 
         //IBSS and AP_PROBE chanswitch mode
         else if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-            // printf("node %d: MacDot11ManagementEnable attempt StartJoin \n", node->nodeId); 
-            MacDot11ManagementStartJoin(
-                node,
-                dot11);
+            printf("node %d: MacDot11ManagementEnable - don't StartJoin until Chanswitch app starts \n", node->nodeId); 
+            // MacDot11ManagementStartJoin(
+            //     node,
+            //     dot11);
         }
 
         result = DOT11_R_OK;
@@ -5694,9 +5702,6 @@ void MacDot11ManagementInit(
 
     //added - chanswitch AP probe should actively scan for APs
     if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-
-        //added: send message to app layer
-        
 
         printf("node %d: MacDot11Init: enable active scanning for AP probe chanswitch \n", node->nodeId);
         mngmtVars->scanType = DOT11_SCAN_ACTIVE;
@@ -5908,16 +5913,14 @@ void MacDot11ManagementInit(
 
     // Enable station management
     //delay for AP setup if in chanswitch AP probe mode
-    if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-        clocktype delay = (50 + node->nodeId) * MILLI_SECOND;
-        MacDot11ManagementStartTimerOfGivenType(node, dot11, delay,
-                MSG_MAC_DOT11_Enable_Management_Timer);
-    }
+    // if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
+    //     clocktype delay = (50 + node->nodeId) * MILLI_SECOND;
+    //     MacDot11ManagementStartTimerOfGivenType(node, dot11, delay,
+    //             MSG_MAC_DOT11_Enable_Management_Timer);
+    // }
 
-    else{
        MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
                                     MSG_MAC_DOT11_Enable_Management_Timer); 
-        }
 
 }// MacDot11ManagementInit
 //---------------------------Power-Save-Mode-Updates---------------------//
