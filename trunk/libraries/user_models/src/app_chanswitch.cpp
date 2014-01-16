@@ -31,6 +31,8 @@
 #include "app_util.h"
 #include "app_chanswitch.h"
 
+ #define DEBUG 1
+
 /*
  * Static Functions
  */
@@ -129,7 +131,7 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
     printf("    localAddr = %s\n", addrStr);
     IO_ConvertIpAddressToString(&chanswitchClient->remoteAddr, addrStr);
     printf("    remoteAddr = %s\n", addrStr);
-    printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
+    // printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
 #endif /* DEBUG */
 
     return chanswitchClient;
@@ -149,8 +151,7 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
 AppDataChanswitchClient *
 AppChanswitchClientNewChanswitchClient(Node *node,
                          Address clientAddr,
-                         Address serverAddr,
-                         int itemsToSend)
+                         Address serverAddr)
 {
     AppDataChanswitchClient *chanswitchClient;
 
@@ -175,15 +176,8 @@ AppChanswitchClientNewChanswitchClient(Node *node,
                    APP_CHANSWITCH_CLIENT,
                    chanswitchClient->uniqueId);
 
-    if (itemsToSend > 0)
-    {
-        chanswitchClient->itemsToSend = itemsToSend;
-    }
-    else
-    {
-        chanswitchClient->itemsToSend = AppChanswitchClientItemsToSend(chanswitchClient);
-    }
 
+    chanswitchClient->itemsToSend = 100;
     chanswitchClient->itemSizeLeft = 0;
     chanswitchClient->numBytesSent = 0;
     chanswitchClient->numBytesRecvd = 0;
@@ -198,7 +192,7 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     printf("    localAddr = %s\n", addrStr);
     IO_ConvertIpAddressToString(&chanswitchClient->remoteAddr, addrStr);
     printf("    remoteAddr = %s\n", addrStr);
-    printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
+    // printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
 #endif /* DEBUG */
 
     #ifdef DEBUG_OUTPUT_FILE
@@ -580,7 +574,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
                 assert(clientPtr != NULL);
 
-                AppChanswitchClientSendNextItem(node, clientPtr);
+                // AppChanswitchClientSendNextItem(node, clientPtr);
             }
 
             break;
@@ -673,13 +667,13 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             clientPtr->numBytesRecvd += (clocktype) msg->packetSize;
 
-            assert(msg->packet[msg->packetSize - 1] == 'd');
+            // assert(msg->packet[msg->packetSize - 1] == 'd');
 
-            if ((clientPtr->sessionIsClosed == FALSE) &&
-                (clientPtr->itemSizeLeft == 0))
-            {
-                AppChanswitchClientSendNextItem(node, clientPtr);
-            }
+            // if ((clientPtr->sessionIsClosed == FALSE) &&
+            //     (clientPtr->itemSizeLeft == 0))
+            // {
+            //     // AppChanswitchClientSendNextItem(node, clientPtr);
+            // }
 
             break;
         }
@@ -732,25 +726,23 @@ AppChanswitchClientInit(
     Node *node,
     Address clientAddr,
     Address serverAddr,
-    int itemsToSend,
     clocktype waitTime)
 {
     AppDataChanswitchClient *clientPtr;
 
     /* Check to make sure the number of chanswitch items is a correct value. */
 
-    if (itemsToSend < 0)
-    {
-        printf("CHANSWITCH Client: Node %d items to send needs to be >= 0\n",
-               node->nodeId);
+    // if (itemsToSend < 0)
+    // {
+    //     printf("CHANSWITCH Client: Node %d items to send needs to be >= 0\n",
+    //            node->nodeId);
 
-        exit(0);
-    }
+    //     exit(0);
+    // }
 
     clientPtr = AppChanswitchClientNewChanswitchClient(node,
                                          clientAddr,
-                                         serverAddr,
-                                         itemsToSend);
+                                         serverAddr);
 
     if (clientPtr == NULL)
     {
@@ -1031,33 +1023,33 @@ AppLayerChanswitchServer(Node *node, Message *msg)
 			 * of an item.  If so, send a response packet back.
 			 * If the data contains a 'c', close the connection.
 			 */
-			if (packet[msg->packetSize - 1] == 'd')
-			{
-				/* Do nothing since item is not completely received yet. */
-			}
-			else if (packet[msg->packetSize - 1] == 'e')
-			{
-				/* Item completely received, now send control info. */
+			// if (packet[msg->packetSize - 1] == 'd')
+			// {
+			// 	/* Do nothing since item is not completely received yet. */
+			// }
+			// else if (packet[msg->packetSize - 1] == 'e')
+			// {
+			// 	/* Item completely received, now send control info. */
 
-				AppChanswitchServerSendCtrlPkt(node, serverPtr);
-			}
-			else if (packet[msg->packetSize - 1] == 'c')
-			{
-				/*
-				 * Client wants to close the session, so server also
-				 * initiates a close.
-				 */
-				APP_TcpCloseConnection(
-					node,
-					serverPtr->connectionId);
+			// 	AppChanswitchServerSendCtrlPkt(node, serverPtr);
+			// }
+			// else if (packet[msg->packetSize - 1] == 'c')
+			// {
+			// 	/*
+			// 	 * Client wants to close the session, so server also
+			// 	 * initiates a close.
+			// 	 */
+			// 	APP_TcpCloseConnection(
+			// 		node,
+			// 		serverPtr->connectionId);
 
-				serverPtr->sessionFinish = getSimTime(node);
-				serverPtr->sessionIsClosed = TRUE;
-			}
-			else
-			{
-			   assert(FALSE);
-			}
+			// 	serverPtr->sessionFinish = getSimTime(node);
+			// 	serverPtr->sessionIsClosed = TRUE;
+			// }
+			// else
+			// {
+			//    assert(FALSE);
+			// }
 
             break;
         }

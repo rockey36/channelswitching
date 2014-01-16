@@ -96,7 +96,6 @@ AppChanswitchClientInit(
     Node *nodePtr,
     Address clientAddr,
     Address serverAddr,
-    int itemsToSend,
     clocktype waitTime);
 
 /*
@@ -159,8 +158,7 @@ AppDataChanswitchClient *
 AppChanswitchClientNewChanswitchClient(
     Node *nodePtr,
     Address clientAddr,
-    Address serverAddr,
-    int itemsToSend);
+    Address serverAddr);
 
 /*
  * NAME:        AppChanswitchClientSendNextItem.

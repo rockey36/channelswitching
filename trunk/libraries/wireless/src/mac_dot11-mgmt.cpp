@@ -5694,6 +5694,10 @@ void MacDot11ManagementInit(
 
     //added - chanswitch AP probe should actively scan for APs
     if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
+
+        //added: send message to app layer
+        
+
         printf("node %d: MacDot11Init: enable active scanning for AP probe chanswitch \n", node->nodeId);
         mngmtVars->scanType = DOT11_SCAN_ACTIVE;
         int longScanTimer = 0;
