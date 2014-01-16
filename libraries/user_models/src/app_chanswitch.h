@@ -25,6 +25,15 @@
 
 #include "types.h"
 
+#define CHANSWITCH_REQ_PKT_SIZE 4
+
+//pkts sent by chanswitch app
+ enum {
+    CHANSWITCH_REQUEST  = 1,
+    CHANSWITCH_APLIST   = 2,
+    CHANSWITCH_NEWCHAN  = 3
+ };
+
 typedef
 struct struct_app_chanswitch_client_str
 {
@@ -284,6 +293,17 @@ AppChanswitchServerNewChanswitchServer(Node *nodePtr,
  */
 void
 AppChanswitchServerSendCtrlPkt(Node *nodePtr, AppDataChanswitchServer *serverPtr);
+
+/*
+ * NAME:        AppChanswitchClientSendChanswitchRequest.
+ * PURPOSE:     Send the chanswitch request pkt.
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the server data structure.
+ *              initial - is this the first channel switch?
+ * RETURN:      none.
+ */
+void
+AppChanswitchClientSendChanswitchRequest(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial);
 
 /*
  * NAME:        AppChanswitchServerCtrlPktSize.

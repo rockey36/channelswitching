@@ -504,6 +504,40 @@ AppChanswitchServerSendCtrlPkt(Node *node, AppDataChanswitchServer *serverPtr)
 }
 
 /*
+ * NAME:        AppChanswitchClientSendChanswitchRequest.
+ * PURPOSE:     Send the chanswitch request pkt.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ *              initial - is this the first channel switch?
+ * RETURN:      none.
+ */
+void
+AppChanswitchClientSendChanswitchRequest(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial){
+
+    int options = 0;
+    if(!initial){
+        options = 1; //not the first chanswitch
+    }
+
+    char *payload;
+
+    payload = (char *)MEM_malloc(CHANSWITCH_REQ_PKT_SIZE); //4
+    memset(payload,CHANSWITCH_REQUEST,1);
+    memset(payload+1,0xfe,2); //dummy data for chanswitch mask
+    memset(payload+3,options,1); //options byte only specifies initial chanswitch
+    if (!clientPtr->sessionIsClosed)
+    {
+        APP_TcpSendData(
+                node,
+                clientPtr->connectionId,
+                payload,
+                CHANSWITCH_REQ_PKT_SIZE,
+                TRACE_APP_CHANSWITCH);
+    }
+     MEM_free(payload);
+}
+
+/*
  * NAME:        AppChanswitchServerCtrlPktSize.
  * PURPOSE:     call tcplib function ftp_ctlsize().
  * PARAMETERS:  node - pointer to the node.
@@ -573,6 +607,16 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 clientPtr = AppChanswitchClientUpdateChanswitchClient(node, openResult);
 
                 assert(clientPtr != NULL);
+
+                //Tell mac layer to start the scan immediately.
+                Message *macMsg;
+                macMsg = MESSAGE_Alloc(node, 
+                    MAC_LAYER,
+                    MAC_PROTOCOL_DOT11,
+                    MSG_MAC_FromAppChanswitchRequest);
+                MESSAGE_Send(node, macMsg, 0);
+                //Send the 'start scanning' pkt to client.
+                AppChanswitchClientSendChanswitchRequest(node, clientPtr, TRUE);
 
                 // AppChanswitchClientSendNextItem(node, clientPtr);
             }
@@ -960,16 +1004,7 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                 AppDataChanswitchServer *serverPtr;
                 serverPtr = AppChanswitchServerNewChanswitchServer(node, openResult);
                 assert(serverPtr != NULL);
-                //Tell mac layer to start the scan immediately.
-                Message *macMsg;
-                macMsg = MESSAGE_Alloc(node, 
-                    MAC_LAYER,
-                    MAC_PROTOCOL_DOT11,
-                    MSG_MAC_FromAppChanswitchRequest);
-                MESSAGE_Send(node, macMsg, 0);
 
-
-                //Send the 'start scanning' pkt to client.
             }
 
             break;
