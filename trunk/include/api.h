@@ -127,6 +127,13 @@ enum
     MSG_MAC_DOT11_CfpEnd                       = 332,
     MSG_MAC_DOT11_Management                   = 333,
 
+    //Message Type for APP channel switching
+    MSG_APP_TxProbeWfAckTimeout                 = 383,
+    MSG_APP_TxChangeWfAckTimeout                = 384,
+    MSG_APP_TxVerifyWfAckTimeout                = 385,
+    MSG_APP_RxProbeAckDelay                     = 386,
+    MSG_APP_RxChangeAckDelay                    = 387,
+
 	// Message Type for DOT11 channel switching
     MSG_MAC_DOT11_ChanswitchRequest             = 388,
     MSG_MAC_FromAppChanswitchRequest            = 389,

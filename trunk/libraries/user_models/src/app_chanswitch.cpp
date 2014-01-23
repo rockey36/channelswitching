@@ -122,6 +122,7 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
     chanswitchClient->lastTime = 0;
     chanswitchClient->sessionIsClosed = FALSE;
     chanswitchClient->bytesRecvdDuringThePeriod = 0;
+    chanswitchClient->state = TX_IDLE;
 #ifdef DEBUG
     char addrStr[MAX_STRING_LENGTH];
     printf("CHANSWITCH Client: Node %d updating chanswitch client structure\n",
@@ -182,6 +183,7 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     chanswitchClient->numBytesSent = 0;
     chanswitchClient->numBytesRecvd = 0;
     chanswitchClient->lastItemSent = 0;
+    chanswitchClient->state = TX_IDLE;
 
 #ifdef DEBUG
     char addrStr[MAX_STRING_LENGTH];
@@ -223,88 +225,7 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     return chanswitchClient;
 }
 
-/*
- * NAME:        AppChanswitchClientSendNextItem.
- * PURPOSE:     Send the next item.
- * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the chanswitch client data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchClientSendNextItem(Node *node, AppDataChanswitchClient *clientPtr)
-{
-    assert(clientPtr->itemSizeLeft == 0);
 
-    if (clientPtr->itemsToSend > 0)
-    {
-        clientPtr->itemSizeLeft = AppChanswitchClientItemSize(clientPtr);
-        clientPtr->itemSizeLeft += AppChanswitchClientCtrlPktSize(clientPtr);
-
-        AppChanswitchClientSendNextPacket(node, clientPtr);
-        clientPtr->itemsToSend --;
-    }
-    else
-    {
-        if (!clientPtr->sessionIsClosed)
-        {
-            APP_TcpSendData(
-                node,
-                clientPtr->connectionId,
-                (char *)"c",
-                1,
-                TRACE_APP_CHANSWITCH);
-        }
-
-        clientPtr->sessionIsClosed = TRUE;
-        clientPtr->sessionFinish = getSimTime(node);
-
-    }
-}
-
-/*
- * NAME:        AppChanswitchClientSendNextPacket.
- * PURPOSE:     Send the remaining data.
- * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the chanswitch client data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchClientSendNextPacket(Node *node, AppDataChanswitchClient *clientPtr)
-{
-    int itemSize;
-    char *payload;
-
-    /* Break packet down of larger than APP_MAX_DATA_SIZE. */
-    if (clientPtr->itemSizeLeft > APP_MAX_DATA_SIZE)
-    {
-        itemSize = APP_MAX_DATA_SIZE;
-        clientPtr->itemSizeLeft -= APP_MAX_DATA_SIZE;
-        payload = (char *)MEM_malloc(itemSize);
-        memset(payload,'d',itemSize);
-    }
-    else
-    {
-        itemSize = clientPtr->itemSizeLeft;
-        payload = (char *)MEM_malloc(itemSize);
-        memset(payload,'d',itemSize);
-
-        /* Mark the end of the packet. */
-
-         *(payload + itemSize - 1) = 'e';
-          clientPtr->itemSizeLeft = 0;
-    }
-
-    if (!clientPtr->sessionIsClosed)
-    {
-        APP_TcpSendData(
-                node,
-                clientPtr->connectionId,
-                payload,
-                itemSize,
-                TRACE_APP_CHANSWITCH);
-    }
-    MEM_free(payload);
-}
 
 /*
  * NAME:        AppChanswitchClientItemsToSend.
@@ -431,6 +352,7 @@ AppChanswitchServerNewChanswitchServer(Node *node,
     chanswitchServer->numBytesRecvd = 0;
     chanswitchServer->bytesRecvdDuringThePeriod = 0;
     chanswitchServer->lastItemSent = 0;
+    chanswitchServer->state = RX_IDLE;
 
     RANDOM_SetSeed(chanswitchServer->seed,
                    node->globalSeed,
@@ -465,54 +387,17 @@ AppChanswitchServerNewChanswitchServer(Node *node,
     return chanswitchServer;
 }
 
-/*
- * NAME:        AppChanswitchServerSendCtrlPkt.
- * PURPOSE:     call AppChanswitchCtrlPktSize() to get the response packet
- *              size, and send the packet.
- * PARAMETERS:  node - pointer to the node,
- *              serverPtr - pointer to the server data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchServerSendCtrlPkt(Node *node, AppDataChanswitchServer *serverPtr)
-{
-    int pktSize;
-    char *payload;
-
-    pktSize = AppChanswitchServerCtrlPktSize(serverPtr);
-
-    if (pktSize > APP_MAX_DATA_SIZE)
-    {
-        /*
-         * Control packet size is larger than APP_MAX_DATA_SIZE,
-         * set it to APP_MAX_DATA_SIZE. This should be rare.
-         */
-        pktSize = APP_MAX_DATA_SIZE;
-    }
-    payload = (char *)MEM_malloc(pktSize);
-    memset(payload,'d',pktSize);
-    if (!serverPtr->sessionIsClosed)
-    {
-        APP_TcpSendData(
-                node,
-                serverPtr->connectionId,
-                payload,
-                pktSize,
-                TRACE_APP_CHANSWITCH);
-    }
-     MEM_free(payload);
-}
 
 /*
- * NAME:        AppChanswitchClientSendChanswitchRequest.
- * PURPOSE:     Send the chanswitch request pkt.
+ * NAME:        AppChanswitchClientSendProbeInit.
+ * PURPOSE:     Send the "probe init" packet.
  * PARAMETERS:  node - pointer to the node,
  *              serverPtr - pointer to the server data structure.
  *              initial - is this the first channel switch?
  * RETURN:      none.
  */
 void
-AppChanswitchClientSendChanswitchRequest(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial){
+AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial){
 
     int options = 0;
     if(!initial){
@@ -521,8 +406,8 @@ AppChanswitchClientSendChanswitchRequest(Node *node, AppDataChanswitchClient *cl
 
     char *payload;
 
-    payload = (char *)MEM_malloc(CHANSWITCH_REQ_PKT_SIZE); //4
-    memset(payload,CHANSWITCH_REQUEST,1);
+    payload = (char *)MEM_malloc(CHANSWITCH_PROBE_PKT_SIZE); //4
+    memset(payload,PROBE_PKT,1);
     memset(payload+1,0xfe,2); //dummy data for chanswitch mask
     memset(payload+3,options,1); //options byte only specifies initial chanswitch
     if (!clientPtr->sessionIsClosed)
@@ -531,31 +416,58 @@ AppChanswitchClientSendChanswitchRequest(Node *node, AppDataChanswitchClient *cl
                 node,
                 clientPtr->connectionId,
                 payload,
-                CHANSWITCH_REQ_PKT_SIZE,
+                CHANSWITCH_PROBE_PKT_SIZE,
+                TRACE_APP_CHANSWITCH);
+
+    }
+     MEM_free(payload);
+
+}
+
+/*
+ * NAME:        AppChanswitchStartProbing.
+ * PURPOSE:     Start scanning channels - either client or server.
+ * PARAMETERS:  node - pointer to the node
+ * RETURN:      none.
+ */
+void
+AppChanswitchStartProbing(Node *node){
+    Message *macMsg;
+    macMsg = MESSAGE_Alloc(node, 
+        MAC_LAYER,
+        MAC_PROTOCOL_DOT11,
+        MSG_MAC_FromAppChanswitchRequest);
+    MESSAGE_Send(node, macMsg, 0);
+}
+
+/*
+ * NAME:        AppChanswitchServerSendProbeAck.
+ * PURPOSE:     Send the ack indicating server got probe request
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ *              initial - is this the first channel switch?
+ * RETURN:      none.
+ */
+void
+AppChanswitchServerSendProbeAck(Node *node, AppDataChanswitchServer *serverPtr){
+
+    char *payload;
+
+    payload = (char *)MEM_malloc(CHANSWITCH_ACK_SIZE); //1
+    memset(payload,PROBE_ACK,1);
+    
+    if (!serverPtr->sessionIsClosed)
+    {
+        APP_TcpSendData(
+                node,
+                serverPtr->connectionId,
+                payload,
+                CHANSWITCH_ACK_SIZE,
                 TRACE_APP_CHANSWITCH);
     }
      MEM_free(payload);
 }
 
-/*
- * NAME:        AppChanswitchServerCtrlPktSize.
- * PURPOSE:     call tcplib function ftp_ctlsize().
- * PARAMETERS:  node - pointer to the node.
- * RETRUN:      chanswitch control packet size.
- */
-int
-AppChanswitchServerCtrlPktSize(AppDataChanswitchServer *serverPtr)
-{
-    int ctrlPktSize;
-    ctrlPktSize = ftp_ctlsize(serverPtr->seed);
-
-#ifdef DEBUG
-    printf("CHANSWITCH: Node chanswitch control pktsize = %d\n",
-           ctrlPktSize);
-#endif /* DEBUG */
-
-    return (ctrlPktSize);
-}
 
 /*
  * Public Functions
@@ -608,17 +520,11 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
                 assert(clientPtr != NULL);
 
-                //Tell mac layer to start the scan immediately.
-                Message *macMsg;
-                macMsg = MESSAGE_Alloc(node, 
-                    MAC_LAYER,
-                    MAC_PROTOCOL_DOT11,
-                    MSG_MAC_FromAppChanswitchRequest);
-                MESSAGE_Send(node, macMsg, 0);
-                //Send the 'start scanning' pkt to client.
-                AppChanswitchClientSendChanswitchRequest(node, clientPtr, TRUE);
+               //Send the 'start scanning' pkt to server.
+                clientPtr->state = TX_PROBE_INIT;
+                AppChanswitchClientSendProbeInit(node, clientPtr, TRUE);
+                clientPtr->state = TX_PROBE_WFACK;
 
-                // AppChanswitchClientSendNextItem(node, clientPtr);
             }
 
             break;
@@ -626,8 +532,10 @@ AppLayerChanswitchClient(Node *node, Message *msg)
         case MSG_APP_FromTransDataSent:
         {
             TransportToAppDataSent *dataSent;
+            char *packet;
 
             dataSent = (TransportToAppDataSent *) MESSAGE_ReturnInfo(msg);
+
 
 #ifdef DEBUG
             printf("%s: CHANSWITCH Client node %u sent data %d\n",
@@ -641,6 +549,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             clientPtr->numBytesSent += (clocktype) dataSent->length;
             clientPtr->lastItemSent = getSimTime(node);
+
 
             /* Instant throughput is measured here after each 1 second */
             #ifdef DEBUG_OUTPUT_FILE
@@ -678,12 +587,8 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             }
             #endif
 
-            if (clientPtr->itemSizeLeft > 0)
-            {
-                AppChanswitchClientSendNextPacket(node, clientPtr);
-            }
-            else if (clientPtr->itemsToSend == 0
-                     && clientPtr->sessionIsClosed == TRUE)
+            //close the session if requested by the previous pkt
+            if (clientPtr->sessionIsClosed == TRUE)
             {
                 APP_TcpCloseConnection(
                     node,
@@ -695,9 +600,12 @@ AppLayerChanswitchClient(Node *node, Message *msg)
         case MSG_APP_FromTransDataReceived:
         {
             TransportToAppDataReceived *dataRecvd;
+            char *packet;
 
             dataRecvd = (TransportToAppDataReceived *)
                          MESSAGE_ReturnInfo(msg);
+
+            packet = MESSAGE_ReturnPacket(msg);
 
 #ifdef DEBUG
             printf("%s: CHANSWITCH Client node %u received data %d\n",
@@ -711,13 +619,20 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             clientPtr->numBytesRecvd += (clocktype) msg->packetSize;
 
-            // assert(msg->packet[msg->packetSize - 1] == 'd');
-
-            // if ((clientPtr->sessionIsClosed == FALSE) &&
-            //     (clientPtr->itemSizeLeft == 0))
-            // {
-            //     // AppChanswitchClientSendNextItem(node, clientPtr);
-            // }
+            switch(clientPtr->state){
+                case TX_PROBE_WFACK:{
+                    if(packet[0] == PROBE_ACK){
+                       #ifdef DEBUG
+                        printf("CHANSWITCH Client: Node %ld at %s got PROBE_ACK\n",
+                            node->nodeId, buf);
+                       #endif 
+                        clientPtr->state = TX_PROBING;
+                        //start the probe
+                        AppChanswitchStartProbing(node);
+                    }
+                    break;
+                }
+            }
 
             break;
         }
@@ -745,7 +660,36 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             }
 
             break;
+
+
         }
+    case MSG_APP_TxProbeWfAckTimeout:
+    {
+        #ifdef DEBUG
+            printf("%s: CHANSWITCH Client node %u got probe ACK timeout\n",
+                   buf, node->nodeId);
+        #endif /* DEBUG */
+        break;
+    }
+
+        case MSG_APP_TxChangeWfAckTimeout:
+    {
+        #ifdef DEBUG
+            printf("%s: CHANSWITCH Client node %u got change ACK timeout\n",
+                   buf, node->nodeId);
+        #endif /* DEBUG */
+        break;
+    }
+
+    case MSG_APP_TxVerifyWfAckTimeout:
+    {
+        #ifdef DEBUG
+            printf("%s: CHANSWITCH Client node %u got verify ACK timeout\n",
+                   buf, node->nodeId);
+        #endif /* DEBUG */
+        break;
+    }
+
         default:
             ctoa(getSimTime(node), buf);
             printf("Time %s: CHANSWITCH Client node %u received message of unknown"
@@ -1005,6 +949,7 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                 serverPtr = AppChanswitchServerNewChanswitchServer(node, openResult);
                 assert(serverPtr != NULL);
 
+
             }
 
             break;
@@ -1061,6 +1006,50 @@ AppLayerChanswitchServer(Node *node, Message *msg)
 
             serverPtr->numBytesRecvd +=
                     (clocktype) MESSAGE_ReturnPacketSize(msg);
+
+
+            switch(serverPtr->state){
+                case RX_IDLE:
+                {
+                    if(packet[0] == PROBE_PKT){
+                       #ifdef DEBUG
+                        printf("CHANSWITCH Server: Node %ld at %s got PROBE_PKT\n",
+                            node->nodeId, buf);
+                       #endif 
+                        serverPtr->state = RX_PROBE_ACK;
+                        //send PROBE_ACK to TX
+                        AppChanswitchServerSendProbeAck(node, serverPtr);
+                        //start the delay timer
+                        Message *probeMsg;
+                        probeMsg = MESSAGE_Alloc(node, 
+                            APP_LAYER,
+                            APP_CHANSWITCH_SERVER,
+                            MSG_APP_RxProbeAckDelay);
+                        MESSAGE_Send(node, probeMsg, RX_PROBE_ACK_DELAY);
+                        }
+                        else if (packet[0] == CHANGE_PKT){
+                        #ifdef DEBUG
+                            printf("CHANSWITCH Server: Node %ld at %s got CHANGE_PKT\n",
+                                node->nodeId, buf);
+                        #endif 
+                        }
+                        else if (packet[0] == VERIFY_PKT){
+                        #ifdef DEBUG
+                            printf("CHANSWITCH Server: Node %ld at %s got VERIFY_PKT\n",
+                                node->nodeId, buf);
+                        #endif 
+                        }
+                        else{
+                            ERROR_Assert(FALSE, "CHANSWITCH Server: Received unknown pkt type \n");
+                        }
+
+                    break;
+
+                }
+
+            }
+
+
 
 
 			/*
@@ -1121,6 +1110,25 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                 serverPtr->sessionFinish = getSimTime(node);
             }
 
+            break;
+        }
+
+        case MSG_APP_RxProbeAckDelay:
+        {
+            #ifdef DEBUG
+                printf("%s: CHANSWITCH Server node %u ACK delay timer expired\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG */
+            AppChanswitchStartProbing(node);
+            break;
+        }
+
+        case MSG_APP_RxChangeAckDelay:
+        {
+            #ifdef DEBUG
+                printf("%s: CHANSWITCH Server node %u ACK change timer expired\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG */
             break;
         }
 
