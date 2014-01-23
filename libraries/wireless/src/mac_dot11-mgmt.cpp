@@ -4709,7 +4709,7 @@ void MacDot11ManagementHandleTimeout(
         {
             ERROR_Assert(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE,
             "Error: Channel switching type must be set to AP Probing. \n");   
-            printf("Received request to StartJoin from CHANSWITCH server %d \n", node->nodeId);
+            // printf("Received request to StartJoin from CHANSWITCH node %d \n", node->nodeId);
             MacDot11ManagementStartJoin(node, dot11);
             break;
         }

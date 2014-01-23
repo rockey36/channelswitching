@@ -25,13 +25,46 @@
 
 #include "types.h"
 
-#define CHANSWITCH_REQ_PKT_SIZE 4
+#define CHANSWITCH_PROBE_PKT_SIZE 4
+#define CHANSWITCH_ACK_SIZE       1
+
+#define TX_PROBE_WFACK_TIMEOUT     (50 * MILLI_SECOND)
+#define TX_CHANGE_WFACK_TIMEOUT    (50 * MILLI_SECOND)
+#define TX_VERIFY_WFACK_TIMEOUT    (50 * MILLI_SECOND)
+#define RX_PROBE_ACK_DELAY         (5 * MILLI_SECOND)
+#define RX_CHANGE_ACK_DELAY        (5 * MILLI_SECOND) 
+
+//tx (client) states
+ enum {
+    TX_IDLE = 0,
+    TX_PROBE_INIT,
+    TX_PROBE_WFACK,
+    TX_PROBING,
+    TX_PROBE_WFRX,
+    TX_CHANGE_INIT,
+    TX_CHANGE_WFACK,
+    TX_VERIFY_INIT,
+    TX_VERIFY_WFACK
+
+ };
+
+ //rx (server) states
+ enum{
+    RX_IDLE = 0,
+    RX_PROBE_ACK,
+    RX_PROBING,
+    RX_CHANGE_ACK,
+    RX_WF_VERIFY
+ };
 
 //pkts sent by chanswitch app
  enum {
-    CHANSWITCH_REQUEST  = 1,
-    CHANSWITCH_APLIST   = 2,
-    CHANSWITCH_NEWCHAN  = 3
+    PROBE_PKT   = 1,
+    PROBE_ACK   = 2,
+    CHANGE_PKT  = 3,
+    CHANGE_ACK  = 4,
+    VERIFY_PKT  = 5,
+    VERIFY_ACK  = 6
  };
 
 typedef
@@ -54,10 +87,10 @@ struct struct_app_chanswitch_client_str
     RandomSeed  seed;
 //DERIUS
     char        cmd[MAX_STRING_LENGTH];
+    int         state;
 
     
-}
-AppDataChanswitchClient;
+}AppDataChanswitchClient;
 
 typedef
 struct struct_app_chanswitch_server_str
@@ -77,8 +110,8 @@ struct struct_app_chanswitch_server_str
 //
     BOOL        isLoggedIn;
     int         portForDataConn;
-}
-AppDataChanswitchServer;
+    int         state;
+}AppDataChanswitchServer;
 
 /*
  * NAME:        AppLayerChanswitchClient.
@@ -169,25 +202,6 @@ AppChanswitchClientNewChanswitchClient(
     Address clientAddr,
     Address serverAddr);
 
-/*
- * NAME:        AppChanswitchClientSendNextItem.
- * PURPOSE:     Send the next item.
- * PARAMETERS:  nodePtr - pointer to the node,
- *              clientPtr - pointer to the chanswitch client data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchClientSendNextItem(Node *nodePtr, AppDataChanswitchClient *clientPtr);
-
-/*
- * NAME:        AppChanswitchClientSendNextPacket.
- * PURPOSE:     Send the remaining data.
- * PARAMETERS:  nodePtr - pointer to the node,
- *              clientPtr - pointer to the chanswitch client data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchClientSendNextPacket(Node *nodePtr, AppDataChanswitchClient *clientPtr);
 
 /*
  * NAME:        AppChanswitchClientItemsToSend.
@@ -209,14 +223,6 @@ AppChanswitchClientItemsToSend(AppDataChanswitchClient *clientPtr);
 int
 AppChanswitchClientItemSize(AppDataChanswitchClient *clientPtr);
 
-/*
- * NAME:        AppChanswitchServerCtrlPktSize.
- * PURPOSE:     call tcplib function chanswitch_ctlsize().
- * PARAMETERS:  nodePtr - pointer to the node.
- * RETRUN:      chanswitch control packet size.
- */
-int
-AppChanswitchClientCtrlPktSize(AppDataChanswitchClient *clientPtr);
 
 /*
  * NAME:        AppLayerChanswitchServer.
@@ -283,19 +289,9 @@ AppDataChanswitchServer *
 AppChanswitchServerNewChanswitchServer(Node *nodePtr,
                          TransportToAppOpenResult *openResult);
 
-/*
- * NAME:        AppChanswitchServerSendCtrlPkt.
- * PURPOSE:     call AppChanswitchCtrlPktSize() to get the response packet
- *              size, and send the packet.
- * PARAMETERS:  nodePtr - pointer to the node,
- *              serverPtr - pointer to the server data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchServerSendCtrlPkt(Node *nodePtr, AppDataChanswitchServer *serverPtr);
 
 /*
- * NAME:        AppChanswitchClientSendChanswitchRequest.
+ * NAME:        AppChanswitchClientSendProbeInit.
  * PURPOSE:     Send the chanswitch request pkt.
  * PARAMETERS:  node - pointer to the node,
  *              clientPtr - pointer to the server data structure.
@@ -303,15 +299,26 @@ AppChanswitchServerSendCtrlPkt(Node *nodePtr, AppDataChanswitchServer *serverPtr
  * RETURN:      none.
  */
 void
-AppChanswitchClientSendChanswitchRequest(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial);
+AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial);
 
 /*
- * NAME:        AppChanswitchServerCtrlPktSize.
- * PURPOSE:     call tcplib function chanswitch_ctlsize().
- * PARAMETERS:  nodePtr - pointer to the node.
- * RETRUN:      chanswitch control packet size.
+ * NAME:        AppChanswitchServerSendProbeAck.
+ * PURPOSE:     Send the ack indicating server got probe request
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ *              initial - is this the first channel switch?
+ * RETURN:      none.
  */
-int
-AppChanswitchServerCtrlPktSize(AppDataChanswitchServer *serverPtr);
+void
+AppChanswitchServerSendProbeAck(Node *node, AppDataChanswitchServer *serverPtr);
+
+/*
+ * NAME:        AppChanswitchStartProbing.
+ * PURPOSE:     Start scanning channels - either client or server.
+ * PARAMETERS:  node - pointer to the node
+ * RETURN:      none.
+ */
+void
+AppChanswitchStartProbing(Node *node);
 
 #endif /* _CHANSWITCH_APP_H_ */
