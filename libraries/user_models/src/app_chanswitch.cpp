@@ -497,18 +497,18 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             openResult = (TransportToAppOpenResult *)MESSAGE_ReturnInfo(msg);
 
-#ifdef DEBUG
+            #ifdef DEBUG
             printf("%s: CHANSWITCH Client node %u got OpenResult\n", buf, node->nodeId);
-#endif /* DEBUG */
+            #endif /* DEBUG */
 
             assert(openResult->type == TCP_CONN_ACTIVE_OPEN);
 
             if (openResult->connectionId < 0)
             {
-#ifdef DEBUG
+            #ifdef DEBUG
                 printf("%s: CHANSWITCH Client node %u connection failed!\n",
                        buf, node->nodeId);
-#endif /* DEBUG */
+            #endif /* DEBUG */
 
                 node->appData.numAppTcpFailure ++;
             }
@@ -525,10 +525,28 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 AppChanswitchClientSendProbeInit(node, clientPtr, TRUE);
                 clientPtr->state = TX_PROBE_WFACK;
 
+                //start probe ACK timeout timer
+                Message *timeout;
+
+                timeout = MESSAGE_Alloc(node, 
+                    APP_LAYER,
+                    APP_CHANSWITCH_CLIENT,
+                    MSG_APP_TxProbeWfAckTimeout);
+
+                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        timeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(info, "cannot allocate enough space for needed info");
+                info->connectionId = openResult->connectionId;
+
+                MESSAGE_Send(node, timeout, TX_PROBE_WFACK_TIMEOUT);
             }
 
             break;
         }
+
         case MSG_APP_FromTransDataSent:
         {
             TransportToAppDataSent *dataSent;
@@ -536,11 +554,10 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             dataSent = (TransportToAppDataSent *) MESSAGE_ReturnInfo(msg);
 
-
-#ifdef DEBUG
+            #ifdef DEBUG
             printf("%s: CHANSWITCH Client node %u sent data %d\n",
                    buf, node->nodeId, dataSent->length);
-#endif /* DEBUG */
+            #endif /* DEBUG */
 
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  dataSent->connectionId);
@@ -607,10 +624,10 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             packet = MESSAGE_ReturnPacket(msg);
 
-#ifdef DEBUG
+            #ifdef DEBUG
             printf("%s: CHANSWITCH Client node %u received data %d\n",
                    buf, node->nodeId, msg->packetSize);
-#endif /* DEBUG */
+            #endif /* DEBUG */
 
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  dataRecvd->connectionId);
@@ -643,10 +660,10 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             closeResult = (TransportToAppCloseResult *)
                           MESSAGE_ReturnInfo(msg);
 
-#ifdef DEBUG
+            #ifdef DEBUG
             printf("%s: CHANSWITCH Client node %u got close result\n",
                    buf, node->nodeId);
-#endif /* DEBUG */
+            #endif /* DEBUG */
 
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  closeResult->connectionId);
@@ -663,38 +680,52 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
 
         }
-    case MSG_APP_TxProbeWfAckTimeout:
-    {
-        #ifdef DEBUG
-            printf("%s: CHANSWITCH Client node %u got probe ACK timeout\n",
-                   buf, node->nodeId);
-        #endif /* DEBUG */
-        break;
-    }
+        case MSG_APP_TxProbeWfAckTimeout:
+        {
+
+            #ifdef DEBUG
+                printf("%s: CHANSWITCH Client node %u got probe ACK timeout\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG */
+
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchClientGetChanswitchClient(node,
+                                            timeoutInfo->connectionId);
+
+            if(clientPtr->state == TX_PROBE_WFACK){
+                clientPtr->state = TX_PROBING;
+                //start the probe
+                AppChanswitchStartProbing(node);
+            }
+            break;  
+        }
 
         case MSG_APP_TxChangeWfAckTimeout:
-    {
-        #ifdef DEBUG
-            printf("%s: CHANSWITCH Client node %u got change ACK timeout\n",
-                   buf, node->nodeId);
-        #endif /* DEBUG */
-        break;
-    }
+        {
+            #ifdef DEBUG
+                printf("%s: CHANSWITCH Client node %u got change ACK timeout\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG */
+            break;
+        }
 
-    case MSG_APP_TxVerifyWfAckTimeout:
-    {
-        #ifdef DEBUG
-            printf("%s: CHANSWITCH Client node %u got verify ACK timeout\n",
-                   buf, node->nodeId);
-        #endif /* DEBUG */
-        break;
-    }
+        case MSG_APP_TxVerifyWfAckTimeout:
+        {
+            #ifdef DEBUG
+                printf("%s: CHANSWITCH Client node %u got verify ACK timeout\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG */
+            break;
+        }
 
-        default:
+        default: {
             ctoa(getSimTime(node), buf);
             printf("Time %s: CHANSWITCH Client node %u received message of unknown"
                    " type %d.\n", buf, node->nodeId, msg->eventType);
             assert(FALSE);
+        }  
     }
 
     MESSAGE_Free(node, msg);
