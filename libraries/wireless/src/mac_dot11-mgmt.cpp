@@ -3977,6 +3977,24 @@ void MacDot11ManagementScanCompleted(
                 node,
                 dot11,
                 mgmtVars->currentChannel);
+        //send the visible node list to the correct app layer
+        if(dot11->appType == CHANSWITCH_TX_CLIENT){
+            Message *appMsg;
+            appMsg = MESSAGE_Alloc(node,
+                APP_LAYER,
+                APP_CHANSWITCH_CLIENT,
+                MSG_APP_FromMacTxScanFinished);
+            MESSAGE_Send(node, appMsg, 0);
+        }
+        else if(dot11->appType = CHANSWITCH_RX_SERVER){
+            Message *appMsg;
+            appMsg = MESSAGE_Alloc(node,
+                APP_LAYER,
+                APP_CHANSWITCH_SERVER,
+                MSG_APP_FromMacRxScanFinished);
+            MESSAGE_Send(node, appMsg, 0);
+
+        }
 
         return;
     }

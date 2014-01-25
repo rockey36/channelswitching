@@ -3623,6 +3623,10 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         {
             //Set a timer so it gets called properly.
             // printf("MSG_MAC_FromAppChanswitchRequest node %d \n", node->nodeId);
+            AppToMacStartProbe* probeInfo =
+                (AppToMacStartProbe*) MESSAGE_ReturnInfo(msg);
+            dot11->connectionId = probeInfo->connectionId;
+            dot11->appType = probeInfo->appType;
             MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
                                         MSG_MAC_DOT11_ChanswitchRequest); 
             MESSAGE_Free(node,msg);
@@ -4830,6 +4834,8 @@ void MacDot11Init(
     dot11->broadcastQueueSize = DOT11_PS_MODE_DEFAULT_BROADCAST_QUEUE_SIZE;
     dot11->unicastQueueSize = DOT11_PS_MODE_DEFAULT_UNICAST_QUEUE_SIZE;
 	dot11->inTransmitreadyforchanswitch = FALSE;
+    dot11->appType = 0;
+    dot11->connectionId = -1;
 //---------------------------Power-Save-Mode-End-Updates-----------------//
 
 	// Read channel switching interval

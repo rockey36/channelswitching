@@ -1794,6 +1794,10 @@ struct MacDataDot11 {
     double chanswitchRxReturnPrevChannel;
     //AP active probing method
     DOT11_VisibleNodeInfo* visibleNodeList;
+    //remember if TX or RX for active probing
+    int appType;
+    //connection id for app layer
+    int connectionId;
 
 };
 
