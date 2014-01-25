@@ -1459,6 +1459,15 @@ typedef struct app_to_tcp_close {
 } AppToTcpClose;
 
 // /**
+// STRUCT      :: AppChanswitchTimeout
+// DESCRIPTION :: Application sends a timeout message to itself
+// Used in chanswitch
+// **/
+typedef struct app_chanswitch_timeout {
+    int connectionId;
+} AppChanswitchTimeout;
+
+// /**
 // STRUCT      :: AppToTcpConnSetup
 // DESCRIPTION :: Application sets up connection at the local end
 // Needed for NS TCP to fake connection setup
