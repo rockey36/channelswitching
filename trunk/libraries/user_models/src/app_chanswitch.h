@@ -319,6 +319,6 @@ AppChanswitchServerSendProbeAck(Node *node, AppDataChanswitchServer *serverPtr);
  * RETURN:      none.
  */
 void
-AppChanswitchStartProbing(Node *node);
+AppChanswitchStartProbing(Node *node, int appType);
 
 #endif /* _CHANSWITCH_APP_H_ */

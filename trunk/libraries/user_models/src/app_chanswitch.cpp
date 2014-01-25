@@ -431,12 +431,22 @@ AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr,
  * RETURN:      none.
  */
 void
-AppChanswitchStartProbing(Node *node){
+AppChanswitchStartProbing(Node *node, int connectionId, int appType){
     Message *macMsg;
     macMsg = MESSAGE_Alloc(node, 
-        MAC_LAYER,
-        MAC_PROTOCOL_DOT11,
-        MSG_MAC_FromAppChanswitchRequest);
+    MAC_LAYER,
+    MAC_PROTOCOL_DOT11,
+    MSG_MAC_FromAppChanswitchRequest);
+
+    AppToMacStartProbe* info = (AppToMacStartProbe*)
+        MESSAGE_InfoAlloc(
+            node,
+            macMsg,
+            sizeof(AppToMacStartProbe));
+    ERROR_Assert(info, "cannot allocate enough space for needed info");
+    info->connectionId = connectionId;
+    info->appType = appType;
+
     MESSAGE_Send(node, macMsg, 0);
 }
 
@@ -645,7 +655,8 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                        #endif 
                         clientPtr->state = TX_PROBING;
                         //start the probe
-                        AppChanswitchStartProbing(node);
+                        AppChanswitchStartProbing(node, dataRecvd->connectionId,
+                            CHANSWITCH_TX_CLIENT);
                     }
                     break;
                 }
@@ -697,7 +708,8 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             if(clientPtr->state == TX_PROBE_WFACK){
                 clientPtr->state = TX_PROBING;
                 //start the probe
-                AppChanswitchStartProbing(node);
+                AppChanswitchStartProbing(node, timeoutInfo->connectionId,
+                    CHANSWITCH_TX_CLIENT);
             }
             break;  
         }
@@ -715,6 +727,15 @@ AppLayerChanswitchClient(Node *node, Message *msg)
         {
             #ifdef DEBUG
                 printf("%s: CHANSWITCH Client node %u got verify ACK timeout\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG */
+            break;
+        }
+
+        case MSG_APP_FromMacTxScanFinished:
+        {
+            #ifdef DEBUG
+                printf("%s: CHANSWITCH Client node %u channel scan finished\n",
                        buf, node->nodeId);
             #endif /* DEBUG */
             break;
@@ -1056,6 +1077,14 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                             APP_LAYER,
                             APP_CHANSWITCH_SERVER,
                             MSG_APP_RxProbeAckDelay);
+                        AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                            MESSAGE_InfoAlloc(
+                                node,
+                                probeMsg,
+                                sizeof(AppChanswitchTimeout));
+                        ERROR_Assert(info, "cannot allocate enough space for needed info");
+                        info->connectionId = dataRecvd->connectionId;
+
                         MESSAGE_Send(node, probeMsg, RX_PROBE_ACK_DELAY);
                         }
                         else if (packet[0] == CHANGE_PKT){
@@ -1079,42 +1108,6 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                 }
 
             }
-
-
-
-
-			/*
-			 * Test if the received data contains the last byte
-			 * of an item.  If so, send a response packet back.
-			 * If the data contains a 'c', close the connection.
-			 */
-			// if (packet[msg->packetSize - 1] == 'd')
-			// {
-			// 	/* Do nothing since item is not completely received yet. */
-			// }
-			// else if (packet[msg->packetSize - 1] == 'e')
-			// {
-			// 	/* Item completely received, now send control info. */
-
-			// 	AppChanswitchServerSendCtrlPkt(node, serverPtr);
-			// }
-			// else if (packet[msg->packetSize - 1] == 'c')
-			// {
-			// 	/*
-			// 	 * Client wants to close the session, so server also
-			// 	 * initiates a close.
-			// 	 */
-			// 	APP_TcpCloseConnection(
-			// 		node,
-			// 		serverPtr->connectionId);
-
-			// 	serverPtr->sessionFinish = getSimTime(node);
-			// 	serverPtr->sessionIsClosed = TRUE;
-			// }
-			// else
-			// {
-			//    assert(FALSE);
-			// }
 
             break;
         }
@@ -1150,7 +1143,13 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                 printf("%s: CHANSWITCH Server node %u ACK delay timer expired\n",
                        buf, node->nodeId);
             #endif /* DEBUG */
-            AppChanswitchStartProbing(node);
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            serverPtr = AppChanswitchServerGetChanswitchServer(node,
+                                            timeoutInfo->connectionId);
+            AppChanswitchStartProbing(node, timeoutInfo->connectionId,
+                                        CHANSWITCH_RX_SERVER);
             break;
         }
 
@@ -1158,6 +1157,15 @@ AppLayerChanswitchServer(Node *node, Message *msg)
         {
             #ifdef DEBUG
                 printf("%s: CHANSWITCH Server node %u ACK change timer expired\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG */
+            break;
+        }
+
+        case MSG_APP_FromMacRxScanFinished:
+        {
+            #ifdef DEBUG
+                printf("%s: CHANSWITCH Server node %u channel scan finished\n",
                        buf, node->nodeId);
             #endif /* DEBUG */
             break;

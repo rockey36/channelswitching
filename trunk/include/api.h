@@ -53,6 +53,9 @@
 #include "mobility.h"
 #include "trace.h"
 
+#define CHANSWITCH_TX_CLIENT 1
+#define CHANSWITCH_RX_SERVER 2
+
 // /**
 // ENUM        :: MESSAGE/EVENT
 // DESCRIPTION :: Event/message types exchanged in the simulation
@@ -137,8 +140,8 @@ enum
 	// Message Type for DOT11 channel switching
     MSG_MAC_DOT11_ChanswitchRequest             = 388,
     MSG_MAC_FromAppChanswitchRequest            = 389,
-    MSG_APP_FromMacSendAPList                   = 390,                   
-    MSG_MAC_FromAppChangeChannel                = 391,
+    MSG_APP_FromMacTxScanFinished               = 390,                   
+    MSG_APP_FromMacRxScanFinished               = 391,
     MSG_MAC_DOT11_ChanSwitchRxReturnPrevChannel = 392,
     MSG_MAC_DOT11_ChanSwitchInitialDelay        = 393,
     MSG_MAC_DOT11_ChanSwitchRxProbe             = 394,
@@ -1466,6 +1469,16 @@ typedef struct app_to_tcp_close {
 typedef struct app_chanswitch_timeout {
     int connectionId;
 } AppChanswitchTimeout;
+
+// /**
+// STRUCT      :: AppToMacStartProbe
+// DESCRIPTION :: Application sends message to mac to start channel scan
+// Used in chanswitch
+// **/
+typedef struct app_to_mac_start_probe{
+    int connectionId;
+    int appType;
+} AppToMacStartProbe;
 
 // /**
 // STRUCT      :: AppToTcpConnSetup
