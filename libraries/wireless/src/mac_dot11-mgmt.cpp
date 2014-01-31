@@ -3948,6 +3948,7 @@ void MacDot11ManagementScanCompleted(
     int scanStatus = result;
     DOT11_ApInfo* bestAp = MacDot11ManagementFindBestAp(node, dot11);
     dot11->ScanStarted = FALSE;
+    int nodeCount = 0;
 
     DOT11_ManagementVars * mgmtVars =
         (DOT11_ManagementVars*) dot11->mngmtVars;
@@ -3969,7 +3970,8 @@ void MacDot11ManagementScanCompleted(
         while(nodeInfo != NULL){
         printf("channel %d, signal strength %f dBm, isAP %d, bss %d \n",
             nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
-            nodeInfo = nodeInfo->next;  
+            nodeInfo = nodeInfo->next; 
+            nodeCount++; 
         }
         printf("\n \n");
 
@@ -3984,16 +3986,33 @@ void MacDot11ManagementScanCompleted(
                 APP_LAYER,
                 APP_CHANSWITCH_CLIENT,
                 MSG_APP_FromMacTxScanFinished);
+            MacToAppScanComplete* info = (MacToAppScanComplete *)
+            MESSAGE_InfoAlloc(
+                node,
+                appMsg,
+                sizeof(MacToAppScanComplete));
+            ERROR_Assert(info, "cannot allocate enough space for needed info");
+            info->nodeInfo = dot11->visibleNodeList;
+            info->connectionId = dot11->connectionId;
+            info->nodeCount = nodeCount;
             MESSAGE_Send(node, appMsg, 0);
         }
-        else if(dot11->appType = CHANSWITCH_RX_SERVER){
+        else if(dot11->appType == CHANSWITCH_RX_SERVER){
             Message *appMsg;
             appMsg = MESSAGE_Alloc(node,
                 APP_LAYER,
                 APP_CHANSWITCH_SERVER,
                 MSG_APP_FromMacRxScanFinished);
+            MacToAppScanComplete* info = (MacToAppScanComplete *)
+            MESSAGE_InfoAlloc(
+                node,
+                appMsg,
+                sizeof(MacToAppScanComplete));
+            ERROR_Assert(info, "cannot allocate enough space for needed info");
+            info->nodeInfo = dot11->visibleNodeList;
+            info->connectionId = dot11->connectionId;
+            info->nodeCount = nodeCount;
             MESSAGE_Send(node, appMsg, 0);
-
         }
 
         return;
@@ -4731,12 +4750,46 @@ void MacDot11ManagementHandleTimeout(
             MacDot11ManagementStartJoin(node, dot11);
             break;
         }
+        case MSG_MAC_DOT11_MACAddressRequest:
+        {
+            ERROR_Assert(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE,
+            "Error: Channel switching type must be set to AP Probing. \n");   
+            printf("Received request to report MAC address from node %d (address %d) \n", node->nodeId, dot11->selfAddr);
+            Message *appMsg;
+            if(dot11->appType == CHANSWITCH_TX_CLIENT){
+                appMsg = MESSAGE_Alloc(node,
+                    APP_LAYER,
+                    APP_CHANSWITCH_CLIENT,
+                    MSG_APP_FromMac_MACAddressRequest);
+                }
+            else if (dot11->appType == CHANSWITCH_RX_SERVER){
+                appMsg = MESSAGE_Alloc(node,
+                    APP_LAYER,
+                    APP_CHANSWITCH_SERVER,
+                    MSG_APP_FromMac_MACAddressRequest); 
+            }
+            else {
+                ERROR_ReportError("MSG_APP_FromMac_MACAddressRequest: Application type not specified. \n");
+            }
+            MacToAppAddrRequest* info = (MacToAppAddrRequest *)
+            MESSAGE_InfoAlloc(
+                node,
+                appMsg,
+                sizeof(MacToAppAddrRequest));
+            ERROR_Assert(info, "cannot allocate enough space for needed info");
+            info->connectionId = dot11->connectionId;
+            info->myAddr = dot11->selfAddr;
+            MESSAGE_Send(node, appMsg, 0);
+            
+
+            break;
+        }
         default:
         {
             ERROR_ReportError("MacDot11Layer: "
                 "Unknown message event type.\n");
 
-            //MESSAGE_Free(node, msg);
+            MESSAGE_Free(node, msg);
             break;
 
         }

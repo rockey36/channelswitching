@@ -31,7 +31,7 @@
 #include "app_util.h"
 #include "app_chanswitch.h"
 
- #define DEBUG 1
+ #define DEBUG_CHANSWITCH 1
 
 /*
  * Static Functions
@@ -90,13 +90,13 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
         {
             tmpChanswitchClient = (AppDataChanswitchClient *) appList->appDetail;
 
-#ifdef DEBUG
+#ifdef DEBUG_CHANSWITCH
             printf("CHANSWITCH Client: Node %d comparing uniqueId "
                    "%d with %d\n",
                    node->nodeId,
                    tmpChanswitchClient->uniqueId,
                    openResult->uniqueId);
-#endif /* DEBUG */
+#endif /* DEBUG_CHANSWITCH */
 
             if (tmpChanswitchClient->uniqueId == openResult->uniqueId)
             {
@@ -123,7 +123,8 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
     chanswitchClient->sessionIsClosed = FALSE;
     chanswitchClient->bytesRecvdDuringThePeriod = 0;
     chanswitchClient->state = TX_IDLE;
-#ifdef DEBUG
+    chanswitchClient->got_RX_nodelist = FALSE;
+#ifdef DEBUG_CHANSWITCH
     char addrStr[MAX_STRING_LENGTH];
     printf("CHANSWITCH Client: Node %d updating chanswitch client structure\n",
             node->nodeId);
@@ -133,7 +134,7 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
     IO_ConvertIpAddressToString(&chanswitchClient->remoteAddr, addrStr);
     printf("    remoteAddr = %s\n", addrStr);
     // printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
-#endif /* DEBUG */
+#endif /* DEBUG_CHANSWITCH */
 
     return chanswitchClient;
 }
@@ -184,8 +185,9 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     chanswitchClient->numBytesRecvd = 0;
     chanswitchClient->lastItemSent = 0;
     chanswitchClient->state = TX_IDLE;
+    chanswitchClient->got_RX_nodelist = FALSE;
 
-#ifdef DEBUG
+#ifdef DEBUG_CHANSWITCH
     char addrStr[MAX_STRING_LENGTH];
     printf("CHANSWITCH Client: Node %d creating new chanswitch "
            "client structure\n", node->nodeId);
@@ -195,9 +197,9 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     IO_ConvertIpAddressToString(&chanswitchClient->remoteAddr, addrStr);
     printf("    remoteAddr = %s\n", addrStr);
     // printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
-#endif /* DEBUG */
+#endif /* DEBUG_CHANSWITCH */
 
-    #ifdef DEBUG_OUTPUT_FILE
+    #ifdef DEBUG_CHANSWITCH_OUTPUT_FILE
     {
         char fileName[MAX_STRING_LENGTH];
         FILE *fp;
@@ -227,76 +229,7 @@ AppChanswitchClientNewChanswitchClient(Node *node,
 
 
 
-/*
- * NAME:        AppChanswitchClientItemsToSend.
- * PURPOSE:     call tcplib function ftp_nitems() to get the
- *              number of items to send in an chanswitch session.
- * PARAMETERS:  node - pointer to the node.
- * RETRUN:      amount of items to send.
- */
-int
-AppChanswitchClientItemsToSend(AppDataChanswitchClient *clientPtr)
-{
-    int items;
 
-    items = ftp_nitems(clientPtr->seed);
-
-#ifdef DEBUG
-    printf("CHANSWITCH nitems = %d\n", items);
-#endif /* DEBUG */
-
-    return items;
-}
-
-/*
- * NAME:        AppChanswitchClientItemSize.
- * PURPOSE:     call tcplib function ftp_itemsize() to get the size
- *              of each item.
- * PARAMETERS:  node - pointer to the node.
- * RETRUN:      size of an item.
- */
-int
-AppChanswitchClientItemSize(AppDataChanswitchClient *clientPtr)
-{
-    int size;
-
-    size = ftp_itemsize(clientPtr->seed);
-
-#ifdef DEBUG
-    printf("CHANSWITCH item size = %d\n", size);
-#endif /* DEBUG */
-
-    return size;
-}
-
-/*
- * NAME:        AppChanswitchClientCtrlPktSize.
- * PURPOSE:     call tcplib function ftp_ctlsize().
- * PARAMETERS:  node - pointer to the node.
- * RETRUN:      chanswitch control packet size.
- */
-int
-AppChanswitchClientCtrlPktSize(AppDataChanswitchClient *clientPtr)
-{
-    int ctrlPktSize;
-    ctrlPktSize = ftp_ctlsize(clientPtr->seed);
-
-#ifdef DEBUG
-    printf("CHANSWITCH: Node %d ftp control pktsize = %d\n",
-           ctrlPktSize);
-#endif /* DEBUG */
-
-    return (ctrlPktSize);
-}
-
-/*
- * NAME:        AppChanswitchServerGetChanswitchServer.
- * PURPOSE:     search for a chanswitch server data structure.
- * PARAMETERS:  appList - link list of applications,
- *              connId - connection ID of the chanswitch server.
- * RETURN:      the pointer to the chanswitch server data structure,
- *              NULL if nothing found.
- */
 AppDataChanswitchServer *
 AppChanswitchServerGetChanswitchServer(Node *node, int connId)
 {
@@ -362,7 +295,7 @@ AppChanswitchServerNewChanswitchServer(Node *node,
 
     APP_RegisterNewApp(node, APP_CHANSWITCH_SERVER, chanswitchServer);
 
-    #ifdef DEBUG_OUTPUT_FILE
+    #ifdef DEBUG_CHANSWITCH_OUTPUT_FILE
     {
         char fileName[MAX_STRING_LENGTH];
         FILE *fp;
@@ -406,10 +339,11 @@ AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr,
 
     char *payload;
 
-    payload = (char *)MEM_malloc(CHANSWITCH_PROBE_PKT_SIZE); //4
+    payload = (char *)MEM_malloc(CHANSWITCH_PROBE_PKT_SIZE); //10
     memset(payload,PROBE_PKT,1);
     memset(payload+1,0xfe,2); //dummy data for chanswitch mask
     memset(payload+3,options,1); //options byte only specifies initial chanswitch
+
     if (!clientPtr->sessionIsClosed)
     {
         APP_TcpSendData(
@@ -425,9 +359,10 @@ AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr,
 }
 
 /*
- * NAME:        AppChanswitchStartProbing.
+ * NAME:            
  * PURPOSE:     Start scanning channels - either client or server.
  * PARAMETERS:  node - pointer to the node
+ * connectionId - identifier of the client/server connection
  * RETURN:      none.
  */
 void
@@ -451,11 +386,38 @@ AppChanswitchStartProbing(Node *node, int connectionId, int appType){
 }
 
 /*
+ * NAME:        AppChanswitchGetMyMacAddr.
+ * PURPOSE:     Ask MAC for my MAC address
+ * PARAMETERS:  node - pointer to the node,
+ *              connectionId - identifier of the client/server connection
+ *              appType - is this app TX or RX
+ * RETURN:      none.
+ */
+void
+AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType){
+    Message *macMsg;
+    macMsg = MESSAGE_Alloc(node, 
+    MAC_LAYER,
+    MAC_PROTOCOL_DOT11,
+    MSG_MAC_FromAppMACAddressRequest);
+
+    AppToMacAddrRequest* info = (AppToMacAddrRequest*)
+        MESSAGE_InfoAlloc(
+            node,
+            macMsg,
+            sizeof(AppToMacAddrRequest));
+    ERROR_Assert(info, "cannot allocate enough space for needed info");
+    info->connectionId = connectionId;
+    info->appType = appType;
+
+    MESSAGE_Send(node, macMsg, 0);
+}
+
+/*
  * NAME:        AppChanswitchServerSendProbeAck.
  * PURPOSE:     Send the ack indicating server got probe request
  * PARAMETERS:  node - pointer to the node,
  *              serverPtr - pointer to the server data structure.
- *              initial - is this the first channel switch?
  * RETURN:      none.
  */
 void
@@ -476,6 +438,69 @@ AppChanswitchServerSendProbeAck(Node *node, AppDataChanswitchServer *serverPtr){
                 TRACE_APP_CHANSWITCH);
     }
      MEM_free(payload);
+}
+
+/*
+ * NAME:        AppChanswitchServerSendVisibleNodeList.
+ * PURPOSE:     Send the list of visible nodes to the TX.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchServerSendVisibleNodeList(Node *node, 
+                                        AppDataChanswitchServer *serverPtr, 
+                                        DOT11_VisibleNodeInfo* nodeInfo,
+                                        int nodeCount)
+{
+    char *payload;
+    //11 + 24 * nodeCount
+    int length = CHANSWITCH_LIST_HEADER_SIZE + CHANSWITCH_LIST_ENTRY_SIZE * nodeCount; 
+    payload = (char *)MEM_malloc(length);
+    memset(payload, NODE_LIST, 1);
+    memset(payload+1, 0x55, 8); //PLACEHOLDER for tx rssi
+    memset(payload+9, (nodeCount % 256),1); //low byte of node count
+    memset(payload+10, (nodeCount / 256),1); //high byte of node count
+    int count = 0;
+
+    //test: print visible node list
+    //TODO: do not include TX in visible node list
+    printf("(APP RX) nodeCount: %d \n", nodeCount);
+    if(nodeInfo == NULL){
+        printf("\n (APP RX) No visible nodes found at node %d. \n",node->nodeId);
+    }
+    else{
+        printf("\n (APP RX) Visible Node List at node %d: \n",node->nodeId);
+    }
+
+    while(nodeInfo != NULL){
+    printf("(APP RX) channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+        nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+        char *offset = payload + CHANSWITCH_LIST_HEADER_SIZE + count * CHANSWITCH_LIST_ENTRY_SIZE;
+        memcpy(offset, &(nodeInfo->channelId), 1);
+        memcpy(offset+1, &(nodeInfo->bssAddr),6);
+        memcpy(offset+7, &(nodeInfo->signalStrength),8);
+        memcpy(offset+15, &(nodeInfo->isAP),1);
+        nodeInfo = nodeInfo->next;
+        count++;
+
+    }
+    printf("\n \n");
+
+    if (!serverPtr->sessionIsClosed)
+    {
+        APP_TcpSendData(
+                node,
+                serverPtr->connectionId,
+                payload,
+                length,
+                TRACE_APP_CHANSWITCH);
+    }
+     MEM_free(payload);
+
+
+    //TODO: tell dot11 to clear the visible node list
+
 }
 
 
@@ -507,18 +532,18 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             openResult = (TransportToAppOpenResult *)MESSAGE_ReturnInfo(msg);
 
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
             printf("%s: CHANSWITCH Client node %u got OpenResult\n", buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
 
             assert(openResult->type == TCP_CONN_ACTIVE_OPEN);
 
             if (openResult->connectionId < 0)
             {
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Client node %u connection failed!\n",
                        buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
 
                 node->appData.numAppTcpFailure ++;
             }
@@ -530,10 +555,9 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
                 assert(clientPtr != NULL);
 
-               //Send the 'start scanning' pkt to server.
+               //Get my mac address from MAC layer
                 clientPtr->state = TX_PROBE_INIT;
-                AppChanswitchClientSendProbeInit(node, clientPtr, TRUE);
-                clientPtr->state = TX_PROBE_WFACK;
+                AppChanswitchGetMyMacAddr(node,clientPtr->connectionId, CHANSWITCH_TX_CLIENT);
 
                 //start probe ACK timeout timer
                 Message *timeout;
@@ -564,10 +588,10 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             dataSent = (TransportToAppDataSent *) MESSAGE_ReturnInfo(msg);
 
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
             printf("%s: CHANSWITCH Client node %u sent data %d\n",
                    buf, node->nodeId, dataSent->length);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
 
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  dataSent->connectionId);
@@ -579,7 +603,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
 
             /* Instant throughput is measured here after each 1 second */
-            #ifdef DEBUG_OUTPUT_FILE
+            #ifdef DEBUG_CHANSWITCH_OUTPUT_FILE
             {
                 char fileName[MAX_STRING_LENGTH];
                 FILE *fp;
@@ -634,10 +658,10 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             packet = MESSAGE_ReturnPacket(msg);
 
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
             printf("%s: CHANSWITCH Client node %u received data %d\n",
                    buf, node->nodeId, msg->packetSize);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
 
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  dataRecvd->connectionId);
@@ -646,10 +670,11 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             clientPtr->numBytesRecvd += (clocktype) msg->packetSize;
 
+
             switch(clientPtr->state){
                 case TX_PROBE_WFACK:{
                     if(packet[0] == PROBE_ACK){
-                       #ifdef DEBUG
+                       #ifdef DEBUG_CHANSWITCH
                         printf("CHANSWITCH Client: Node %ld at %s got PROBE_ACK\n",
                             node->nodeId, buf);
                        #endif 
@@ -657,6 +682,29 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                         //start the probe
                         AppChanswitchStartProbing(node, dataRecvd->connectionId,
                             CHANSWITCH_TX_CLIENT);
+                    }
+                    break;
+                }
+                case TX_PROBING: {
+                    if(packet[0] == NODE_LIST){
+                        printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBING state.\n",
+                            node->nodeId, buf);
+                    }
+                    break;
+                }
+                case TX_PROBE_WFRX: {
+                    if(packet[0] == NODE_LIST){
+                        printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBE_WFRX state.\n",
+                            node->nodeId, buf);
+                        if(clientPtr->state == TX_PROBING){ //got RX results before TX probe done
+                            clientPtr->got_RX_nodelist = TRUE;
+                            //TODO: save the nodelist
+                        }
+                        else if(clientPtr->state == TX_PROBE_WFRX){ //got RX results after
+                        clientPtr->state = TX_CHANGE_INIT;
+                        //TODO: save the nodelist
+                        //TODO: evaluate channels
+                        }
                     }
                     break;
                 }
@@ -671,10 +719,10 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             closeResult = (TransportToAppCloseResult *)
                           MESSAGE_ReturnInfo(msg);
 
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
             printf("%s: CHANSWITCH Client node %u got close result\n",
                    buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
 
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                                  closeResult->connectionId);
@@ -694,10 +742,10 @@ AppLayerChanswitchClient(Node *node, Message *msg)
         case MSG_APP_TxProbeWfAckTimeout:
         {
 
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Client node %u got probe ACK timeout\n",
                        buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
 
             AppChanswitchTimeout* timeoutInfo;
             timeoutInfo = (AppChanswitchTimeout*) 
@@ -716,28 +764,63 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
         case MSG_APP_TxChangeWfAckTimeout:
         {
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Client node %u got change ACK timeout\n",
                        buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
             break;
         }
 
         case MSG_APP_TxVerifyWfAckTimeout:
         {
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Client node %u got verify ACK timeout\n",
                        buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
             break;
         }
 
         case MSG_APP_FromMacTxScanFinished:
         {
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Client node %u channel scan finished\n",
                        buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
+            MacToAppScanComplete* scanComplete;
+            scanComplete = (MacToAppScanComplete*) MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchClientGetChanswitchClient(node,
+                                            scanComplete->connectionId);
+
+            if(clientPtr->state == TX_PROBING){
+
+                if(!clientPtr->got_RX_nodelist){ //did not get nodelist yet
+                    clientPtr->state = TX_PROBE_WFRX;
+                }
+                else { //got nodelist already
+                    clientPtr->state = TX_CHANGE_INIT;
+                    //TODO: start channel analysis
+                }
+            }
+            break;
+        }
+
+        case MSG_APP_FromMac_MACAddressRequest:
+        {
+            MacToAppAddrRequest* addrRequest;
+            addrRequest = (MacToAppAddrRequest*) MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchClientGetChanswitchClient(node, addrRequest->connectionId);
+            clientPtr->myAddr = addrRequest->myAddr; //save my address
+            #ifdef DEBUG_CHANSWITCH
+                printf("TX mac address: %2x:%2x:%2x:%2x:%2x:%2x \n", 
+                    clientPtr->myAddr.byte[5], 
+                    clientPtr->myAddr.byte[4], 
+                    clientPtr->myAddr.byte[3],
+                    clientPtr->myAddr.byte[2],
+                    clientPtr->myAddr.byte[1],
+                    clientPtr->myAddr.byte[0]);
+            #endif
+            AppChanswitchClientSendProbeInit(node, clientPtr, TRUE);
+            clientPtr->state = TX_PROBE_WFACK;
             break;
         }
 
@@ -966,10 +1049,10 @@ AppLayerChanswitchServer(Node *node, Message *msg)
             listenResult = (TransportToAppListenResult *)
                            MESSAGE_ReturnInfo(msg);
 
-#ifdef DEBUG
+#ifdef DEBUG_CHANSWITCH
             printf("CHANSWITCH Server: Node %ld at %s got listenResult\n",
                    node->nodeId, buf);
-#endif /* DEBUG */
+#endif /* DEBUG_CHANSWITCH */
 
             if (listenResult->connectionId == -1)
             {
@@ -984,10 +1067,10 @@ AppLayerChanswitchServer(Node *node, Message *msg)
             TransportToAppOpenResult *openResult;
             openResult = (TransportToAppOpenResult *)MESSAGE_ReturnInfo(msg);
 
-#ifdef DEBUG
+#ifdef DEBUG_CHANSWITCH
             printf("CHANSWITCH Server: Node %ld at %s got OpenResult\n",
                    node->nodeId, buf);
-#endif /* DEBUG */
+#endif /* DEBUG_CHANSWITCH */
 
             assert(openResult->type == TCP_CONN_PASSIVE_OPEN);
 
@@ -1013,10 +1096,10 @@ AppLayerChanswitchServer(Node *node, Message *msg)
 
             dataSent = (TransportToAppDataSent *) MESSAGE_ReturnInfo(msg);
 
-#ifdef DEBUG
+#ifdef DEBUG_CHANSWITCH
             printf("CHANSWITCH Server Node %ld at %s sent data %ld\n",
                    node->nodeId, buf, dataSent->length);
-#endif /* DEBUG */
+#endif /* DEBUG_CHANSWITCH */
 
             serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                      dataSent->connectionId);
@@ -1039,10 +1122,10 @@ AppLayerChanswitchServer(Node *node, Message *msg)
 
             packet = MESSAGE_ReturnPacket(msg);
 
-#ifdef DEBUG
+#ifdef DEBUG_CHANSWITCH
             printf("CHANSWITCH Server: Node %ld at %s received data size %d\n",
                    node->nodeId, buf, MESSAGE_ReturnPacketSize(msg));
-#endif /* DEBUG */
+#endif /* DEBUG_CHANSWITCH */
 
             serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                                  dataRecvd->connectionId);
@@ -1064,7 +1147,7 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                 case RX_IDLE:
                 {
                     if(packet[0] == PROBE_PKT){
-                       #ifdef DEBUG
+                       #ifdef DEBUG_CHANSWITCH
                         printf("CHANSWITCH Server: Node %ld at %s got PROBE_PKT\n",
                             node->nodeId, buf);
                        #endif 
@@ -1088,13 +1171,13 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                         MESSAGE_Send(node, probeMsg, RX_PROBE_ACK_DELAY);
                         }
                         else if (packet[0] == CHANGE_PKT){
-                        #ifdef DEBUG
+                        #ifdef DEBUG_CHANSWITCH
                             printf("CHANSWITCH Server: Node %ld at %s got CHANGE_PKT\n",
                                 node->nodeId, buf);
                         #endif 
                         }
                         else if (packet[0] == VERIFY_PKT){
-                        #ifdef DEBUG
+                        #ifdef DEBUG_CHANSWITCH
                             printf("CHANSWITCH Server: Node %ld at %s got VERIFY_PKT\n",
                                 node->nodeId, buf);
                         #endif 
@@ -1119,10 +1202,10 @@ AppLayerChanswitchServer(Node *node, Message *msg)
             closeResult = (TransportToAppCloseResult *)
                           MESSAGE_ReturnInfo(msg);
 
-#ifdef DEBUG
+#ifdef DEBUG_CHANSWITCH
             printf("CHANSWITCH Server: Node %ld at %s got close result\n",
                    node->nodeId, buf);
-#endif /* DEBUG */
+#endif /* DEBUG_CHANSWITCH */
 
             serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                                  closeResult->connectionId);
@@ -1139,35 +1222,64 @@ AppLayerChanswitchServer(Node *node, Message *msg)
 
         case MSG_APP_RxProbeAckDelay:
         {
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Server node %u ACK delay timer expired\n",
                        buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
             AppChanswitchTimeout* timeoutInfo;
             timeoutInfo = (AppChanswitchTimeout*) 
                             MESSAGE_ReturnInfo(msg);
             serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                             timeoutInfo->connectionId);
-            AppChanswitchStartProbing(node, timeoutInfo->connectionId,
-                                        CHANSWITCH_RX_SERVER);
+            AppChanswitchGetMyMacAddr(node,serverPtr->connectionId,CHANSWITCH_RX_SERVER);
             break;
         }
 
         case MSG_APP_RxChangeAckDelay:
         {
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Server node %u ACK change timer expired\n",
                        buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
             break;
         }
 
         case MSG_APP_FromMacRxScanFinished:
         {
-            #ifdef DEBUG
+            #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Server node %u channel scan finished\n",
                        buf, node->nodeId);
-            #endif /* DEBUG */
+            #endif /* DEBUG_CHANSWITCH */
+            //send the packet to TX
+            MacToAppScanComplete* scanComplete;
+            scanComplete = (MacToAppScanComplete*) MESSAGE_ReturnInfo(msg);
+            serverPtr = AppChanswitchServerGetChanswitchServer(node,
+                                            scanComplete->connectionId);
+            AppChanswitchServerSendVisibleNodeList(node, 
+                                                    serverPtr, 
+                                                    scanComplete->nodeInfo, 
+                                                    scanComplete->nodeCount);
+            serverPtr->state = RX_IDLE;
+            break;
+        }
+
+        case MSG_APP_FromMac_MACAddressRequest:
+        {
+            MacToAppAddrRequest* addrRequest;
+            addrRequest = (MacToAppAddrRequest*) MESSAGE_ReturnInfo(msg);
+            serverPtr = AppChanswitchServerGetChanswitchServer(node, addrRequest->connectionId);
+            serverPtr->myAddr = addrRequest->myAddr; //save my address
+            #ifdef DEBUG_CHANSWITCH
+                printf("RX mac address: %2x:%2x:%2x:%2x:%2x:%2x \n", 
+                    serverPtr->myAddr.byte[5], 
+                    serverPtr->myAddr.byte[4], 
+                    serverPtr->myAddr.byte[3],
+                    serverPtr->myAddr.byte[2],
+                    serverPtr->myAddr.byte[1],
+                    serverPtr->myAddr.byte[0]);
+            #endif
+            AppChanswitchStartProbing(node, addrRequest->connectionId,
+                                        CHANSWITCH_RX_SERVER);
             break;
         }
 

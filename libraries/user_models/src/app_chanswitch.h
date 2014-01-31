@@ -25,8 +25,13 @@
 
 #include "types.h"
 
-#define CHANSWITCH_PROBE_PKT_SIZE 4
-#define CHANSWITCH_ACK_SIZE       1
+#define CHANSWITCH_PROBE_PKT_SIZE           6
+ //id (1) : channel mask (2) : flags (1)
+#define CHANSWITCH_ACK_SIZE                 1
+#define CHANSWITCH_LIST_HEADER_SIZE         11
+ // id (1) : tx rssi (8) : total station count (2) 
+#define CHANSWITCH_LIST_ENTRY_SIZE          16   
+//  channel (1) :  mac addr (6) : signal strength (8) : isAp (1)
 
 #define TX_PROBE_WFACK_TIMEOUT     (50 * MILLI_SECOND)
 #define TX_CHANGE_WFACK_TIMEOUT    (50 * MILLI_SECOND)
@@ -64,53 +69,56 @@
     CHANGE_PKT  = 3,
     CHANGE_ACK  = 4,
     VERIFY_PKT  = 5,
-    VERIFY_ACK  = 6
+    VERIFY_ACK  = 6,
+    NODE_LIST   = 7
  };
 
 typedef
 struct struct_app_chanswitch_client_str
 {
-    int         connectionId;
-    Address     localAddr;
-    Address     remoteAddr;
-    clocktype   sessionStart;
-    clocktype   sessionFinish;
-    clocktype   lastTime;
-    BOOL        sessionIsClosed;
-    int         itemsToSend;
-    int         itemSizeLeft;
-    Int64       numBytesSent;
-    Int64       numBytesRecvd;
-    Int32       bytesRecvdDuringThePeriod;
-    clocktype   lastItemSent;
-    int         uniqueId;
-    RandomSeed  seed;
+    int             connectionId;
+    Address         localAddr;
+    Address         remoteAddr;
+    clocktype       sessionStart;
+    clocktype       sessionFinish;
+    clocktype       lastTime;
+    BOOL            sessionIsClosed;
+    int             itemsToSend;
+    int             itemSizeLeft;
+    Int64           numBytesSent;
+    Int64           numBytesRecvd;
+    Int32           bytesRecvdDuringThePeriod;
+    clocktype       lastItemSent;
+    int             uniqueId;
+    RandomSeed      seed;
 //DERIUS
-    char        cmd[MAX_STRING_LENGTH];
-    int         state;
-
+    char            cmd[MAX_STRING_LENGTH];
+    int             state;
+    BOOL            got_RX_nodelist;
+    Mac802Address   myAddr; 
     
 }AppDataChanswitchClient;
 
 typedef
 struct struct_app_chanswitch_server_str
 {
-    int         connectionId;
-    Address     localAddr;
-    Address     remoteAddr;
-    clocktype   sessionStart;
-    clocktype   sessionFinish;
-    clocktype   lastTime;
-    BOOL        sessionIsClosed;
-    Int64       numBytesSent;
-    Int64       numBytesRecvd;
-    Int32       bytesRecvdDuringThePeriod;
-    clocktype   lastItemSent;
-    RandomSeed  seed;
+    int             connectionId;
+    Address         localAddr;
+    Address         remoteAddr;
+    clocktype       sessionStart;
+    clocktype       sessionFinish;
+    clocktype       lastTime;
+    BOOL            sessionIsClosed;
+    Int64           numBytesSent;
+    Int64           numBytesRecvd;
+    Int32           bytesRecvdDuringThePeriod;
+    clocktype       lastItemSent;
+    RandomSeed      seed;
 //
-    BOOL        isLoggedIn;
-    int         portForDataConn;
-    int         state;
+    BOOL            isLoggedIn;
+    int             portForDataConn;
+    int             state;
+    Mac802Address   myAddr;
 }AppDataChanswitchServer;
 
 /*
@@ -296,6 +304,7 @@ AppChanswitchServerNewChanswitchServer(Node *nodePtr,
  * PARAMETERS:  node - pointer to the node,
  *              clientPtr - pointer to the server data structure.
  *              initial - is this the first channel switch?
+ *              myAddr - MAC address of this TX node 
  * RETURN:      none.
  */
 void
@@ -316,9 +325,36 @@ AppChanswitchServerSendProbeAck(Node *node, AppDataChanswitchServer *serverPtr);
  * NAME:        AppChanswitchStartProbing.
  * PURPOSE:     Start scanning channels - either client or server.
  * PARAMETERS:  node - pointer to the node
+ *              appType:     CHANSWITCH_TX_CLIENT or CHANSWITCH_RX_SERVER
  * RETURN:      none.
  */
 void
 AppChanswitchStartProbing(Node *node, int appType);
+
+/*
+ * NAME:        AppChanswitchServerSendVisibleNodeList.
+ * PURPOSE:     Send the list of visible nodes to the TX.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchServerSendVisibleNodeList(Node *node, 
+                                        AppDataChanswitchServer *serverPtr, 
+                                        DOT11_VisibleNodeInfo* nodeInfo,
+                                        int nodeCount);
+
+/*
+ * NAME:        AppChanswitchGetMyMacAddr.
+ * PURPOSE:     Ask MAC for my MAC address
+ * PARAMETERS:  node - pointer to the node,
+ *              connectionId - identifier of the client/server connection
+ *              appType - is this app TX or RX
+ * RETURN:      none.
+ */
+void
+AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType);
+
+
 
 #endif /* _CHANSWITCH_APP_H_ */

@@ -131,6 +131,9 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
     //Message Type for APP channel switching
+    MSG_APP_FromMac_MACAddressRequest            = 380,
+    MSG_MAC_DOT11_MACAddressRequest             = 381,
+    MSG_MAC_FromAppMACAddressRequest            = 382,
     MSG_APP_TxProbeWfAckTimeout                 = 383,
     MSG_APP_TxChangeWfAckTimeout                = 384,
     MSG_APP_TxVerifyWfAckTimeout                = 385,
@@ -1471,6 +1474,26 @@ typedef struct app_chanswitch_timeout {
 } AppChanswitchTimeout;
 
 // /**
+// STRUCT      :: AppToMacAddrRequest
+// DESCRIPTION :: Application asks for its MAC address
+// Used in chanswitch
+// **/
+typedef struct app_to_mac_addr_request {
+    int connectionId;
+    int appType;
+} AppToMacAddrRequest;
+
+// /**
+// STRUCT      :: MacToAppAddr
+// DESCRIPTION :: MAC tells TX its address
+// Used in chanswitch
+// **/
+typedef struct mac_to_app_addr_request {
+    int connectionId;
+    Mac802Address myAddr;
+} MacToAppAddrRequest;
+
+// /**
 // STRUCT      :: AppToMacStartProbe
 // DESCRIPTION :: Application sends message to mac to start channel scan
 // Used in chanswitch
@@ -1479,6 +1502,20 @@ typedef struct app_to_mac_start_probe{
     int connectionId;
     int appType;
 } AppToMacStartProbe;
+
+// /**
+// STRUCT      :: MacToAppScanComplete
+// DESCRIPTION :: MAC sends visible node list to App after finishing
+// Used in chanswitch
+// **/
+typedef struct mac_to_app_scan_complete{
+    int connectionId;
+    int nodeCount;
+    DOT11_VisibleNodeInfo* nodeInfo;
+} MacToAppScanComplete;
+
+
+
 
 // /**
 // STRUCT      :: AppToTcpConnSetup
