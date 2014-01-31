@@ -1904,6 +1904,16 @@ typedef struct struct_random_fault
 } RandFault;
 
 
+//Visible node list data structure
+typedef struct dot11_visible_node_str{
+    int channelId;
+    Mac802Address bssAddr;
+    double signalStrength;
+    BOOL isAP;
+    struct dot11_visible_node_str* next;
+
+}DOT11_VisibleNodeInfo;
+
 // /**
 // FUNCTION    :: MAC_RandFaultInit
 // LAYER       :: MAC

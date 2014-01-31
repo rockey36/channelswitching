@@ -1406,15 +1406,7 @@ typedef struct dot11_ap_info_str{
     struct dot11_ap_info_str* next;
 }DOT11_ApInfo;
 
-//Visible node list data structure
-typedef struct dot11_visible_node_str{
-    int channelId;
-    Mac802Address bssAddr;
-    double signalStrength;
-    BOOL isAP;
-    struct dot11_visible_node_str* next;
 
-}DOT11_VisibleNodeInfo;
 
 // Dot11 data structure
 struct MacDataDot11 {
@@ -1798,7 +1790,6 @@ struct MacDataDot11 {
     int appType;
     //connection id for app layer
     int connectionId;
-
 };
 
 
