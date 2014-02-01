@@ -124,6 +124,7 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
     chanswitchClient->bytesRecvdDuringThePeriod = 0;
     chanswitchClient->state = TX_IDLE;
     chanswitchClient->got_RX_nodelist = FALSE;
+
 #ifdef DEBUG_CHANSWITCH
     char addrStr[MAX_STRING_LENGTH];
     printf("CHANSWITCH Client: Node %d updating chanswitch client structure\n",
@@ -458,9 +459,10 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
     int length = CHANSWITCH_LIST_HEADER_SIZE + CHANSWITCH_LIST_ENTRY_SIZE * nodeCount; 
     payload = (char *)MEM_malloc(length);
     memset(payload, NODE_LIST, 1);
-    memset(payload+1, 0x55, 8); //PLACEHOLDER for tx rssi
-    memset(payload+9, (nodeCount % 256),1); //low byte of node count
-    memset(payload+10, (nodeCount / 256),1); //high byte of node count
+    // ERROR_Assert(serverPtr->myAddr != NULL, "RX needs to know its MAC address to send the NodeList pkt. \n");
+    memcpy(payload+1, &(serverPtr->myAddr), 6); //rx MAC address
+    memset(payload+6, (nodeCount % 256),1); //low byte of node count
+    memset(payload+7, (nodeCount / 256),1); //high byte of node count
     int count = 0;
 
     //test: print visible node list
@@ -500,6 +502,19 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
 
 
     //TODO: tell dot11 to clear the visible node list
+
+}
+
+/*
+ * NAME:        AppChanswitchClientParseRXNodeList.
+ * PURPOSE:     Parse the node list packet from RX.
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the client
+ *              packet - raw packet from RX
+ * RETURN:      none.
+ */
+void 
+AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPtr, char *packet){
 
 }
 
@@ -679,32 +694,31 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                             node->nodeId, buf);
                        #endif 
                         clientPtr->state = TX_PROBING;
+                        clientPtr->got_RX_nodelist = FALSE;
                         //start the probe
                         AppChanswitchStartProbing(node, dataRecvd->connectionId,
                             CHANSWITCH_TX_CLIENT);
                     }
                     break;
                 }
-                case TX_PROBING: {
-                    if(packet[0] == NODE_LIST){
+                case TX_PROBING: { 
+                    if(packet[0] == NODE_LIST){ //got node list before TX finished its probe
                         printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBING state.\n",
                             node->nodeId, buf);
+                        clientPtr->got_RX_nodelist = TRUE;
+                        //TODO: save RX's node list and wait
+                        AppChanswitchClientParseRxNodeList(node,clientPtr,packet);
                     }
                     break;
                 }
                 case TX_PROBE_WFRX: {
-                    if(packet[0] == NODE_LIST){
+                    if(packet[0] == NODE_LIST){ //got node list after TX finished probing
                         printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBE_WFRX state.\n",
                             node->nodeId, buf);
-                        if(clientPtr->state == TX_PROBING){ //got RX results before TX probe done
-                            clientPtr->got_RX_nodelist = TRUE;
-                            //TODO: save the nodelist
-                        }
-                        else if(clientPtr->state == TX_PROBE_WFRX){ //got RX results after
-                        clientPtr->state = TX_CHANGE_INIT;
-                        //TODO: save the nodelist
+                        clientPtr->got_RX_nodelist = TRUE;
+                        //TODO: save RX's node list
+                        AppChanswitchClientParseRxNodeList(node,clientPtr,packet);
                         //TODO: evaluate channels
-                        }
                     }
                     break;
                 }
@@ -756,6 +770,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             if(clientPtr->state == TX_PROBE_WFACK){
                 clientPtr->state = TX_PROBING;
                 //start the probe
+                clientPtr->got_RX_nodelist = FALSE;
                 AppChanswitchStartProbing(node, timeoutInfo->connectionId,
                     CHANSWITCH_TX_CLIENT);
             }
@@ -791,16 +806,24 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                             scanComplete->connectionId);
 
+
             if(clientPtr->state == TX_PROBING){
 
                 if(!clientPtr->got_RX_nodelist){ //did not get nodelist yet
                     clientPtr->state = TX_PROBE_WFRX;
+
                 }
-                else { //got nodelist already
+                else { //got nodelist from RX already
                     clientPtr->state = TX_CHANGE_INIT;
-                    //TODO: start channel analysis
+                    //TODO: begin channel evaluation
+
                 }
             }
+
+            else {
+                ERROR_ReportWarning("TX scan at node finished in unknown state. \n");
+            }
+
             break;
         }
 
@@ -811,7 +834,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             clientPtr = AppChanswitchClientGetChanswitchClient(node, addrRequest->connectionId);
             clientPtr->myAddr = addrRequest->myAddr; //save my address
             #ifdef DEBUG_CHANSWITCH
-                printf("TX mac address: %2x:%2x:%2x:%2x:%2x:%2x \n", 
+                printf("TX mac address: %02x:%02x:%02x:%02x:%02x:%02x \n", 
                     clientPtr->myAddr.byte[5], 
                     clientPtr->myAddr.byte[4], 
                     clientPtr->myAddr.byte[3],
@@ -1270,7 +1293,7 @@ AppLayerChanswitchServer(Node *node, Message *msg)
             serverPtr = AppChanswitchServerGetChanswitchServer(node, addrRequest->connectionId);
             serverPtr->myAddr = addrRequest->myAddr; //save my address
             #ifdef DEBUG_CHANSWITCH
-                printf("RX mac address: %2x:%2x:%2x:%2x:%2x:%2x \n", 
+                printf("RX mac address: %02x:%02x:%02x:%02x:%02x:%02x \n", 
                     serverPtr->myAddr.byte[5], 
                     serverPtr->myAddr.byte[4], 
                     serverPtr->myAddr.byte[3],
