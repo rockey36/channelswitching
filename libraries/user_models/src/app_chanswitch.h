@@ -28,8 +28,8 @@
 #define CHANSWITCH_PROBE_PKT_SIZE           6
  //id (1) : channel mask (2) : flags (1)
 #define CHANSWITCH_ACK_SIZE                 1
-#define CHANSWITCH_LIST_HEADER_SIZE         11
- // id (1) : tx rssi (8) : total station count (2) 
+#define CHANSWITCH_LIST_HEADER_SIZE         9
+ // id (1) : rx mac addr (6) : total station count (2) 
 #define CHANSWITCH_LIST_ENTRY_SIZE          16   
 //  channel (1) :  mac addr (6) : signal strength (8) : isAp (1)
 
@@ -76,26 +76,29 @@
 typedef
 struct struct_app_chanswitch_client_str
 {
-    int             connectionId;
-    Address         localAddr;
-    Address         remoteAddr;
-    clocktype       sessionStart;
-    clocktype       sessionFinish;
-    clocktype       lastTime;
-    BOOL            sessionIsClosed;
-    int             itemsToSend;
-    int             itemSizeLeft;
-    Int64           numBytesSent;
-    Int64           numBytesRecvd;
-    Int32           bytesRecvdDuringThePeriod;
-    clocktype       lastItemSent;
-    int             uniqueId;
-    RandomSeed      seed;
-//DERIUS
-    char            cmd[MAX_STRING_LENGTH];
-    int             state;
-    BOOL            got_RX_nodelist;
-    Mac802Address   myAddr; 
+    int                     connectionId;
+    Address                 localAddr;
+    Address                 remoteAddr;
+    clocktype               sessionStart;
+    clocktype               sessionFinish;
+    clocktype               lastTime;
+    BOOL                    sessionIsClosed;
+    int                     itemsToSend;
+    int                     itemSizeLeft;
+    Int64                   numBytesSent;
+    Int64                   numBytesRecvd;
+    Int32                   bytesRecvdDuringThePeriod;
+    clocktype               lastItemSent;
+    int                     uniqueId;
+    RandomSeed              seed;
+//DERIUS    
+    char                    cmd[MAX_STRING_LENGTH];
+    int                     state;
+    BOOL                    got_RX_nodelist;
+    Mac802Address           myAddr; 
+    DOT11_VisibleNodeInfo*  txNodeList;
+    DOT11_VisibleNodeInfo*  rxNodeList;
+
     
 }AppDataChanswitchClient;
 
@@ -354,6 +357,17 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
  */
 void
 AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType);
+
+/*
+ * NAME:        AppChanswitchClientParseRXNodeList.
+ * PURPOSE:     Parse the node list packet from RX.
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the client
+ *              packet - raw packet from RX
+ * RETURN:      none.
+ */
+void
+AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPtr, char *packet);
 
 
 
