@@ -467,13 +467,13 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
 
     //test: print visible node list
     //TODO: do not include TX in visible node list
-    printf("(APP RX) nodeCount: %d \n", nodeCount);
-    if(nodeInfo == NULL){
-        printf("\n (APP RX) No visible nodes found at node %d. \n",node->nodeId);
-    }
-    else{
-        printf("\n (APP RX) Visible Node List at node %d: \n",node->nodeId);
-    }
+    // printf("(APP RX) nodeCount: %d \n", nodeCount);
+    // if(nodeInfo == NULL){
+    //     printf("\n (APP RX) No visible nodes found at node %d. \n",node->nodeId);
+    // }
+    // else{
+    //     printf("\n (APP RX) Visible Node List at node %d: \n",node->nodeId);
+    // }
 
     while(nodeInfo != NULL){
     printf("(APP RX) channel %d, signal strength %f dBm, isAP %d, bss %d \n",
@@ -515,7 +515,66 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
  */
 void 
 AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPtr, char *packet){
+    Mac802Address rxAddr;
+    int nodeCount = 0;
 
+    memcpy(&rxAddr, &packet[1], 6);
+    memcpy(&nodeCount, &packet[6], 2);
+    printf("node count from RX: %d \n", nodeCount);
+
+    DOT11_VisibleNodeInfo* nodeList = clientPtr->rxNodeList;
+    int channelId;
+    Mac802Address bssAddr;
+    double signalStrength;
+    int isAP = 0;
+    int i = 0;
+
+    while(i < nodeCount){
+        char *offset = packet + CHANSWITCH_LIST_HEADER_SIZE + i * CHANSWITCH_LIST_ENTRY_SIZE;
+        memcpy(&channelId,offset,1);
+        memcpy(&bssAddr,offset+1,6);
+        memcpy(&signalStrength,offset+7,8);
+        memcpy(&isAP,offset+15,1);
+        //if this is my (tx) node, save my signal strength
+        if(bssAddr == clientPtr->myAddr){
+            clientPtr->signalStrengthAtRx = signalStrength;
+            printf("AppChanswitchClientParseRxNodeList at node %d: my signal strength is %f dBm at RX \n",
+                node->nodeId, signalStrength);
+        }
+        //otherwise add to the list
+        else{
+            DOT11_VisibleNodeInfo* nodeInfo = (DOT11_VisibleNodeInfo*) MEM_malloc(sizeof(DOT11_VisibleNodeInfo));
+            ERROR_Assert(nodeInfo != NULL, "MAC 802.11: Out of memory!");
+            memset((char*) nodeInfo, 0, sizeof(DOT11_VisibleNodeInfo)); 
+            nodeInfo->channelId = channelId;
+            nodeInfo->bssAddr = bssAddr;
+            nodeInfo->signalStrength = signalStrength;
+            nodeInfo->isAP = isAP;
+
+            printf("AppChanswitchClientParseRxNodeList at node %d: channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+                node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+
+            // add visible node in the list
+            nodeInfo->next = clientPtr->rxNodeList;
+            clientPtr->rxNodeList = nodeInfo;
+        }
+        i++;
+    }
+
+}
+
+/*
+ * NAME:        AppChanswitchClientEvaulateChannels
+ * PURPOSE:     Evaulate the node list and select the next channel.
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the client
+ *              
+ * RETURN:      the channel to switch to.
+ */
+int
+AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPtr){
+
+return 0;
 }
 
 
@@ -719,6 +778,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                         //TODO: save RX's node list
                         AppChanswitchClientParseRxNodeList(node,clientPtr,packet);
                         //TODO: evaluate channels
+                        clientPtr->nextChannel = AppChanswitchClientEvaluateChannels(node,clientPtr);
                     }
                     break;
                 }
