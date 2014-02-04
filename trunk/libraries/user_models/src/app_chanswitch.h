@@ -98,7 +98,8 @@ struct struct_app_chanswitch_client_str
     Mac802Address           myAddr; 
     DOT11_VisibleNodeInfo*  txNodeList;
     DOT11_VisibleNodeInfo*  rxNodeList;
-
+    double                  signalStrengthAtRx;
+    int                     nextChannel;
     
 }AppDataChanswitchClient;
 
@@ -122,6 +123,7 @@ struct struct_app_chanswitch_server_str
     int             portForDataConn;
     int             state;
     Mac802Address   myAddr;
+    int             nextChannel;
 }AppDataChanswitchServer;
 
 /*
@@ -368,6 +370,17 @@ AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType);
  */
 void
 AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPtr, char *packet);
+
+/*
+ * NAME:        AppChanswitchClientEvaulateChannels
+ * PURPOSE:     Evaulate the node list and select the next channel.
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the client
+ *              
+ * RETURN:      the channel to switch to.
+ */
+int
+AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPtr);
 
 
 
