@@ -124,6 +124,10 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
     chanswitchClient->bytesRecvdDuringThePeriod = 0;
     chanswitchClient->state = TX_IDLE;
     chanswitchClient->got_RX_nodelist = FALSE;
+    chanswitchClient->signalStrengthAtRx = 0.0;
+    chanswitchClient->numChannels = 1;
+    chanswitchClient->currentChannel = 0;
+    chanswitchClient->nextChannel = 0;
 
 #ifdef DEBUG_CHANSWITCH
     char addrStr[MAX_STRING_LENGTH];
@@ -187,6 +191,11 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     chanswitchClient->lastItemSent = 0;
     chanswitchClient->state = TX_IDLE;
     chanswitchClient->got_RX_nodelist = FALSE;
+    chanswitchClient->signalStrengthAtRx = 0.0;
+    chanswitchClient->numChannels = 1;
+    chanswitchClient->currentChannel = 0;
+    chanswitchClient->nextChannel = 0;
+
 
 #ifdef DEBUG_CHANSWITCH
     char addrStr[MAX_STRING_LENGTH];
@@ -287,6 +296,9 @@ AppChanswitchServerNewChanswitchServer(Node *node,
     chanswitchServer->bytesRecvdDuringThePeriod = 0;
     chanswitchServer->lastItemSent = 0;
     chanswitchServer->state = RX_IDLE;
+    chanswitchServer->numChannels = 1;
+    chanswitchServer->currentChannel = 0;
+    chanswitchServer->nextChannel = 0;
 
     RANDOM_SetSeed(chanswitchServer->seed,
                    node->globalSeed,
@@ -388,7 +400,7 @@ AppChanswitchStartProbing(Node *node, int connectionId, int appType){
 
 /*
  * NAME:        AppChanswitchGetMyMacAddr.
- * PURPOSE:     Ask MAC for my MAC address
+ * PURPOSE:     Ask MAC for my MAC address and other MAC-layer info
  * PARAMETERS:  node - pointer to the node,
  *              connectionId - identifier of the client/server connection
  *              appType - is this app TX or RX
@@ -465,19 +477,9 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
     memset(payload+7, (nodeCount / 256),1); //high byte of node count
     int count = 0;
 
-    //test: print visible node list
-    //TODO: do not include TX in visible node list
-    // printf("(APP RX) nodeCount: %d \n", nodeCount);
-    // if(nodeInfo == NULL){
-    //     printf("\n (APP RX) No visible nodes found at node %d. \n",node->nodeId);
-    // }
-    // else{
-    //     printf("\n (APP RX) Visible Node List at node %d: \n",node->nodeId);
-    // }
-
     while(nodeInfo != NULL){
-    printf("(APP RX) channel %d, signal strength %f dBm, isAP %d, bss %d \n",
-        nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+    // printf("(APP RX) channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+    //     nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
         char *offset = payload + CHANSWITCH_LIST_HEADER_SIZE + count * CHANSWITCH_LIST_ENTRY_SIZE;
         memcpy(offset, &(nodeInfo->channelId), 1);
         memcpy(offset+1, &(nodeInfo->bssAddr),6);
@@ -574,6 +576,126 @@ AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPt
 int
 AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPtr){
 
+    DOT11_VisibleNodeInfo* rxNode = clientPtr->rxNodeList;
+    DOT11_VisibleNodeInfo* txNode = clientPtr->txNodeList;
+
+    #ifdef DEBUG_CHANSWITCH
+    int i = 0;
+    printf("list of available channels: ");
+    while(i<clientPtr->numChannels){
+        if(clientPtr->channelSwitch[i]){
+            printf("%d ", i);
+        }
+        i++;
+
+    }
+    printf("\n");
+    #endif
+
+    //constant NUM_CHANNELS since C++ cannot dynamically allocate arrays :/
+    int hiddenNodeCount[NUM_CHANNELS] = { 0 }; //HN count per channel
+    int csNodeCount[NUM_CHANNELS] = { 0 }; //CS count per channel
+    BOOL isHN;
+    double sinr = 0.0;
+
+    //look for HN
+    while(rxNode != NULL){
+        isHN = TRUE;
+        //hidden if RX sees it and TX doesn't
+        while(txNode != NULL){
+            if(rxNode->bssAddr == txNode->bssAddr){
+                isHN = FALSE;
+
+            }
+            txNode = txNode->next;
+        }
+        //verify signal strength
+        sinr = clientPtr->signalStrengthAtRx - rxNode->signalStrength; //TODO: need to add CHANNEL NOISE
+        if(isHN && (sinr > SINR_MIN_DB)){ //TODO: remove hardcode
+            #ifdef DEBUG_CHANSWITCH
+            printf("weak hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX is %f dBm when transmitting) \n",
+                    rxNode->bssAddr.byte[5], 
+                    rxNode->bssAddr.byte[4], 
+                    rxNode->bssAddr.byte[3],
+                    rxNode->bssAddr.byte[2],
+                    rxNode->bssAddr.byte[1],
+                    rxNode->bssAddr.byte[0], 
+                    rxNode->channelId,
+                    sinr);
+            #endif
+            isHN = FALSE;
+        }
+
+        if(isHN){
+            #ifdef DEBUG_CHANSWITCH
+            printf("hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting) \n",
+                    rxNode->bssAddr.byte[5], 
+                    rxNode->bssAddr.byte[4], 
+                    rxNode->bssAddr.byte[3],
+                    rxNode->bssAddr.byte[2],
+                    rxNode->bssAddr.byte[1],
+                    rxNode->bssAddr.byte[0],
+                    rxNode->channelId,
+                    sinr);
+            #endif
+            hiddenNodeCount[rxNode->channelId]++;
+
+        }
+                txNode = clientPtr->txNodeList;
+                rxNode = rxNode->next;
+    }
+
+    txNode = clientPtr->txNodeList;
+    rxNode = clientPtr->rxNodeList;
+    BOOL isCS;
+
+    //count carrier sensing nodes at TX
+    while(txNode != NULL){
+        isCS = TRUE;
+        if(txNode->signalStrength < CS_MIN_DBM){
+            #ifdef DEBUG_CHANSWITCH
+            printf("weak cs node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f)\n",
+                    txNode->bssAddr.byte[5], 
+                    txNode->bssAddr.byte[4], 
+                    txNode->bssAddr.byte[3],
+                    txNode->bssAddr.byte[2],
+                    txNode->bssAddr.byte[1],
+                    txNode->bssAddr.byte[0], 
+                    txNode->channelId,
+                    txNode->signalStrength);
+            #endif
+            isCS = FALSE;
+        }
+        if(isCS){
+            #ifdef DEBUG_CHANSWITCH
+            printf("cs node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f) \n",
+                    txNode->bssAddr.byte[5], 
+                    txNode->bssAddr.byte[4], 
+                    txNode->bssAddr.byte[3],
+                    txNode->bssAddr.byte[2],
+                    txNode->bssAddr.byte[1],
+                    txNode->bssAddr.byte[0], 
+                    txNode->channelId,
+                    txNode->signalStrength);
+            #endif
+            csNodeCount[txNode->channelId]++;
+        }
+        txNode = txNode->next;
+    }
+
+    #ifdef DEBUG_CHANSWITCH
+    int j = 0;
+    printf("channel stats: ");
+    while(j<clientPtr->numChannels){
+        if(clientPtr->channelSwitch[j]){
+            printf("channel %d: %d hn, %d cs nodes \n", j, hiddenNodeCount[j], csNodeCount[j]);
+        }
+        j++;
+    }
+    #endif
+
+    //when finished, dealloc both node lists and tell MAC
+  
 return 0;
 }
 
@@ -765,7 +887,6 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                         printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBING state.\n",
                             node->nodeId, buf);
                         clientPtr->got_RX_nodelist = TRUE;
-                        //TODO: save RX's node list and wait
                         AppChanswitchClientParseRxNodeList(node,clientPtr,packet);
                     }
                     break;
@@ -775,9 +896,9 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                         printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBE_WFRX state.\n",
                             node->nodeId, buf);
                         clientPtr->got_RX_nodelist = TRUE;
-                        //TODO: save RX's node list
+                        //save RX's node list
                         AppChanswitchClientParseRxNodeList(node,clientPtr,packet);
-                        //TODO: evaluate channels
+                        //TODO: start channel evaluation
                         clientPtr->nextChannel = AppChanswitchClientEvaluateChannels(node,clientPtr);
                     }
                     break;
@@ -866,7 +987,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                             scanComplete->connectionId);
 
-
+            clientPtr->txNodeList = scanComplete->nodeInfo;
             if(clientPtr->state == TX_PROBING){
 
                 if(!clientPtr->got_RX_nodelist){ //did not get nodelist yet
@@ -875,7 +996,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 }
                 else { //got nodelist from RX already
                     clientPtr->state = TX_CHANGE_INIT;
-                    //TODO: begin channel evaluation
+                    //TODO: get channel info from MAC, then begin channel evaluation
 
                 }
             }
@@ -893,15 +1014,21 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             addrRequest = (MacToAppAddrRequest*) MESSAGE_ReturnInfo(msg);
             clientPtr = AppChanswitchClientGetChanswitchClient(node, addrRequest->connectionId);
             clientPtr->myAddr = addrRequest->myAddr; //save my address
+            clientPtr->currentChannel = addrRequest->currentChannel;
+            clientPtr->numChannels = addrRequest->numChannels;
+
             #ifdef DEBUG_CHANSWITCH
-                printf("TX mac address: %02x:%02x:%02x:%02x:%02x:%02x \n", 
+                printf("TX mac address: %02x:%02x:%02x:%02x:%02x:%02x, on channel %d of %d channels \n", 
                     clientPtr->myAddr.byte[5], 
                     clientPtr->myAddr.byte[4], 
                     clientPtr->myAddr.byte[3],
                     clientPtr->myAddr.byte[2],
                     clientPtr->myAddr.byte[1],
-                    clientPtr->myAddr.byte[0]);
+                    clientPtr->myAddr.byte[0],
+                    clientPtr->currentChannel,
+                    clientPtr->numChannels);
             #endif
+            clientPtr->channelSwitch = addrRequest->channelSwitch;
             AppChanswitchClientSendProbeInit(node, clientPtr, TRUE);
             clientPtr->state = TX_PROBE_WFACK;
             break;
@@ -1352,14 +1479,18 @@ AppLayerChanswitchServer(Node *node, Message *msg)
             addrRequest = (MacToAppAddrRequest*) MESSAGE_ReturnInfo(msg);
             serverPtr = AppChanswitchServerGetChanswitchServer(node, addrRequest->connectionId);
             serverPtr->myAddr = addrRequest->myAddr; //save my address
+            serverPtr->currentChannel = addrRequest->currentChannel;
+            serverPtr->numChannels = addrRequest->numChannels;
             #ifdef DEBUG_CHANSWITCH
-                printf("RX mac address: %02x:%02x:%02x:%02x:%02x:%02x \n", 
+                printf("RX mac address: %02x:%02x:%02x:%02x:%02x:%02x on channel %d of %d channels \n", 
                     serverPtr->myAddr.byte[5], 
                     serverPtr->myAddr.byte[4], 
                     serverPtr->myAddr.byte[3],
                     serverPtr->myAddr.byte[2],
                     serverPtr->myAddr.byte[1],
-                    serverPtr->myAddr.byte[0]);
+                    serverPtr->myAddr.byte[0],
+                    serverPtr->currentChannel,
+                    serverPtr->numChannels);
             #endif
             AppChanswitchStartProbing(node, addrRequest->connectionId,
                                         CHANSWITCH_RX_SERVER);
