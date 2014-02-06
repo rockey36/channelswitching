@@ -38,6 +38,9 @@
 #define TX_VERIFY_WFACK_TIMEOUT    (50 * MILLI_SECOND)
 #define RX_PROBE_ACK_DELAY         (5 * MILLI_SECOND)
 #define RX_CHANGE_ACK_DELAY        (5 * MILLI_SECOND) 
+#define SINR_MIN_DB                20.0             //SINR threshold for hidden node in dB (default)
+#define CS_MIN_DBM                 -69.0            //energy threshold for carrier sense node in dBm (default)
+#define NUM_CHANNELS               14               //hardcode because C++ is gross. should not be using more than this in our simulations  
 
 //tx (client) states
  enum {
@@ -99,7 +102,10 @@ struct struct_app_chanswitch_client_str
     DOT11_VisibleNodeInfo*  txNodeList;
     DOT11_VisibleNodeInfo*  rxNodeList;
     double                  signalStrengthAtRx;
+    int                     numChannels;
+    int                     currentChannel;
     int                     nextChannel;
+    D_BOOL*                 channelSwitch; //channels that can be switched to                
     
 }AppDataChanswitchClient;
 
@@ -123,6 +129,8 @@ struct struct_app_chanswitch_server_str
     int             portForDataConn;
     int             state;
     Mac802Address   myAddr;
+    int             numChannels;
+    int             currentChannel;
     int             nextChannel;
 }AppDataChanswitchServer;
 

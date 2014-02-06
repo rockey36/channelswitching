@@ -131,7 +131,7 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
     //Message Type for APP channel switching
-    MSG_APP_FromMac_MACAddressRequest            = 380,
+    MSG_APP_FromMac_MACAddressRequest           = 380,
     MSG_MAC_DOT11_MACAddressRequest             = 381,
     MSG_MAC_FromAppMACAddressRequest            = 382,
     MSG_APP_TxProbeWfAckTimeout                 = 383,
@@ -1485,12 +1485,15 @@ typedef struct app_to_mac_addr_request {
 
 // /**
 // STRUCT      :: MacToAppAddr
-// DESCRIPTION :: MAC tells TX its address
+// DESCRIPTION :: MAC tells TX/RX its address
 // Used in chanswitch
 // **/
 typedef struct mac_to_app_addr_request {
     int connectionId;
     Mac802Address myAddr;
+    int numChannels;
+    int currentChannel;
+    D_BOOL* channelSwitch;
 } MacToAppAddrRequest;
 
 // /**
@@ -1513,9 +1516,6 @@ typedef struct mac_to_app_scan_complete{
     int nodeCount;
     DOT11_VisibleNodeInfo* nodeInfo;
 } MacToAppScanComplete;
-
-
-
 
 // /**
 // STRUCT      :: AppToTcpConnSetup

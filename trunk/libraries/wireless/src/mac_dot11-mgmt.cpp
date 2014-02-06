@@ -4771,6 +4771,11 @@ void MacDot11ManagementHandleTimeout(
             else {
                 ERROR_ReportError("MSG_APP_FromMac_MACAddressRequest: Application type not specified. \n");
             }
+            int phyIndex = dot11->myMacData->phyNumber;
+            int channel;
+            PhyData *thisPhy = node->phyData[phyIndex];
+            PHY_GetTransmissionChannel(node,phyIndex,&channel);
+            
             MacToAppAddrRequest* info = (MacToAppAddrRequest *)
             MESSAGE_InfoAlloc(
                 node,
@@ -4779,6 +4784,9 @@ void MacDot11ManagementHandleTimeout(
             ERROR_Assert(info, "cannot allocate enough space for needed info");
             info->connectionId = dot11->connectionId;
             info->myAddr = dot11->selfAddr;
+            info->numChannels = PROP_NumberChannels(node);
+            info->currentChannel = channel;
+            info->channelSwitch = thisPhy->channelSwitch;
             MESSAGE_Send(node, appMsg, 0);
             
 
