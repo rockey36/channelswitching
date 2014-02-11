@@ -3607,6 +3607,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         case MSG_MAC_DOT11_Scan_Start_Timer:
         case MSG_MAC_DOT11_Enable_Management_Timer:
         case MSG_MAC_DOT11_ChanswitchRequest:
+        case MSG_MAC_DOT11_ChangeChannelRequest:
         case MSG_MAC_DOT11_MACAddressRequest:
         {
             unsigned timerSequenceNumber = *(int*)(MESSAGE_ReturnInfo(msg));
@@ -3630,6 +3631,20 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             dot11->appType = probeInfo->appType;
             MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
                                         MSG_MAC_DOT11_ChanswitchRequest); 
+            MESSAGE_Free(node,msg);
+            break;
+        }
+
+        case MSG_MAC_FromAppChangeChannelRequest:
+        {
+            AppToMacChannelChange* channelChange =
+                (AppToMacChannelChange*) MESSAGE_ReturnInfo(msg);
+            dot11->connectionId = channelChange->connectionId;
+            dot11->appType = channelChange->appType;
+            dot11->oldChannel = channelChange->oldChannel;
+            dot11->newChannel = channelChange->newChannel;
+            MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
+                                        MSG_MAC_DOT11_ChangeChannelRequest); 
             MESSAGE_Free(node,msg);
             break;
         }

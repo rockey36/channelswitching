@@ -430,6 +430,38 @@ AppChanswitchStartProbing(Node *node, int connectionId, int appType){
 }
 
 /*
+ * NAME:            
+ * PURPOSE:     Change to the next channel - either client or server.
+ * PARAMETERS:  node - pointer to the node
+ * connectionId - identifier of the client/server connection
+ * appType      - is this app TX or RX
+ * newChannel   - the new channel to switch to
+ * RETURN:      none.
+ */
+void 
+AppChanswitchChangeChannels(Node *node, int connectionId, int appType, int oldChannel, int newChannel){
+    Message *macMsg;
+    macMsg = MESSAGE_Alloc(node, 
+    MAC_LAYER,
+    MAC_PROTOCOL_DOT11,
+    MSG_MAC_FromAppChangeChannelRequest);
+
+    AppToMacChannelChange* info = (AppToMacChannelChange*)
+        MESSAGE_InfoAlloc(
+            node,
+            macMsg,
+            sizeof(AppToMacChannelChange));
+    ERROR_Assert(info, "cannot allocate enough space for needed info");
+    info->connectionId = connectionId;
+    info->appType = appType;
+    info->oldChannel = oldChannel;
+    info->newChannel = newChannel;
+
+    MESSAGE_Send(node, macMsg, 0);
+
+}
+
+/*
  * NAME:        AppChanswitchGetMyMacAddr.
  * PURPOSE:     Ask MAC for my MAC address and other MAC-layer info
  * PARAMETERS:  node - pointer to the node,
@@ -823,6 +855,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
 return bestChannel;
 }
 
+
 /*
  * NAME:        AppChanswitchClientChangeInit.
  *              Perform required functions upon reaching TX_CHANGE_INIT state.
@@ -860,6 +893,7 @@ void AppChanswitchClientChangeInit(Node *node,AppDataChanswitchClient *clientPtr
     clientPtr->state = TX_CHANGE_WFACK;
 
 }
+
 
 
 /*
@@ -1073,7 +1107,14 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                             node->nodeId, buf);
                        #endif 
                     //TODO: change channel, send verify
+                    AppChanswitchChangeChannels(
+                        node, 
+                        clientPtr->connectionId, 
+                        CHANSWITCH_TX_CLIENT, 
+                        clientPtr->currentChannel,
+                        clientPtr->nextChannel);
                     }
+                    clientPtr->state = TX_VERIFY_INIT;
                     break;
                 }
             }
@@ -1144,6 +1185,13 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                                             timeoutInfo->connectionId);
             if(clientPtr->state == TX_CHANGE_WFACK){
                 //TODO: change channels, send verify pkt
+
+                AppChanswitchChangeChannels(
+                        node, 
+                        clientPtr->connectionId, 
+                        CHANSWITCH_TX_CLIENT, 
+                        clientPtr->currentChannel,
+                        clientPtr->nextChannel);
             }
             break;
         }
@@ -1584,7 +1632,10 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                         #ifdef DEBUG_CHANSWITCH
                             printf("CHANSWITCH Server: Node %ld at %s got CHANGE_PKT\n",
                                 node->nodeId, buf);
-                        #endif 
+                        #endif
+                        int nextChannel = 0;
+                        memcpy(&nextChannel,packet+1,1);
+                        serverPtr->nextChannel = nextChannel;
                         serverPtr->state = RX_PROBE_ACK;
                         //send CHANGE_ACK to TX
                         AppChanswitchServerSendChangeAck(node, serverPtr);
@@ -1676,6 +1727,11 @@ AppLayerChanswitchServer(Node *node, Message *msg)
             serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                             timeoutInfo->connectionId);
             //TODO: change to the new channel
+            AppChanswitchChangeChannels(node, 
+                                        serverPtr->connectionId, 
+                                        CHANSWITCH_RX_SERVER, 
+                                        serverPtr->currentChannel,
+                                        serverPtr->nextChannel);
             break;
         }
 

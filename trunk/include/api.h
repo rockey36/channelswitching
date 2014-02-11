@@ -131,6 +131,8 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
     //Message Type for APP channel switching
+    MSG_MAC_DOT11_ChangeChannelRequest          = 378,
+    MSG_MAC_FromAppChangeChannelRequest         = 379,
     MSG_APP_FromMac_MACAddressRequest           = 380,
     MSG_MAC_DOT11_MACAddressRequest             = 381,
     MSG_MAC_FromAppMACAddressRequest            = 382,
@@ -1506,6 +1508,18 @@ typedef struct app_to_mac_start_probe{
     int connectionId;
     int appType;
 } AppToMacStartProbe;
+
+// /**
+// STRUCT      :: AppToMacChannelChange
+// DESCRIPTION :: Application sends message to mac to change to the new channel
+// Used in chanswitch
+// **/
+typedef struct app_to_mac_channel_change{
+    int connectionId;
+    int appType;
+    int oldChannel;
+    int newChannel;
+} AppToMacChannelChange;
 
 // /**
 // STRUCT      :: MacToAppScanComplete

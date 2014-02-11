@@ -4745,11 +4745,28 @@ void MacDot11ManagementHandleTimeout(
         case MSG_MAC_DOT11_ChanswitchRequest:
         {
             ERROR_Assert(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE,
-            "Error: Channel switching type must be set to AP Probing. \n");   
+            "MSG_MAC_DOT11_ChanswitchRequest: Channel switching type must be set to AP Probing. \n");   
             // printf("Received request to StartJoin from CHANSWITCH node %d \n", node->nodeId);
             MacDot11ManagementStartJoin(node, dot11);
             break;
         }
+            case MSG_MAC_DOT11_ChangeChannelRequest:
+        {
+            ERROR_Assert(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE,
+            "MSG_MAC_DOT11_ChangeChannelRequest: Channel switching type must be set to AP Probing. \n");   
+            printf("Received request to change from channel %d to channel %d CHANSWITCH node %d \n", dot11->oldChannel, dot11->newChannel, node->nodeId);
+
+            int phyIndex = dot11->myMacData->phyNumber;
+            PHY_StopListeningToChannel(node,phyIndex,dot11->oldChannel);
+        
+            if(!PHY_IsListeningToChannel(node,phyIndex,dot11->newChannel)){
+                PHY_StartListeningToChannel(node,phyIndex,dot11->newChannel);
+            }
+            PHY_SetTransmissionChannel(node,phyIndex,dot11->newChannel);
+            //send message back to app layer
+            break;
+        }
+
         case MSG_MAC_DOT11_MACAddressRequest:
         {
             ERROR_Assert(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE,
