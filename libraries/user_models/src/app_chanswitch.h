@@ -368,6 +368,18 @@ void
 AppChanswitchStartProbing(Node *node, int appType);
 
 /*
+ * NAME:            
+ * PURPOSE:     Change to the next channel - either client or server.
+ * PARAMETERS:  node - pointer to the node
+ * connectionId - identifier of the client/server connection
+ * appType      - is this app TX or RX
+ * newChannel   - the new channel to switch to
+ * RETURN:      none.
+ */
+void 
+AppChanswitchChangeChannels(Node *node, int connectionId, int appType, int oldChannel, int newChannel);
+
+/*
  * NAME:        AppChanswitchServerSendVisibleNodeList.
  * PURPOSE:     Send the list of visible nodes to the TX.
  * PARAMETERS:  node - pointer to the node,

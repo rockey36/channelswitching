@@ -1790,6 +1790,8 @@ struct MacDataDot11 {
     int appType;
     //connection id for app layer
     int connectionId;
+    int oldChannel;
+    int newChannel;
 };
 
 
