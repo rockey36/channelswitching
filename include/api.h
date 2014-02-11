@@ -1494,6 +1494,7 @@ typedef struct mac_to_app_addr_request {
     int numChannels;
     int currentChannel;
     D_BOOL* channelSwitch;
+    double noise_mW;
 } MacToAppAddrRequest;
 
 // /**

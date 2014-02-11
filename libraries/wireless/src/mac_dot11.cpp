@@ -777,7 +777,7 @@ void MacDot11NetworkLayerHasPacketToSend(
 }//MacDot11NetworkLayerHasPacketToSend//
 
 //--------------------------------------------------------------------------
-// NAME         MacDot11NetworkLayerHasPacketToSend
+// NAME         MacDot11NetworkLayerChanswitch
 // PURPOSE      To notify dot11 that channel should be changed
 // PARAMETERS   Node* node
 //                  Node which received the message.
