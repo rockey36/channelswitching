@@ -16,6 +16,7 @@ extern unsigned int WbestBandwidth;	/// Variable which contains previous calcula
 #define REG_KEY_QUALNETCONFILTER_NUMBER_OF_PIN	"NumberOfPins"
 #define REG_VALUE_DEFAULT						1
 #define GNUPLOT_PATH							"C:\\utils\\Gnuplot\\binary\\wgnuplot.exe"
+#define DISABLE_DX_MANAGER						1
 
 UINT RegReadInt( HKEY hKey, LPCTSTR lpKey,LPCTSTR lpValue,INT nDefault);
 
@@ -462,6 +463,7 @@ bool AppVideoCreateDXManager(Node *node,							///< The pointer of node
 	}
 
 	PostMessage((HWND) VideoClientPtr->hDXConnector, WM_REQUEST_IPCRUNNING, 0, 0);
+	
 
 	printf("Waiting for a client, Named pipe handle : 0x%x address :%s\n",VideoClientPtr->hNamedPIPE,VideoClientPtr->strNamedPIPEFull);
 
@@ -721,7 +723,9 @@ void AppLayerVideoClient(Node *node, Message *msg)
 					if (VideoClientPtr->sve == STATE_INACTIVE) // play DirectShow
 					{
 						VideoClientPtr->sve				 = STATE_ACTIVE;
+						
 						SendMessage((HWND) VideoClientPtr->hDXConnector, WM_USER_PLAY, 0, 0);
+						
 						VideoClientPtr->sessionStart	 = getSimTime(node);
 					}
 
@@ -858,6 +862,7 @@ int SendDataToDirectShowConnector(Node *node, AppDataVideoServer* appVideoServer
 	if (appVideoServer->VideoClientAppData->hDXConnector == NULL) {
 			ERROR_Assert(FALSE,"[SendDataToDirectShowConnector] DirectShow Connector is not running");
 	}
+	
 
 	if(nByte < 1) {
 		ERROR_Assert(FALSE,"[SendDataToDirectShowConnector] Data to send is not correct");
@@ -876,7 +881,6 @@ int SendDataToDirectShowConnector(Node *node, AppDataVideoServer* appVideoServer
 	tip.dwData = IPC_MESSAGE_RECV_DATA;
 	tip.cbData = nByte;
 	tip.lpData = p_buffer;
-
 
 	if(IsWindow( (HWND) appVideoServer->VideoClientAppData->hDXConnector )) {
 

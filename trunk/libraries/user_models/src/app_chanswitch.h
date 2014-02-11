@@ -27,6 +27,8 @@
 
 #define CHANSWITCH_PROBE_PKT_SIZE           6
  //id (1) : channel mask (2) : flags (1)
+#define CHANSWITCH_CHANGE_PKT_SIZE          2
+ //id (1) : new channel (1)
 #define CHANSWITCH_ACK_SIZE                 1
 #define CHANSWITCH_LIST_HEADER_SIZE         9
  // id (1) : rx mac addr (6) : total station count (2) 
@@ -105,7 +107,8 @@ struct struct_app_chanswitch_client_str
     int                     numChannels;
     int                     currentChannel;
     int                     nextChannel;
-    D_BOOL*                 channelSwitch; //channels that can be switched to                
+    D_BOOL*                 channelSwitch; //channels that can be switched to  
+    double                  noise_mW; //thermal noise is the same on every channel in QualNet           
     
 }AppDataChanswitchClient;
 
@@ -335,6 +338,26 @@ void
 AppChanswitchServerSendProbeAck(Node *node, AppDataChanswitchServer *serverPtr);
 
 /*
+ * NAME:        AppChanswitchServerSendChangeAck.
+ * PURPOSE:     Send the ack indicating server got change request
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchServerSendChangeAck(Node *node, AppDataChanswitchServer *serverPtr);
+
+/*
+ * NAME:        AppChanswitchClientSendChangeInit.
+ * PURPOSE:     Send the "change init" packet.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchClientSendChangeInit(Node *node, AppDataChanswitchClient *clientPtr);
+
+/*
  * NAME:        AppChanswitchStartProbing.
  * PURPOSE:     Start scanning channels - either client or server.
  * PARAMETERS:  node - pointer to the node
@@ -389,6 +412,28 @@ AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPt
  */
 int
 AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPtr);
+
+/*
+ * NAME:        ClearVisibleNodeList
+ * PURPOSE:     Clear (deallocate) this node list in preparation for the next scan.
+ * PARAMETERS:  nodelist - pointer to the visible node list
+ * RETURN:      none.
+ */
+void
+ClearVisibleNodeList(DOT11_VisibleNodeInfo* nodeList);
+
+/*
+ * NAME:        AppChanswitchClientChangeInit.
+ *              Perform required functions upon reaching TX_CHANGE_INIT state.
+ *              (Evaluate channels, determine if channel change is needed and start ACK timeout.)
+ * PARAMETERS:  node - pointer to the node which received the message.
+ *              msg - message received by the layer
+ * RETURN:      none.
+ */
+void 
+AppChanswitchClientChangeInit(Node *node,AppDataChanswitchClient *clientPtr);
+
+
 
 
 

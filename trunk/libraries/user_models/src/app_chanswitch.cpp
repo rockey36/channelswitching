@@ -372,6 +372,37 @@ AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr,
 }
 
 /*
+ * NAME:        AppChanswitchClientSendChangeInit.
+ * PURPOSE:     Send the "change init" packet.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchClientSendChangeInit(Node *node, AppDataChanswitchClient *clientPtr){
+
+    char *payload;
+
+    payload = (char *)MEM_malloc(CHANSWITCH_CHANGE_PKT_SIZE); //2
+    memset(payload,CHANGE_PKT,1);
+    memcpy(payload+1,&(clientPtr->nextChannel),1); //first byte of int
+
+    if (!clientPtr->sessionIsClosed)
+    {
+        APP_TcpSendData(
+                node,
+                clientPtr->connectionId,
+                payload,
+                CHANSWITCH_CHANGE_PKT_SIZE,
+                TRACE_APP_CHANSWITCH);
+
+    }
+     MEM_free(payload);
+
+}
+
+
+/*
  * NAME:            
  * PURPOSE:     Start scanning channels - either client or server.
  * PARAMETERS:  node - pointer to the node
@@ -454,6 +485,33 @@ AppChanswitchServerSendProbeAck(Node *node, AppDataChanswitchServer *serverPtr){
 }
 
 /*
+ * NAME:        AppChanswitchServerSendChangeAck.
+ * PURPOSE:     Send the ack indicating server got change request
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchServerSendChangeAck(Node *node, AppDataChanswitchServer *serverPtr){
+
+    char *payload;
+
+    payload = (char *)MEM_malloc(CHANSWITCH_ACK_SIZE); //1
+    memset(payload,CHANGE_ACK,1);
+    
+    if (!serverPtr->sessionIsClosed)
+    {
+        APP_TcpSendData(
+                node,
+                serverPtr->connectionId,
+                payload,
+                CHANSWITCH_ACK_SIZE,
+                TRACE_APP_CHANSWITCH);
+    }
+     MEM_free(payload);
+}
+
+/*
  * NAME:        AppChanswitchServerSendVisibleNodeList.
  * PURPOSE:     Send the list of visible nodes to the TX.
  * PARAMETERS:  node - pointer to the node,
@@ -501,9 +559,6 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
                 TRACE_APP_CHANSWITCH);
     }
      MEM_free(payload);
-
-
-    //TODO: tell dot11 to clear the visible node list
 
 }
 
@@ -579,7 +634,6 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
     DOT11_VisibleNodeInfo* rxNode = clientPtr->rxNodeList;
     DOT11_VisibleNodeInfo* txNode = clientPtr->txNodeList;
 
-    #ifdef DEBUG_CHANSWITCH
     int i = 0;
     printf("list of available channels: ");
     while(i<clientPtr->numChannels){
@@ -590,7 +644,6 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
 
     }
     printf("\n");
-    #endif
 
     //constant NUM_CHANNELS since C++ cannot dynamically allocate arrays :/
     int hiddenNodeCount[NUM_CHANNELS] = { 0 }; //HN count per channel
@@ -605,12 +658,11 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
         while(txNode != NULL){
             if(rxNode->bssAddr == txNode->bssAddr){
                 isHN = FALSE;
-
             }
             txNode = txNode->next;
         }
         //verify signal strength
-        sinr = clientPtr->signalStrengthAtRx - rxNode->signalStrength; //TODO: need to add CHANNEL NOISE
+        sinr = NON_DB(clientPtr->signalStrengthAtRx) / (NON_DB(rxNode->signalStrength) + clientPtr->noise_mW) ; 
         if(isHN && (sinr > SINR_MIN_DB)){ //TODO: remove hardcode
             #ifdef DEBUG_CHANSWITCH
             printf("weak hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX is %f dBm when transmitting) \n",
@@ -628,7 +680,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
 
         if(isHN){
             #ifdef DEBUG_CHANSWITCH
-            printf("hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting) \n",
+            printf("strong hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting) \n",
                     rxNode->bssAddr.byte[5], 
                     rxNode->bssAddr.byte[4], 
                     rxNode->bssAddr.byte[3],
@@ -668,7 +720,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
         }
         if(isCS){
             #ifdef DEBUG_CHANSWITCH
-            printf("cs node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f) \n",
+            printf("strong cs node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f) \n",
                     txNode->bssAddr.byte[5], 
                     txNode->bssAddr.byte[4], 
                     txNode->bssAddr.byte[3],
@@ -683,20 +735,130 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
         txNode = txNode->next;
     }
 
-    #ifdef DEBUG_CHANSWITCH
-    int j = 0;
-    printf("channel stats: ");
-    while(j<clientPtr->numChannels){
-        if(clientPtr->channelSwitch[j]){
-            printf("channel %d: %d hn, %d cs nodes \n", j, hiddenNodeCount[j], csNodeCount[j]);
+    i = 0;
+    printf("channel stats: \n");
+    while(i<NUM_CHANNELS){
+        if(clientPtr->channelSwitch[i]){
+            printf("channel %d: %d hn, %d cs nodes \n", i, hiddenNodeCount[i], csNodeCount[i]);
         }
-        j++;
+        i++;
     }
-    #endif
 
-    //when finished, dealloc both node lists and tell MAC
+
+    //set the next channel and previous channel
+    BOOL tied = FALSE;
+    //first check for hidden nodes
+    i=0;
+    int bestChannel = -1;
+    int lowest = -1;
+    while(i<NUM_CHANNELS){
+        if(clientPtr->channelSwitch[i]){
+            if(bestChannel < 0){
+                bestChannel = i;
+                lowest = hiddenNodeCount[i];
+            }
+            else if (hiddenNodeCount[i] < lowest){
+                tied = FALSE;
+                bestChannel = i;
+                lowest = hiddenNodeCount[i];
+            }
+            else if (hiddenNodeCount[i] == lowest){
+                tied = TRUE;
+            }
+        }
+        i++;
+    }
+
+    ERROR_Assert((lowest > -1 && bestChannel > -1), "error counting HN on channel \n");
+
+    if(!tied){
+        printf("The best channel is channel %d with %d hidden nodes. \n", bestChannel, lowest);
+        
+    }
+
+    //multiple channels were tied for # of HN = check for CS nodes
+    else{
+        printf("Multiple channels had %d hidden nodes. Now checking carrier sense nodes. \n", lowest);
+        BOOL tied = FALSE;
+        bestChannel = -1;
+        lowest = -1;
+        i=0;
+
+        while(i<NUM_CHANNELS){
+            if(clientPtr->channelSwitch[i]){
+                if(bestChannel < 0){
+                    bestChannel = i;
+                    lowest = csNodeCount[i];
+                }
+                else if (csNodeCount[i] < lowest){
+                    tied = FALSE;
+                    bestChannel = i;
+                    lowest = csNodeCount[i];
+                }
+                else if (csNodeCount[i] == lowest){
+                    tied = TRUE;
+                }
+            }
+            i++;
+        }
+        ERROR_Assert((lowest > -1 && bestChannel > -1), "error counting CS on channel \n");
+
+        if(!tied){
+            printf("The best channel is channel %d with %d carrier sense nodes. \n", bestChannel, lowest);
+            }
+        else{
+            printf("Multiple channels were tied for fewest hidden nodes and fewest carrier sense nodes. Stay on the same channel. \n");
+            //in QualNet background noise is the same on each channel, so stay on the same channel instead of tiebreaking
+            bestChannel = clientPtr->currentChannel;
+        }
+        
+    }
+    //clear both node lists
+    ClearVisibleNodeList(clientPtr->rxNodeList);
+    clientPtr->rxNodeList = NULL;
+    // ClearVisibleNodeList(clientPtr->txNodeList);
+    clientPtr->txNodeList = NULL;
+
   
-return 0;
+return bestChannel;
+}
+
+/*
+ * NAME:        AppChanswitchClientChangeInit.
+ *              Perform required functions upon reaching TX_CHANGE_INIT state.
+ *              (Evaluate channels, determine if channel change is needed and start ACK timeout.)
+ * PARAMETERS:  node - pointer to the node which received the message.
+ *              msg - message received by the layer
+ * RETURN:      none.
+ */
+void AppChanswitchClientChangeInit(Node *node,AppDataChanswitchClient *clientPtr){
+    clientPtr->nextChannel = AppChanswitchClientEvaluateChannels(node,clientPtr);          
+    if(clientPtr->nextChannel == clientPtr->currentChannel){
+        printf("best channel is the same as the current channel, do nothing \n");
+        clientPtr->state = TX_IDLE;
+    }
+    else{
+        printf("best channel is channel %d, sending change pkt to RX \n", clientPtr->nextChannel);
+        AppChanswitchClientSendChangeInit(node, clientPtr);
+        //start change ACK timeout timer
+        Message *timeout;
+
+        timeout = MESSAGE_Alloc(node, 
+            APP_LAYER,
+            APP_CHANSWITCH_CLIENT,
+            MSG_APP_TxChangeWfAckTimeout);
+
+        AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+        MESSAGE_InfoAlloc(
+                node,
+                timeout,
+                sizeof(AppChanswitchTimeout));
+        ERROR_Assert(info, "cannot allocate enough space for needed info");
+        info->connectionId = clientPtr->connectionId;
+        MESSAGE_Send(node, timeout, TX_CHANGE_WFACK_TIMEOUT);
+    }
+    clientPtr->state = TX_CHANGE_WFACK;
+
 }
 
 
@@ -898,8 +1060,19 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                         clientPtr->got_RX_nodelist = TRUE;
                         //save RX's node list
                         AppChanswitchClientParseRxNodeList(node,clientPtr,packet);
-                        //TODO: start channel evaluation
-                        clientPtr->nextChannel = AppChanswitchClientEvaluateChannels(node,clientPtr);
+                        clientPtr->state = TX_CHANGE_INIT;
+                        //evaluate channels and start ACK timeout
+                        AppChanswitchClientChangeInit(node,clientPtr);
+                    }
+                    break;
+                }
+                case TX_CHANGE_WFACK:{
+                    if(packet[0] == CHANGE_ACK){
+                       #ifdef DEBUG_CHANSWITCH
+                        printf("CHANSWITCH Client: Node %ld at %s got CHANGE_ACK\n",
+                            node->nodeId, buf);
+                       #endif 
+                    //TODO: change channel, send verify
                     }
                     break;
                 }
@@ -963,7 +1136,15 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             #ifdef DEBUG_CHANSWITCH
                 printf("%s: CHANSWITCH Client node %u got change ACK timeout\n",
                        buf, node->nodeId);
-            #endif /* DEBUG_CHANSWITCH */
+            #endif /* DEBUG_CHANSWITCH */     
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchClientGetChanswitchClient(node,
+                                            timeoutInfo->connectionId);
+            if(clientPtr->state == TX_CHANGE_WFACK){
+                //TODO: change channels, send verify pkt
+            }
             break;
         }
 
@@ -996,8 +1177,8 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 }
                 else { //got nodelist from RX already
                     clientPtr->state = TX_CHANGE_INIT;
-                    //TODO: get channel info from MAC, then begin channel evaluation
-
+                    //evaluate channels and start ACK timeout
+                    AppChanswitchClientChangeInit(node,clientPtr);
                 }
             }
 
@@ -1016,6 +1197,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             clientPtr->myAddr = addrRequest->myAddr; //save my address
             clientPtr->currentChannel = addrRequest->currentChannel;
             clientPtr->numChannels = addrRequest->numChannels;
+            clientPtr->noise_mW = addrRequest->noise_mW;
 
             #ifdef DEBUG_CHANSWITCH
                 printf("TX mac address: %02x:%02x:%02x:%02x:%02x:%02x, on channel %d of %d channels \n", 
@@ -1043,6 +1225,23 @@ AppLayerChanswitchClient(Node *node, Message *msg)
     }
 
     MESSAGE_Free(node, msg);
+}
+
+/*
+ * NAME:        ClearVisibleNodeList
+ * PURPOSE:     Clear (deallocate) this node list in preparation for the next scan.
+ * PARAMETERS:  nodelist - pointer to the visible node list
+ * RETURN:      none.
+ */
+void
+ClearVisibleNodeList(DOT11_VisibleNodeInfo* nodeList){
+    DOT11_VisibleNodeInfo *current = nodeList;
+    DOT11_VisibleNodeInfo *next;
+    while(current != NULL){
+        next = current->next;
+        free (current);
+        current = next;
+    }
 }
 
 /*
@@ -1380,11 +1579,31 @@ AppLayerChanswitchServer(Node *node, Message *msg)
 
                         MESSAGE_Send(node, probeMsg, RX_PROBE_ACK_DELAY);
                         }
+
                         else if (packet[0] == CHANGE_PKT){
                         #ifdef DEBUG_CHANSWITCH
                             printf("CHANSWITCH Server: Node %ld at %s got CHANGE_PKT\n",
                                 node->nodeId, buf);
                         #endif 
+                        serverPtr->state = RX_PROBE_ACK;
+                        //send CHANGE_ACK to TX
+                        AppChanswitchServerSendChangeAck(node, serverPtr);
+                        //start the delay timer
+                        Message *changeMsg;
+                        changeMsg = MESSAGE_Alloc(node, 
+                            APP_LAYER,
+                            APP_CHANSWITCH_SERVER,
+                            MSG_APP_RxChangeAckDelay);
+                        AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                            MESSAGE_InfoAlloc(
+                                node,
+                                changeMsg,
+                                sizeof(AppChanswitchTimeout));
+                        ERROR_Assert(info, "cannot allocate enough space for needed info");
+                        info->connectionId = dataRecvd->connectionId;
+
+                        MESSAGE_Send(node, changeMsg, RX_CHANGE_ACK_DELAY);
+
                         }
                         else if (packet[0] == VERIFY_PKT){
                         #ifdef DEBUG_CHANSWITCH
@@ -1451,6 +1670,12 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                 printf("%s: CHANSWITCH Server node %u ACK change timer expired\n",
                        buf, node->nodeId);
             #endif /* DEBUG_CHANSWITCH */
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            serverPtr = AppChanswitchServerGetChanswitchServer(node,
+                                            timeoutInfo->connectionId);
+            //TODO: change to the new channel
             break;
         }
 
