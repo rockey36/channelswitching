@@ -1638,26 +1638,29 @@ APP_InitializeApplications(
         {
             char sourceString[MAX_STRING_LENGTH];
             char destString[MAX_STRING_LENGTH];
-            // int itemsToSend;
-            // char chanswitchMask[MAX_STRING_LENGTH];
+            double hnThreshold;
+            double csThreshold;
             char startTimeStr[MAX_STRING_LENGTH];
             NodeAddress sourceNodeId;
             Address sourceAddr;
             NodeAddress destNodeId;
             Address destAddr;
 
+
             numValues = sscanf(appInput.inputStrings[i],
-                            "%*s %s %s %s",
+                            "%*s %s %s %lf %lf %s",
                             sourceString,
                             destString,
+                            &hnThreshold,
+                            &csThreshold,
                             startTimeStr);
 
-            if (numValues != 3)
+            if (numValues != 5)
             {
                 char errorString[MAX_STRING_LENGTH];
                 sprintf(errorString,
                         "Wrong CHANSWITCH configuration format!\n"
-                        "CHANSWITCH <src> <dest> <start time>\n");
+                        "CHANSWITCH <src> <dest> <start time> <sinr db threshold> <cs dbm threshold>\n");
                 ERROR_ReportError(errorString);
             }
 
@@ -1675,7 +1678,7 @@ APP_InitializeApplications(
             if (node != NULL)
             {
                 clocktype startTime = TIME_ConvertToClock(startTimeStr);
-#ifdef DEBUG
+// #ifdef DEBUG
                 char clockStr[MAX_CLOCK_STRING_LENGTH];
                 char addrStr[MAX_STRING_LENGTH];
 
@@ -1684,13 +1687,14 @@ APP_InitializeApplications(
                 printf("  dst nodeId:    %u\n", destNodeId);
                 IO_ConvertIpAddressToString(&destAddr, addrStr);
                 printf("  dst address:   %s\n", addrStr);
-                // printf("  chanswitch mask (currently unused): %s\n", chanswitchMask);
+                printf("  hidden node sinr threshold (dB): %lf\n",hnThreshold);
+                printf("  cs signal strength threshold (dBm): %lf\n",csThreshold);
                 ctoa(startTime, clockStr);
                 printf("  start time:    %s\n", clockStr);
-#endif /* DEBUG */
+// #endif /* DEBUG */
 
                 AppChanswitchClientInit(
-                    node, sourceAddr, destAddr, startTime);
+                    node, sourceAddr, destAddr, startTime, hnThreshold, csThreshold);
             }
 
             // Handle Loopback Address
