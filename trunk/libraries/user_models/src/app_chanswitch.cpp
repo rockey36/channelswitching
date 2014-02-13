@@ -544,6 +544,34 @@ AppChanswitchServerSendChangeAck(Node *node, AppDataChanswitchServer *serverPtr)
 }
 
 /*
+ * NAME:        AppChanswitchServerSendVerifyAck.
+ * PURPOSE:     Send the ack indicating server changed to the new channel
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchServerSendVerifyAck(Node *node, AppDataChanswitchServer *serverPtr){
+
+    char *payload;
+
+    payload = (char *)MEM_malloc(CHANSWITCH_ACK_SIZE); //1
+    memset(payload,VERIFY_ACK,1);
+    
+    if (!serverPtr->sessionIsClosed)
+    {
+        APP_TcpSendData(
+                node,
+                serverPtr->connectionId,
+                payload,
+                CHANSWITCH_ACK_SIZE,
+                TRACE_APP_CHANSWITCH);
+    }
+     MEM_free(payload);
+}
+
+
+/*
  * NAME:        AppChanswitchServerSendVisibleNodeList.
  * PURPOSE:     Send the list of visible nodes to the TX.
  * PARAMETERS:  node - pointer to the node,
@@ -1062,8 +1090,29 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             clientPtr->numBytesRecvd += (clocktype) msg->packetSize;
 
-
             switch(clientPtr->state){
+                case TX_IDLE: {
+                if(packet[0] == PROBE_ACK){
+                       #ifdef DEBUG_CHANSWITCH
+                        printf("CHANSWITCH Client: Node %ld at %s got PROBE_ACK while in TX_IDLE state.\n",
+                            node->nodeId, buf);
+                       #endif 
+                    }
+                
+                else if(packet[0] == CHANGE_ACK){
+                       #ifdef DEBUG_CHANSWITCH
+                        printf("CHANSWITCH Client: Node %ld at %s got CHANGE_ACK while in TX_IDLE state.\n",
+                            node->nodeId, buf);
+                       #endif 
+                    }
+                
+                else if(packet[0] == VERIFY_ACK){
+                       #ifdef DEBUG_CHANSWITCH
+                        printf("CHANSWITCH Client: Node %ld at %s got VERIFY_ACK while in TX_IDLE state.\n",
+                            node->nodeId, buf);
+                       #endif 
+                    }
+                }
                 case TX_PROBE_WFACK:{
                     if(packet[0] == PROBE_ACK){
                        #ifdef DEBUG_CHANSWITCH
@@ -1103,18 +1152,28 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 case TX_CHANGE_WFACK:{
                     if(packet[0] == CHANGE_ACK){
                        #ifdef DEBUG_CHANSWITCH
-                        printf("CHANSWITCH Client: Node %ld at %s got CHANGE_ACK\n",
+                        printf("CHANSWITCH Client: Node %ld at %s got CHANGE_ACK while in TX_CHANGE_WFACK state.\n",
                             node->nodeId, buf);
                        #endif 
-                    //TODO: change channel, send verify
-                    AppChanswitchChangeChannels(
-                        node, 
-                        clientPtr->connectionId, 
-                        CHANSWITCH_TX_CLIENT, 
-                        clientPtr->currentChannel,
-                        clientPtr->nextChannel);
+                        AppChanswitchChangeChannels(node, 
+                                                    clientPtr->connectionId, 
+                                                    CHANSWITCH_TX_CLIENT, 
+                                                    clientPtr->currentChannel,
+                                                    clientPtr->nextChannel);
+                        clientPtr->currentChannel = clientPtr->nextChannel;
+                        clientPtr->state = TX_IDLE;
                     }
-                    clientPtr->state = TX_VERIFY_INIT;
+                    break;
+                }
+                case TX_VERIFY_WFACK:{
+                    if(packet[0] == VERIFY_ACK){
+                        #ifdef DEBUG_CHANSWITCH
+                        printf("CHANSWITCH Client: Node %ld at %s got VERIFY_ACK in while in TX_VERIFY_WFACK state.\n",
+                            node->nodeId, buf);
+                        #endif
+                        clientPtr->currentChannel = clientPtr->nextChannel;
+                        clientPtr->state = TX_IDLE;
+                    }
                     break;
                 }
             }
@@ -1184,14 +1243,29 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                             timeoutInfo->connectionId);
             if(clientPtr->state == TX_CHANGE_WFACK){
-                //TODO: change channels, send verify pkt
-
+                //change channels, start timer, wait for verify pkt
+                clientPtr->state = TX_VERIFY_WFACK;
                 AppChanswitchChangeChannels(
                         node, 
                         clientPtr->connectionId, 
                         CHANSWITCH_TX_CLIENT, 
                         clientPtr->currentChannel,
                         clientPtr->nextChannel);
+
+                Message *timeout;
+                timeout = MESSAGE_Alloc(node, 
+                                        APP_LAYER,
+                                        APP_CHANSWITCH_CLIENT,
+                                        MSG_APP_TxVerifyWfAckTimeout);
+                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        timeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(info, "cannot allocate enough space for needed info");
+                info->connectionId = clientPtr->connectionId;
+                MESSAGE_Send(node, timeout, TX_VERIFY_WFACK_TIMEOUT);
+                
             }
             break;
         }
@@ -1202,7 +1276,38 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 printf("%s: CHANSWITCH Client node %u got verify ACK timeout\n",
                        buf, node->nodeId);
             #endif /* DEBUG_CHANSWITCH */
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchClientGetChanswitchClient(node,
+                                            timeoutInfo->connectionId);
+            //TODO: return to the previous channel and wait 
+            if(clientPtr->state = TX_VERIFY_WFACK){
+                clientPtr->state = TX_CHANGE_WFACK;
+                AppChanswitchChangeChannels(
+                        node, 
+                        clientPtr->connectionId, 
+                        CHANSWITCH_TX_CLIENT, 
+                        clientPtr->nextChannel,
+                        clientPtr->currentChannel);
+
+                Message *timeout;
+                timeout = MESSAGE_Alloc(node, 
+                                        APP_LAYER,
+                                        APP_CHANSWITCH_CLIENT,
+                                        MSG_APP_TxChangeWfAckTimeout);
+                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        timeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(info, "cannot allocate enough space for needed info");
+                info->connectionId = clientPtr->connectionId;
+                MESSAGE_Send(node, timeout, TX_CHANGE_WFACK_TIMEOUT);
+
+            }
             break;
+
         }
 
         case MSG_APP_FromMacTxScanFinished:
@@ -1656,12 +1761,6 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                         MESSAGE_Send(node, changeMsg, RX_CHANGE_ACK_DELAY);
 
                         }
-                        else if (packet[0] == VERIFY_PKT){
-                        #ifdef DEBUG_CHANSWITCH
-                            printf("CHANSWITCH Server: Node %ld at %s got VERIFY_PKT\n",
-                                node->nodeId, buf);
-                        #endif 
-                        }
                         else{
                             ERROR_Assert(FALSE, "CHANSWITCH Server: Received unknown pkt type \n");
                         }
@@ -1726,12 +1825,14 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                             MESSAGE_ReturnInfo(msg);
             serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                             timeoutInfo->connectionId);
-            //TODO: change to the new channel
+            //change to the new channel
             AppChanswitchChangeChannels(node, 
                                         serverPtr->connectionId, 
                                         CHANSWITCH_RX_SERVER, 
                                         serverPtr->currentChannel,
                                         serverPtr->nextChannel);
+            //send verify ACK
+            AppChanswitchServerSendVerifyAck(node,serverPtr);
             break;
         }
 
