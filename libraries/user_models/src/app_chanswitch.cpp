@@ -158,7 +158,9 @@ AppChanswitchClientUpdateChanswitchClient(Node *node,
 AppDataChanswitchClient *
 AppChanswitchClientNewChanswitchClient(Node *node,
                          Address clientAddr,
-                         Address serverAddr)
+                         Address serverAddr,
+                         double hnThreshold,
+                         double csThreshold)
 {
     AppDataChanswitchClient *chanswitchClient;
 
@@ -195,6 +197,9 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     chanswitchClient->numChannels = 1;
     chanswitchClient->currentChannel = 0;
     chanswitchClient->nextChannel = 0;
+    chanswitchClient->hnThreshold = hnThreshold;
+    chanswitchClient->csThreshold = csThreshold;
+
 
 
 #ifdef DEBUG_CHANSWITCH
@@ -206,6 +211,9 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     printf("    localAddr = %s\n", addrStr);
     IO_ConvertIpAddressToString(&chanswitchClient->remoteAddr, addrStr);
     printf("    remoteAddr = %s\n", addrStr);
+    printf("    hnThreshold = %f\n",hnThreshold);
+    printf("    csThreshold = %f\n",hnThreshold);
+
     // printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
 #endif /* DEBUG_CHANSWITCH */
 
@@ -723,7 +731,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
         }
         //verify signal strength
         sinr = NON_DB(clientPtr->signalStrengthAtRx) / (NON_DB(rxNode->signalStrength) + clientPtr->noise_mW) ; 
-        if(isHN && (sinr > SINR_MIN_DB)){ //TODO: remove hardcode
+        if(isHN && (sinr > clientPtr->hnThreshold)){ //20 dB default
             #ifdef DEBUG_CHANSWITCH
             printf("weak hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX is %f dBm when transmitting) \n",
                     rxNode->bssAddr.byte[5], 
@@ -740,7 +748,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
 
         if(isHN){
             #ifdef DEBUG_CHANSWITCH
-            printf("strong hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting) \n",
+            printf("strong hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting)  \n",
                     rxNode->bssAddr.byte[5], 
                     rxNode->bssAddr.byte[4], 
                     rxNode->bssAddr.byte[3],
@@ -764,7 +772,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
     //count carrier sensing nodes at TX
     while(txNode != NULL){
         isCS = TRUE;
-        if(txNode->signalStrength < CS_MIN_DBM){
+        if(txNode->signalStrength < clientPtr->csThreshold){ //-69.0 dBm default
             #ifdef DEBUG_CHANSWITCH
             printf("weak cs node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f)\n",
                     txNode->bssAddr.byte[5], 
@@ -1411,23 +1419,17 @@ AppChanswitchClientInit(
     Node *node,
     Address clientAddr,
     Address serverAddr,
-    clocktype waitTime)
+    clocktype waitTime,
+    double hnThreshold,
+    double csThreshold)
 {
     AppDataChanswitchClient *clientPtr;
 
-    /* Check to make sure the number of chanswitch items is a correct value. */
-
-    // if (itemsToSend < 0)
-    // {
-    //     printf("CHANSWITCH Client: Node %d items to send needs to be >= 0\n",
-    //            node->nodeId);
-
-    //     exit(0);
-    // }
-
     clientPtr = AppChanswitchClientNewChanswitchClient(node,
                                          clientAddr,
-                                         serverAddr);
+                                         serverAddr,
+                                         hnThreshold,
+                                         csThreshold);
 
     if (clientPtr == NULL)
     {

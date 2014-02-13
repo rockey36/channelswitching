@@ -107,7 +107,9 @@ struct struct_app_chanswitch_client_str
     int                     currentChannel;
     int                     nextChannel;
     D_BOOL*                 channelSwitch; //channels that can be switched to  
-    double                  noise_mW; //thermal noise is the same on every channel in QualNet           
+    double                  noise_mW; //thermal noise is the same on every channel in QualNet      
+    double                  hnThreshold; //threshold for strong hidden node in dB (relative interference from HN)
+    double                  csThreshold; //threshold for strong cs node in dBm 
     
 }AppDataChanswitchClient;
 
@@ -161,7 +163,9 @@ AppChanswitchClientInit(
     Node *nodePtr,
     Address clientAddr,
     Address serverAddr,
-    clocktype waitTime);
+    clocktype waitTime,
+    double hnThreshold,
+    double csThreshold);
 
 /*
  * NAME:        AppChanswitchClientPrintStats.
@@ -223,7 +227,9 @@ AppDataChanswitchClient *
 AppChanswitchClientNewChanswitchClient(
     Node *nodePtr,
     Address clientAddr,
-    Address serverAddr);
+    Address serverAddr,
+    double hnThreshold,
+    double csThreshold);
 
 
 /*
