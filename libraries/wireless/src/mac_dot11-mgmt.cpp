@@ -221,6 +221,42 @@ void MacDot11ManagementStartListeningToChannel(
     }
 } // End of MacDot11ManagementStartListeningToChannel //
 
+//--------------------------------------------------------------------------
+/*!
+ * \brief Select a channel and start listening, WITHOUT starting the probe timer
+ *
+ * \param node          Node*   : Pointer to node
+ * \param phyNumber     int     : Phy to listen to
+ * \param channelIndex  short   : The new channel
+ * \param dot11         MacDataDot11* : Pointer to MacDataDot11
+ * \return              None.
+ */
+//--------------------------------------------------------------------------
+void MacDot11ManagementStartListeningToChannelNoProbe(
+        Node            *node,
+        int             phyNumber,
+        short           channelIndex,
+        MacDataDot11*   dot11)
+{
+    BOOL phyIsListening = TRUE;
+
+    phyIsListening =
+        PHY_IsListeningToChannel(
+            node,
+            phyNumber,
+            channelIndex);
+
+    if (phyIsListening == FALSE)
+    {
+        PHY_StartListeningToChannel(
+            node,
+            phyNumber,
+            channelIndex);
+    }
+
+
+} // End of MacDot11ManagementStartListeningToChannel //
+
 
 //--------------------------------------------------------------------------
 /*!
@@ -304,6 +340,66 @@ void MacDot11ManagementChangeToChannel(
 //---------------------------Power-Save-Mode-End-Updates-----------------//
 
     MacDot11ManagementStartListeningToChannel(
+        node,
+        phyNumber,
+        (short)mngmtVars->currentChannel,
+        dot11);
+
+    PHY_SetTransmissionChannel(
+        node,
+        phyNumber,
+        mngmtVars->currentChannel);
+
+}// MacDot11ManagementChangeToChannel
+
+//--------------------------------------------------------------------------
+/*!
+ * \brief Change to a new channel WITHOUT starting a probe timer
+ *
+ * \param node          Node*   : Pointer to node
+ * \param dot11         MacDataDot11* : Pointer to Dot11 structure
+ * \param channelIndex  short   : The new channel
+
+ * \return              None.
+ */
+//--------------------------------------------------------------------------
+void MacDot11ManagementChangeToChannelNoProbe(
+        Node*           node,
+        MacDataDot11*   dot11,
+        unsigned int    channelIndex)
+{
+   unsigned int phyNumber = dot11->myMacData->phyNumber;
+
+    DOT11_ManagementVars* mngmtVars =
+        (DOT11_ManagementVars *) dot11->mngmtVars;
+
+    if (mngmtVars->currentChannel == channelIndex)
+        return;
+
+    /// Check if able to use channel
+    BOOL phyCanListen =
+        PHY_CanListenToChannel(
+            node,
+            phyNumber,
+            channelIndex);
+
+    if(!phyCanListen){
+        ERROR_ReportError("MacDot11ManagementChangeToChannel: "
+                "Channel is invalid.\n");
+    }
+
+    MacDot11ManagementStopListeningToChannel(
+        node,
+        phyNumber,
+        (short)mngmtVars->currentChannel);
+
+    // Set new transmit channel
+    mngmtVars->currentChannel = channelIndex;
+//---------------------------Power-Save-Mode-Updates---------------------//
+    dot11->phyStatus = MAC_DOT11_PS_ACTIVE;
+//---------------------------Power-Save-Mode-End-Updates-----------------//
+
+    MacDot11ManagementStartListeningToChannelNoProbe(
         node,
         phyNumber,
         (short)mngmtVars->currentChannel,
@@ -4756,7 +4852,7 @@ void MacDot11ManagementHandleTimeout(
             "MSG_MAC_DOT11_ChangeChannelRequest: Channel switching type must be set to AP Probing. \n");   
             printf("Received request to change from channel %d to channel %d CHANSWITCH node %d \n", dot11->oldChannel, dot11->newChannel, node->nodeId);
             //TODO: change channel
-            MacDot11ManagementChangeToChannel(node,dot11,dot11->newChannel);
+            MacDot11ManagementChangeToChannelNoProbe(node,dot11,dot11->newChannel);
             //TODO: send message back to app layer
             break;
         }

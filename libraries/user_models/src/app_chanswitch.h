@@ -53,7 +53,6 @@
     TX_PROBE_WFRX,
     TX_CHANGE_INIT,
     TX_CHANGE_WFACK,
-    TX_VERIFY_INIT,
     TX_VERIFY_WFACK
 
  };
@@ -64,7 +63,7 @@
     RX_PROBE_ACK,
     RX_PROBING,
     RX_CHANGE_ACK,
-    RX_WF_VERIFY
+    RX_VERIFY_ACK
  };
 
 //pkts sent by chanswitch app
@@ -346,6 +345,17 @@ AppChanswitchServerSendProbeAck(Node *node, AppDataChanswitchServer *serverPtr);
  */
 void
 AppChanswitchServerSendChangeAck(Node *node, AppDataChanswitchServer *serverPtr);
+
+/*
+ * NAME:        AppChanswitchServerSendVerifyAck.
+ * PURPOSE:     Send the ack indicating server changed to the new channel
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchServerSendVerifyAck(Node *node, AppDataChanswitchServer *serverPtr);
+
 
 /*
  * NAME:        AppChanswitchClientSendChangeInit.
