@@ -5061,6 +5061,26 @@ void MacDot11Init(
         dot11->chanswitchType = DOT11_CHANSWITCH_TYPE_AP_PROBE;
     }
 
+    //If using ASDCS, determine what triggers the switch
+
+    //Determine channel switch type (simple, AP-probe based)
+    IO_ReadString(
+    node->nodeId,
+    &address,
+    nodeInput,
+    "MAC-DOT11-CHANSWITCH-TRIGGER",
+    &wasFound,
+    retString);
+
+    if ((!wasFound) || (strcmp(retString, "NONE") == 0))
+    {
+        dot11->chanswitchTrigger = DOT11_CHANSWITCH_TRIGGER_NONE;
+    }
+    else if (strcmp(retString, "TX-QUEUE-THRESHOLD") == 0)
+    {
+        dot11->chanswitchTrigger = DOT11_CHANSWITCH_TRIGGER_QUEUE;
+    }
+
 
     // Read short retry count.
     // Format is :
