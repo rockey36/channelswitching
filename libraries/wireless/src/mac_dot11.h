@@ -183,8 +183,12 @@ struct DOT11s_Data;
 #define DOT11_CHANSWITCH_THRESHOLD 75.0 //percentage of queue filled to change channels
 #define DOT11_CHANSWITCH_INITIAL_DELAY 3.0 //time to stay on the initial SINR selected channel
 #define DOT11_CHANSWITCH_RX_RETURN_PREV_CHANNEL 5.0 //time when RX returns to original channel if TX cannot be found
+//---- Channel switching defines --------------------------------------//
 #define DOT11_CHANSWITCH_TYPE_SIMPLE            0 //simple chanswitch - no communication, just move to next channel
 #define DOT11_CHANSWITCH_TYPE_AP_PROBE          1 //chanswitch based on ap probe and communication pkts
+
+#define DOT11_CHANSWITCH_TRIGGER_NONE           0 //ASDCS - initial channel switch only
+#define DOT11_CHANSWITCH_TRIGGER_QUEUE          1 //ASDCS - channel switch activates when TX queue exceeds threshold
 
 
 //---------------------------Power-Save-Mode-Updates---------------------//
@@ -1792,6 +1796,8 @@ struct MacDataDot11 {
     int connectionId;
     int oldChannel;
     int newChannel;
+    //what triggers the chanswitch if using ASDCS (app layer)
+    int chanswitchTrigger;
 };
 
 
