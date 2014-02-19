@@ -1377,6 +1377,14 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             break;
         }
 
+        case MSC_APP_InitiateChannelScanRequest: {
+            #ifdef DEBUG_CHANSWITCH
+                printf("%s: CHANSWITCH Client node %u received a request to initiate a channel scan \n",
+                       buf, node->nodeId);
+            #endif /* DEBUG_CHANSWITCH */
+            break;
+        }
+
         default: {
             ctoa(getSimTime(node), buf);
             printf("Time %s: CHANSWITCH Client node %u received message of unknown"
