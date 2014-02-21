@@ -1641,6 +1641,7 @@ APP_InitializeApplications(
             double hnThreshold;
             double csThreshold;
             char startTimeStr[MAX_STRING_LENGTH];
+            char changeBackoffStr[MAX_STRING_LENGTH];
             NodeAddress sourceNodeId;
             Address sourceAddr;
             NodeAddress destNodeId;
@@ -1648,19 +1649,20 @@ APP_InitializeApplications(
 
 
             numValues = sscanf(appInput.inputStrings[i],
-                            "%*s %s %s %lf %lf %s",
+                            "%*s %s %s %lf %lf %s %s",
                             sourceString,
                             destString,
                             &hnThreshold,
                             &csThreshold,
+                            changeBackoffStr,
                             startTimeStr);
 
-            if (numValues != 5)
+            if (numValues != 6)
             {
                 char errorString[MAX_STRING_LENGTH];
                 sprintf(errorString,
                         "Wrong CHANSWITCH configuration format!\n"
-                        "CHANSWITCH <src> <dest> <start time> <sinr db threshold> <cs dbm threshold>\n");
+                        "CHANSWITCH <src> <dest> <sinr db threshold> <cs dbm threshold> <change backoff> <start time>\n");
                 ERROR_ReportError(errorString);
             }
 
@@ -1678,6 +1680,7 @@ APP_InitializeApplications(
             if (node != NULL)
             {
                 clocktype startTime = TIME_ConvertToClock(startTimeStr);
+                clocktype changeBackoffTime = TIME_ConvertToClock(changeBackoffStr);
 // #ifdef DEBUG
                 char clockStr[MAX_CLOCK_STRING_LENGTH];
                 char addrStr[MAX_STRING_LENGTH];
@@ -1689,12 +1692,14 @@ APP_InitializeApplications(
                 printf("  dst address:   %s\n", addrStr);
                 printf("  hidden node sinr threshold (dB): %lf\n",hnThreshold);
                 printf("  cs signal strength threshold (dBm): %lf\n",csThreshold);
+                ctoa(changeBackoffTime, clockStr);
+                printf("  minimum delay btwn channel changes:    %s\n", clockStr);
                 ctoa(startTime, clockStr);
                 printf("  start time:    %s\n", clockStr);
 // #endif /* DEBUG */
 
                 AppChanswitchClientInit(
-                    node, sourceAddr, destAddr, startTime, hnThreshold, csThreshold);
+                    node, sourceAddr, destAddr, startTime, hnThreshold, csThreshold, changeBackoffTime);
             }
 
             // Handle Loopback Address

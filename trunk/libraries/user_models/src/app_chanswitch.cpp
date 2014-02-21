@@ -160,7 +160,8 @@ AppChanswitchClientNewChanswitchClient(Node *node,
                          Address clientAddr,
                          Address serverAddr,
                          double hnThreshold,
-                         double csThreshold)
+                         double csThreshold,
+                         clocktype changeBackoffTime)
 {
     AppDataChanswitchClient *chanswitchClient;
 
@@ -197,8 +198,10 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     chanswitchClient->numChannels = 1;
     chanswitchClient->currentChannel = 0;
     chanswitchClient->nextChannel = 0;
+    chanswitchClient->initBackoff = FALSE;
     chanswitchClient->hnThreshold = hnThreshold;
     chanswitchClient->csThreshold = csThreshold;
+    chanswitchClient->changeBackoffTime = changeBackoffTime;
 
 
 
@@ -983,27 +986,50 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
                 assert(clientPtr != NULL);
 
-               //Get my mac address from MAC layer
-                clientPtr->state = TX_PROBE_INIT;
-                AppChanswitchGetMyMacAddr(node,clientPtr->connectionId, CHANSWITCH_TX_CLIENT);
+                //TODO: add switch for initial chanswitch
+                if(TRUE){
+                    //Get my mac address from MAC layer
+                    clientPtr->state = TX_PROBE_INIT;
+                    clientPtr->initBackoff = TRUE;
 
-                //start probe ACK timeout timer
-                Message *timeout;
+                    //start channel reselection backoff timer
+                    Message *initTimeout;
+                    initTimeout = MESSAGE_Alloc(node, 
+                        APP_LAYER,
+                        APP_CHANSWITCH_CLIENT,
+                        MSG_APP_TxChannelSelectionTimeout);
 
-                timeout = MESSAGE_Alloc(node, 
-                    APP_LAYER,
-                    APP_CHANSWITCH_CLIENT,
-                    MSG_APP_TxProbeWfAckTimeout);
+                    AppChanswitchTimeout* initInfo = (AppChanswitchTimeout*)
+                    MESSAGE_InfoAlloc(
+                            node,
+                            initTimeout,
+                            sizeof(AppChanswitchTimeout));
+                    ERROR_Assert(initInfo, "cannot allocate enough space for needed info");
+                    initInfo->connectionId = clientPtr->connectionId;
 
-                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
-                MESSAGE_InfoAlloc(
-                        node,
-                        timeout,
-                        sizeof(AppChanswitchTimeout));
-                ERROR_Assert(info, "cannot allocate enough space for needed info");
-                info->connectionId = openResult->connectionId;
+                    MESSAGE_Send(node, initTimeout, clientPtr->changeBackoffTime);
 
-                MESSAGE_Send(node, timeout, TX_PROBE_WFACK_TIMEOUT);
+                    //get MAC addr from MAC layer (probe will immediately start thereafter)
+                    AppChanswitchGetMyMacAddr(node,clientPtr->connectionId, CHANSWITCH_TX_CLIENT);
+
+                    //start probe ACK timeout timer
+                    Message *timeout;
+
+                    timeout = MESSAGE_Alloc(node, 
+                        APP_LAYER,
+                        APP_CHANSWITCH_CLIENT,
+                        MSG_APP_TxProbeWfAckTimeout);
+
+                    AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                    MESSAGE_InfoAlloc(
+                            node,
+                            timeout,
+                            sizeof(AppChanswitchTimeout));
+                    ERROR_Assert(info, "cannot allocate enough space for needed info");
+                    info->connectionId = clientPtr->connectionId;
+
+                    MESSAGE_Send(node, timeout, TX_PROBE_WFACK_TIMEOUT);
+                }
             }
 
             break;
@@ -1318,6 +1344,22 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
         }
 
+        //Prevents multiple channel reselections from being initiated simultaneously
+        case MSG_APP_TxChannelSelectionTimeout:
+        {
+            #ifdef DEBUG_CHANSWITCH
+                printf("%s: CHANSWITCH Client node %u got channel selection timeout\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG_CHANSWITCH */
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchClientGetChanswitchClient(node,
+                                            timeoutInfo->connectionId);
+            clientPtr->initBackoff = FALSE;
+            break;
+        }
+
         case MSG_APP_FromMacTxScanFinished:
         {
             #ifdef DEBUG_CHANSWITCH
@@ -1377,11 +1419,56 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             break;
         }
 
-        case MSC_APP_InitiateChannelScanRequest: {
-            #ifdef DEBUG_CHANSWITCH
-                printf("%s: CHANSWITCH Client node %u received a request to initiate a channel scan \n",
-                       buf, node->nodeId);
-            #endif /* DEBUG_CHANSWITCH */
+        case MSG_APP_InitiateChannelScanRequest: {
+            // #ifdef DEBUG_CHANSWITCH
+            //     printf("%s: CHANSWITCH Client node %u received a request to initiate a channel scan \n",
+            //            buf, node->nodeId);
+            // #endif /* DEBUG_CHANSWITCH */
+            AppInitScanRequest* initRequest = (AppInitScanRequest*) MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchClientGetChanswitchClient(node, initRequest->connectionId);
+
+            //start the scan if timer isn't expired
+            if(clientPtr->state == TX_IDLE && clientPtr->initBackoff == FALSE){
+                printf("attempt new channel switch at app layer \n");
+                //set the backoff timer to keep multiple from being initiated in a row
+                clientPtr->state = TX_PROBE_INIT;
+                clientPtr->initBackoff = TRUE;
+                Message *initTimeout;
+                initTimeout = MESSAGE_Alloc(node, 
+                    APP_LAYER,
+                    APP_CHANSWITCH_CLIENT,
+                    MSG_APP_TxChannelSelectionTimeout);
+
+                AppChanswitchTimeout* initInfo = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        initTimeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(initInfo, "cannot allocate enough space for needed info");
+                initInfo->connectionId = clientPtr->connectionId;
+                MESSAGE_Send(node, initTimeout, clientPtr->changeBackoffTime);
+
+                //Get my mac address from MAC layer (probe will start after)
+                AppChanswitchGetMyMacAddr(node,clientPtr->connectionId, CHANSWITCH_TX_CLIENT);
+
+                //start probe ACK timeout timer
+                Message *timeout;
+
+                timeout = MESSAGE_Alloc(node, 
+                    APP_LAYER,
+                    APP_CHANSWITCH_CLIENT,
+                    MSG_APP_TxProbeWfAckTimeout);
+
+                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        timeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(info, "cannot allocate enough space for needed info");
+                info->connectionId = clientPtr->connectionId;
+
+                MESSAGE_Send(node, timeout, TX_PROBE_WFACK_TIMEOUT);
+            }
             break;
         }
 
@@ -1429,7 +1516,8 @@ AppChanswitchClientInit(
     Address serverAddr,
     clocktype waitTime,
     double hnThreshold,
-    double csThreshold)
+    double csThreshold,
+    clocktype changeBackoffTime)
 {
     AppDataChanswitchClient *clientPtr;
 
@@ -1437,7 +1525,8 @@ AppChanswitchClientInit(
                                          clientAddr,
                                          serverAddr,
                                          hnThreshold,
-                                         csThreshold);
+                                         csThreshold,
+                                         changeBackoffTime);
 
     if (clientPtr == NULL)
     {

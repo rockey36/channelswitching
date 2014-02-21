@@ -131,7 +131,8 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
     //Message Type for APP channel switching
-    MSC_APP_InitiateChannelScanRequest          = 377,
+    MSG_APP_TxChannelSelectionTimeout           = 376,
+    MSG_APP_InitiateChannelScanRequest          = 377,
     MSG_MAC_DOT11_ChangeChannelRequest          = 378,
     MSG_MAC_FromAppChangeChannelRequest         = 379,
     MSG_APP_FromMac_MACAddressRequest           = 380,
@@ -1532,6 +1533,15 @@ typedef struct mac_to_app_scan_complete{
     int nodeCount;
     DOT11_VisibleNodeInfo* nodeInfo;
 } MacToAppScanComplete;
+
+// /**
+// STRUCT      :: init_scan_request
+// DESCRIPTION :: Can be sent from any layer to initiate a channel switch at App layer
+// Used in chanswitch
+// **/
+typedef struct init_scan_request{
+    int connectionId;
+} AppInitScanRequest;
 
 // /**
 // STRUCT      :: AppToTcpConnSetup
