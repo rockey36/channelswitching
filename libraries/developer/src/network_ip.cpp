@@ -13854,17 +13854,24 @@ NetworkIpQueueInsert(
     if(node->macData[outgoingInterface]->macProtocol == MAC_PROTOCOL_DOT11){
         MacDataDot11 *dot11 = (MacDataDot11 *) node->macData[outgoingInterface]->macVar;
         if(filled > dot11->chanswitchThreshold){
-            printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
+            // printf("NetworkIpQueueInsert: node %d, there are %d / %d bytes in queue (%4.2f%%) \n", node->nodeId, bytes, maxBytes, filled);
             if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_SIMPLE){
                 MAC_NetworkLayerChanswitch(node, outgoingInterface); //used by simple channel switch
             }
             else if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE && dot11->chanswitchTrigger == DOT11_CHANSWITCH_TRIGGER_QUEUE){
-                printf("telling app layer to initiate a chanswitch \n");
+                // printf("telling app layer to initiate a chanswitch \n");
                 Message *appMsg;
                 appMsg = MESSAGE_Alloc(node,
                     APP_LAYER,
                     APP_CHANSWITCH_CLIENT,
-                    MSC_APP_InitiateChannelScanRequest);
+                    MSG_APP_InitiateChannelScanRequest);
+                AppInitScanRequest* info = (AppInitScanRequest *)
+                MESSAGE_InfoAlloc(
+                    node,
+                    appMsg,
+                    sizeof(AppInitScanRequest));
+                ERROR_Assert(info, "cannot allocate enough space for needed info");
+                info->connectionId = dot11->connectionId;
                 MESSAGE_Send(node, appMsg, 0);
             }
 

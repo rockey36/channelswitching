@@ -42,6 +42,7 @@
 #define RX_CHANGE_ACK_DELAY        (5 * MILLI_SECOND) 
 #define SINR_MIN_DB                20.0             //SINR threshold for hidden node in dB (default)
 #define CS_MIN_DBM                 -69.0            //energy threshold for carrier sense node in dBm (default)
+#define CHANGE_BACKOFF             (1 * SECOND)
 #define NUM_CHANNELS               14               //hardcode because C++ is gross. should not be using more than this in our simulations  
 
 //tx (client) states
@@ -110,6 +111,8 @@ struct struct_app_chanswitch_client_str
     double                  noise_mW; //thermal noise is the same on every channel in QualNet      
     double                  hnThreshold; //threshold for strong hidden node in dB (relative interference from HN)
     double                  csThreshold; //threshold for strong cs node in dBm 
+    clocktype               changeBackoffTime; //minimum delay between channel scan/change (default 1s)
+    BOOL                    initBackoff; 
     
 }AppDataChanswitchClient;
 
@@ -165,7 +168,8 @@ AppChanswitchClientInit(
     Address serverAddr,
     clocktype waitTime,
     double hnThreshold,
-    double csThreshold);
+    double csThreshold,
+    clocktype changeBackoffTime);
 
 /*
  * NAME:        AppChanswitchClientPrintStats.
@@ -229,7 +233,8 @@ AppChanswitchClientNewChanswitchClient(
     Address clientAddr,
     Address serverAddr,
     double hnThreshold,
-    double csThreshold);
+    double csThreshold,
+    clocktype changeBackoffTime);
 
 
 /*

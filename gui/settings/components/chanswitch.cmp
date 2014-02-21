@@ -4,6 +4,7 @@
    <variable name="Destination" key="DESTINATION" type="SelectionDynamic" keyvisible="false" optional="false"/>
    <variable name="Hidden node SINR threshold (dB)" type="Fixed" default="20.0" key="SINR-DB-THRESHOLD" keyvisible="false" optional="false"/>
    <variable name="Carrier sense node signal strength threshold (dBm)" type="Fixed" default="-69.0" key="CS-DBM-THRESHOLD" keyvisible="false" optional="false"/>
+   <variable name="Minimum time between channel change attempts" key="CHANGE-BACKOFF" type="Time" default="1S" keyvisible="false" optional="false"/>
    <variable name="Start Time" key="START-TIME" type="Time" default="1S" keyvisible="false" optional="false"/>
    
 </category>
