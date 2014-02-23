@@ -28,6 +28,10 @@
               </variable>
             </option>
             <option value="AP-PROBE" name="Active Scanning-based (ASDCS)">
+            <variable key="MAC-DOT11-ASDCS-INIT" type="Selection" name="Initial Channel Switch" default="YES">
+              <option value="NO" name="No" />
+              <option value="YES" name="Yes" />
+            </variable>
             <variable key="MAC-DOT11-CHANSWITCH-TRIGGER" type="Selection" name="Mid-Transmission Channel Switch" default="NONE">
                 <option value="NONE" name="None - select initial channel only" />
                 <option value="TX-QUEUE-THRESHOLD" name="TX queue filled percentage" />

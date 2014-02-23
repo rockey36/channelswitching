@@ -4895,6 +4895,8 @@ void MacDot11ManagementHandleTimeout(
             info->currentChannel = channel;
             info->channelSwitch = thisPhy->channelSwitch;
             info->noise_mW      = thisPhy->noise_mW_hz * PHY_CHANSWITCH_CHANNEL_BANDWIDTH; //same on all channels
+            info->initial       = dot11->firstScan;
+            info->asdcsInit     = dot11->asdcsInit;
             MESSAGE_Send(node, appMsg, 0);
             
 

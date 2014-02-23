@@ -3652,10 +3652,11 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
         case MSG_MAC_FromAppMACAddressRequest:
         {
             //Set a timer so it gets called properly.
-            AppToMacStartProbe* info =
-                (AppToMacStartProbe*) MESSAGE_ReturnInfo(msg);
+            AppToMacAddrRequest* info =
+                (AppToMacAddrRequest*) MESSAGE_ReturnInfo(msg);
             dot11->connectionId = info->connectionId;
             dot11->appType = info->appType;
+            dot11->firstScan = info->initial;
             MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
                                         MSG_MAC_DOT11_MACAddressRequest); 
             printf("MSG_MAC_FromAppMACAddressRequest node %d \n", node->nodeId);
@@ -5061,7 +5062,24 @@ void MacDot11Init(
         dot11->chanswitchType = DOT11_CHANSWITCH_TYPE_AP_PROBE;
     }
 
-    //If using ASDCS, determine what triggers the switch
+    //configuration for ASDCS
+
+    IO_ReadString(
+    node->nodeId,
+    &address,
+    nodeInput,
+    "MAC-DOT11-ASDCS-INIT",
+    &wasFound,
+    retString);
+
+    if ((!wasFound) || (strcmp(retString, "NO") == 0))
+    {
+        dot11->asdcsInit = FALSE;
+    }
+    else if (strcmp(retString, "YES") == 0)
+    {
+        dot11->asdcsInit = TRUE;
+    }
 
     //Determine channel switch type (simple, AP-probe based)
     IO_ReadString(

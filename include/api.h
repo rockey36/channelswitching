@@ -1485,6 +1485,7 @@ typedef struct app_chanswitch_timeout {
 typedef struct app_to_mac_addr_request {
     int connectionId;
     int appType;
+    BOOL initial;
 } AppToMacAddrRequest;
 
 // /**
@@ -1499,6 +1500,8 @@ typedef struct mac_to_app_addr_request {
     int currentChannel;
     D_BOOL* channelSwitch;
     double noise_mW;
+    BOOL initial;
+    BOOL asdcsInit;
 } MacToAppAddrRequest;
 
 // /**
@@ -1509,6 +1512,7 @@ typedef struct mac_to_app_addr_request {
 typedef struct app_to_mac_start_probe{
     int connectionId;
     int appType;
+    BOOL initial;
 } AppToMacStartProbe;
 
 // /**

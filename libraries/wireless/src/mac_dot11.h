@@ -1798,6 +1798,9 @@ struct MacDataDot11 {
     int newChannel;
     //what triggers the chanswitch if using ASDCS (app layer)
     int chanswitchTrigger;
+    //whether to do the initial chanswitch if using ASDCS (app layer)
+    BOOL asdcsInit;
+    BOOL firstScan; //true if ASDCS first scan
 };
 
 
