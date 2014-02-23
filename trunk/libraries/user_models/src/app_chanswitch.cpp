@@ -215,7 +215,7 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     IO_ConvertIpAddressToString(&chanswitchClient->remoteAddr, addrStr);
     printf("    remoteAddr = %s\n", addrStr);
     printf("    hnThreshold = %f\n",hnThreshold);
-    printf("    csThreshold = %f\n",hnThreshold);
+    printf("    csThreshold = %f\n",csThreshold);
 
     // printf("    itemsToSend = %d\n", chanswitchClient->itemsToSend);
 #endif /* DEBUG_CHANSWITCH */
@@ -357,13 +357,13 @@ void
 AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial){
 
     int options = 0;
-    if(!initial){
+    if(initial == FALSE){
         options = 1; //not the first chanswitch
     }
 
     char *payload;
 
-    payload = (char *)MEM_malloc(CHANSWITCH_PROBE_PKT_SIZE); //10
+    payload = (char *)MEM_malloc(CHANSWITCH_PROBE_PKT_SIZE); //6
     memset(payload,PROBE_PKT,1);
     memset(payload+1,0xfe,2); //dummy data for chanswitch mask
     memset(payload+3,options,1); //options byte only specifies initial chanswitch
@@ -474,14 +474,15 @@ AppChanswitchChangeChannels(Node *node, int connectionId, int appType, int oldCh
 
 /*
  * NAME:        AppChanswitchGetMyMacAddr.
- * PURPOSE:     Ask MAC for my MAC address and other MAC-layer info
+ * PURPOSE:     Ask MAC for my MAC address and other MAC-layer info.
+ *              After this is finished, ProbeInit will be called.
  * PARAMETERS:  node - pointer to the node,
  *              connectionId - identifier of the client/server connection
  *              appType - is this app TX or RX
  * RETURN:      none.
  */
 void
-AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType){
+AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType, BOOL initial){
     Message *macMsg;
     macMsg = MESSAGE_Alloc(node, 
     MAC_LAYER,
@@ -496,9 +497,12 @@ AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType){
     ERROR_Assert(info, "cannot allocate enough space for needed info");
     info->connectionId = connectionId;
     info->appType = appType;
+    info->initial = initial;
 
     MESSAGE_Send(node, macMsg, 0);
 }
+
+
 
 /*
  * NAME:        AppChanswitchServerSendProbeAck.
@@ -986,50 +990,28 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
                 assert(clientPtr != NULL);
 
-                //TODO: add switch for initial chanswitch
-                if(TRUE){
-                    //Get my mac address from MAC layer
-                    clientPtr->state = TX_PROBE_INIT;
-                    clientPtr->initBackoff = TRUE;
+                clientPtr->state = TX_PROBE_INIT;
+                //get MAC addr from MAC layer (probe will immediately start thereafter unless disabled)
+                AppChanswitchGetMyMacAddr(node,openResult->connectionId, CHANSWITCH_TX_CLIENT, TRUE);
 
-                    //start channel reselection backoff timer
-                    Message *initTimeout;
-                    initTimeout = MESSAGE_Alloc(node, 
-                        APP_LAYER,
-                        APP_CHANSWITCH_CLIENT,
-                        MSG_APP_TxChannelSelectionTimeout);
+                //start channel reselection backoff timer
+                clientPtr->initBackoff = TRUE;
+                Message *initTimeout;
+                initTimeout = MESSAGE_Alloc(node, 
+                    APP_LAYER,
+                    APP_CHANSWITCH_CLIENT,
+                    MSG_APP_TxChannelSelectionTimeout);
 
-                    AppChanswitchTimeout* initInfo = (AppChanswitchTimeout*)
-                    MESSAGE_InfoAlloc(
-                            node,
-                            initTimeout,
-                            sizeof(AppChanswitchTimeout));
-                    ERROR_Assert(initInfo, "cannot allocate enough space for needed info");
-                    initInfo->connectionId = clientPtr->connectionId;
+                AppChanswitchTimeout* initInfo = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        initTimeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(initInfo, "cannot allocate enough space for needed info");
+                initInfo->connectionId = clientPtr->connectionId;
 
-                    MESSAGE_Send(node, initTimeout, clientPtr->changeBackoffTime);
+                MESSAGE_Send(node, initTimeout, clientPtr->changeBackoffTime);
 
-                    //get MAC addr from MAC layer (probe will immediately start thereafter)
-                    AppChanswitchGetMyMacAddr(node,clientPtr->connectionId, CHANSWITCH_TX_CLIENT);
-
-                    //start probe ACK timeout timer
-                    Message *timeout;
-
-                    timeout = MESSAGE_Alloc(node, 
-                        APP_LAYER,
-                        APP_CHANSWITCH_CLIENT,
-                        MSG_APP_TxProbeWfAckTimeout);
-
-                    AppChanswitchTimeout* info = (AppChanswitchTimeout*)
-                    MESSAGE_InfoAlloc(
-                            node,
-                            timeout,
-                            sizeof(AppChanswitchTimeout));
-                    ERROR_Assert(info, "cannot allocate enough space for needed info");
-                    info->connectionId = clientPtr->connectionId;
-
-                    MESSAGE_Send(node, timeout, TX_PROBE_WFACK_TIMEOUT);
-                }
             }
 
             break;
@@ -1401,6 +1383,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             clientPtr->currentChannel = addrRequest->currentChannel;
             clientPtr->numChannels = addrRequest->numChannels;
             clientPtr->noise_mW = addrRequest->noise_mW;
+            clientPtr->channelSwitch = addrRequest->channelSwitch;
 
             #ifdef DEBUG_CHANSWITCH
                 printf("TX mac address: %02x:%02x:%02x:%02x:%02x:%02x, on channel %d of %d channels \n", 
@@ -1413,9 +1396,41 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                     clientPtr->currentChannel,
                     clientPtr->numChannels);
             #endif
-            clientPtr->channelSwitch = addrRequest->channelSwitch;
-            AppChanswitchClientSendProbeInit(node, clientPtr, TRUE);
-            clientPtr->state = TX_PROBE_WFACK;
+
+            // //start probe ACK timeout timer (don't do first scan if disabled)
+            if(!(addrRequest->initial) || (addrRequest->initial && addrRequest->asdcsInit))
+            {
+
+                //start probe init
+                if(addrRequest->initial == TRUE){
+                    AppChanswitchClientSendProbeInit(node, clientPtr, TRUE);
+                }
+                else{
+                    AppChanswitchClientSendProbeInit(node, clientPtr, FALSE);
+                }
+                
+                Message *timeout;
+
+                timeout = MESSAGE_Alloc(node, 
+                    APP_LAYER,
+                    APP_CHANSWITCH_CLIENT,
+                    MSG_APP_TxProbeWfAckTimeout);
+
+                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        timeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(info, "cannot allocate enough space for needed info");
+                info->connectionId = clientPtr->connectionId;
+
+                MESSAGE_Send(node, timeout, TX_PROBE_WFACK_TIMEOUT);
+                clientPtr->state = TX_PROBE_WFACK;
+             }
+            else {
+                clientPtr->state = TX_IDLE;
+            }
+
             break;
         }
 
@@ -1439,6 +1454,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                     APP_CHANSWITCH_CLIENT,
                     MSG_APP_TxChannelSelectionTimeout);
 
+                //start backoff timer to prevent multiple requests
                 AppChanswitchTimeout* initInfo = (AppChanswitchTimeout*)
                 MESSAGE_InfoAlloc(
                         node,
@@ -1449,25 +1465,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 MESSAGE_Send(node, initTimeout, clientPtr->changeBackoffTime);
 
                 //Get my mac address from MAC layer (probe will start after)
-                AppChanswitchGetMyMacAddr(node,clientPtr->connectionId, CHANSWITCH_TX_CLIENT);
-
-                //start probe ACK timeout timer
-                Message *timeout;
-
-                timeout = MESSAGE_Alloc(node, 
-                    APP_LAYER,
-                    APP_CHANSWITCH_CLIENT,
-                    MSG_APP_TxProbeWfAckTimeout);
-
-                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
-                MESSAGE_InfoAlloc(
-                        node,
-                        timeout,
-                        sizeof(AppChanswitchTimeout));
-                ERROR_Assert(info, "cannot allocate enough space for needed info");
-                info->connectionId = clientPtr->connectionId;
-
-                MESSAGE_Send(node, timeout, TX_PROBE_WFACK_TIMEOUT);
+                AppChanswitchGetMyMacAddr(node,clientPtr->connectionId, CHANSWITCH_TX_CLIENT, FALSE);
             }
             break;
         }
@@ -1909,7 +1907,7 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                             MESSAGE_ReturnInfo(msg);
             serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                             timeoutInfo->connectionId);
-            AppChanswitchGetMyMacAddr(node,serverPtr->connectionId,CHANSWITCH_RX_SERVER);
+            AppChanswitchGetMyMacAddr(node,serverPtr->connectionId,CHANSWITCH_RX_SERVER, FALSE); //bool doesn't matter
             break;
         }
 

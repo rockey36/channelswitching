@@ -415,14 +415,15 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
 
 /*
  * NAME:        AppChanswitchGetMyMacAddr.
- * PURPOSE:     Ask MAC for my MAC address
+ * PURPOSE:     Ask MAC for my MAC address (and start the probe after getting it.)
  * PARAMETERS:  node - pointer to the node,
  *              connectionId - identifier of the client/server connection
  *              appType - is this app TX or RX
+ *              initial - true if first chanswitch, false otherwise
  * RETURN:      none.
  */
 void
-AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType);
+AppChanswitchGetMyMacAddr(Node *node, int connectionId, int appType, BOOL initial);
 
 /*
  * NAME:        AppChanswitchClientParseRXNodeList.
