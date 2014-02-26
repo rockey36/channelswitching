@@ -1462,7 +1462,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
 
             //start the scan if timer isn't expired
             if(clientPtr->state == TX_IDLE && clientPtr->initBackoff == FALSE){
-                printf("attempt new channel switch at app layer \n");
+                printf("Attempting mid-stream channel switch on node %u \n", node->nodeId);
                 //start backoff timer to prevent multiple requests
                 clientPtr->state = TX_PROBE_INIT;
                 clientPtr->initBackoff = TRUE;
@@ -1818,7 +1818,7 @@ AppLayerChanswitchServer(Node *node, Message *msg)
             serverPtr->numBytesRecvd +=
                     (clocktype) MESSAGE_ReturnPacketSize(msg);
 
-
+            // printf("server is in state %d meow \n", serverPtr->state);
             switch(serverPtr->state){
                 case RX_IDLE:
                 {
@@ -1855,7 +1855,7 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                         int nextChannel = 0;
                         memcpy(&nextChannel,packet+1,1);
                         serverPtr->nextChannel = nextChannel;
-                        serverPtr->state = RX_PROBE_ACK;
+                        serverPtr->state = RX_CHANGE_ACK;
                         //send CHANGE_ACK to TX
                         AppChanswitchServerSendChangeAck(node, serverPtr);
                         //start the delay timer
@@ -1946,7 +1946,9 @@ AppLayerChanswitchServer(Node *node, Message *msg)
                                         serverPtr->currentChannel,
                                         serverPtr->nextChannel);
             //send verify ACK
+            serverPtr->state = RX_VERIFY_ACK;
             AppChanswitchServerSendVerifyAck(node,serverPtr);
+            serverPtr->state = RX_IDLE;
             break;
         }
 
