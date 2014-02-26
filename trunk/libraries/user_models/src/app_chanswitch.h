@@ -113,6 +113,7 @@ struct struct_app_chanswitch_client_str
     double                  csThreshold; //threshold for strong cs node in dBm 
     clocktype               changeBackoffTime; //minimum delay between channel scan/change (default 1s)
     BOOL                    initBackoff; 
+    BOOL                    initial; //is this the "initial" chanswitch or a "mid-stream" chanswitch?
     
 }AppDataChanswitchClient;
 
@@ -334,7 +335,7 @@ AppChanswitchServerNewChanswitchServer(Node *nodePtr,
  * RETURN:      none.
  */
 void
-AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial);
+AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr);
 
 /*
  * NAME:        AppChanswitchServerSendProbeAck.

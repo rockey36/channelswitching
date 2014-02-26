@@ -33,7 +33,7 @@
               <option value="YES" name="Yes" />
             </variable>
             <variable key="MAC-DOT11-CHANSWITCH-TRIGGER" type="Selection" name="Mid-Transmission Channel Switch" default="NONE">
-                <option value="NONE" name="None - select initial channel only" />
+                <option value="NONE" name="None" />
                 <option value="TX-QUEUE-THRESHOLD" name="TX queue filled percentage" />
             </variable>
             </option> 

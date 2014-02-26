@@ -199,6 +199,7 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     chanswitchClient->currentChannel = 0;
     chanswitchClient->nextChannel = 0;
     chanswitchClient->initBackoff = FALSE;
+    chanswitchClient->initial = FALSE;
     chanswitchClient->hnThreshold = hnThreshold;
     chanswitchClient->csThreshold = csThreshold;
     chanswitchClient->changeBackoffTime = changeBackoffTime;
@@ -354,10 +355,10 @@ AppChanswitchServerNewChanswitchServer(Node *node,
  * RETURN:      none.
  */
 void
-AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr, BOOL initial){
+AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr){
 
     int options = 0;
-    if(initial == FALSE){
+    if(clientPtr->initial == FALSE){
         options = 1; //not the first chanswitch
     }
 
@@ -1126,7 +1127,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                        #ifdef DEBUG_CHANSWITCH
                         printf("CHANSWITCH Client: Node %ld at %s got VERIFY_ACK while in TX_IDLE state.\n",
                             node->nodeId, buf);
-                       #endif 
+                       #endif                   
                     }
                 }
                 case TX_PROBE_WFACK:{
@@ -1150,9 +1151,17 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                         clientPtr->got_RX_nodelist = TRUE;
                         AppChanswitchClientParseRxNodeList(node,clientPtr,packet);
                     }
+                    if(packet[0] == PROBE_ACK){
+                        printf("CHANSWITCH Client: Node %ld at %s got PROBE_ACK while in TX_PROBING state.\n",
+                            node->nodeId, buf);
+                    }
                     break;
                 }
                 case TX_PROBE_WFRX: {
+                    if(packet[0] == PROBE_ACK){
+                        printf("CHANSWITCH Client: Node %ld at %s got PROBE_ACK while in TX_PROBE_WFRX state.\n",
+                            node->nodeId, buf);
+                    }
                     if(packet[0] == NODE_LIST){ //got node list after TX finished probing
                         printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBE_WFRX state.\n",
                             node->nodeId, buf);
@@ -1177,6 +1186,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                                                     clientPtr->currentChannel,
                                                     clientPtr->nextChannel);
                         clientPtr->currentChannel = clientPtr->nextChannel;
+                        printf("Switch to new channel %d completed on TX and RX nodes. \n",clientPtr->currentChannel);
                         clientPtr->state = TX_IDLE;
                     }
                     break;
@@ -1227,7 +1237,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
         {
 
             #ifdef DEBUG_CHANSWITCH
-                printf("%s: CHANSWITCH Client node %u got probe ACK timeout\n",
+                printf("%s: CHANSWITCH Client node %u got probe ACK timeout (enabled)\n",
                        buf, node->nodeId);
             #endif /* DEBUG_CHANSWITCH */
 
@@ -1357,6 +1367,13 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             if(clientPtr->state == TX_PROBING){
 
                 if(!clientPtr->got_RX_nodelist){ //did not get nodelist yet
+                 //return to original channel and wait
+                AppChanswitchChangeChannels(
+                        node, 
+                        clientPtr->connectionId, 
+                        CHANSWITCH_TX_CLIENT, 
+                        clientPtr->currentChannel,
+                        clientPtr->currentChannel);
                     clientPtr->state = TX_PROBE_WFRX;
 
                 }
@@ -1400,13 +1417,14 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             // //start probe ACK timeout timer (don't do first scan if disabled)
             if(!(addrRequest->initial) || (addrRequest->initial && addrRequest->asdcsInit))
             {
-
                 //start probe init
                 if(addrRequest->initial == TRUE){
-                    AppChanswitchClientSendProbeInit(node, clientPtr, TRUE);
+                    clientPtr->initial = TRUE;
+                    AppChanswitchClientSendProbeInit(node, clientPtr);
                 }
                 else{
-                    AppChanswitchClientSendProbeInit(node, clientPtr, FALSE);
+                    clientPtr->initial = FALSE;
+                    AppChanswitchClientSendProbeInit(node, clientPtr);
                 }
                 
                 Message *timeout;
@@ -1445,7 +1463,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             //start the scan if timer isn't expired
             if(clientPtr->state == TX_IDLE && clientPtr->initBackoff == FALSE){
                 printf("attempt new channel switch at app layer \n");
-                //set the backoff timer to keep multiple from being initiated in a row
+                //start backoff timer to prevent multiple requests
                 clientPtr->state = TX_PROBE_INIT;
                 clientPtr->initBackoff = TRUE;
                 Message *initTimeout;
@@ -1454,7 +1472,6 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                     APP_CHANSWITCH_CLIENT,
                     MSG_APP_TxChannelSelectionTimeout);
 
-                //start backoff timer to prevent multiple requests
                 AppChanswitchTimeout* initInfo = (AppChanswitchTimeout*)
                 MESSAGE_InfoAlloc(
                         node,
@@ -1944,6 +1961,12 @@ AppLayerChanswitchServer(Node *node, Message *msg)
             scanComplete = (MacToAppScanComplete*) MESSAGE_ReturnInfo(msg);
             serverPtr = AppChanswitchServerGetChanswitchServer(node,
                                             scanComplete->connectionId);
+            //return to original channel
+            AppChanswitchChangeChannels(node, 
+                            serverPtr->connectionId, 
+                            CHANSWITCH_RX_SERVER, 
+                            serverPtr->currentChannel,
+                            serverPtr->currentChannel);
             AppChanswitchServerSendVisibleNodeList(node, 
                                                     serverPtr, 
                                                     scanComplete->nodeInfo, 

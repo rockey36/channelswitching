@@ -1,4 +1,4 @@
 CBR 8 7 1000000 512 1MS 0S 25S PRECEDENCE 0 
 CBR 5 6 1000000 512 1MS 0S 25S PRECEDENCE 0 
-CHANSWITCH 1 2 20.0 -69.0 1S 5S 
-VIDEO 1 2 30 150 1920 1080 10S C:/KAIST_WINSLAB/OEFMON/DXConnector.exe C:/Users/lirien/Documents/cats_annexb.grf C:/Users/lirien/Documents/QoSParameter.xml 
+CHANSWITCH 1 2 20.0 -69.0 1S 1S 
+VIDEO 1 2 30 150 1920 1080 5S C:/KAIST_WINSLAB/OEFMON/DXConnector.exe C:/Users/lirien/Documents/cats_annexb.grf C:/Users/lirien/Documents/QoSParameter.xml 
