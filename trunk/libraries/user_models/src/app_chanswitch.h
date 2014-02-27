@@ -114,6 +114,7 @@ struct struct_app_chanswitch_client_str
     clocktype               changeBackoffTime; //minimum delay between channel scan/change (default 1s)
     BOOL                    initBackoff; 
     BOOL                    initial; //is this the "initial" chanswitch or a "mid-stream" chanswitch?
+    Mac802Address           rxAddr; 
     
 }AppDataChanswitchClient;
 
