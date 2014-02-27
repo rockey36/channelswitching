@@ -607,8 +607,8 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
     memset(payload, NODE_LIST, 1);
     // ERROR_Assert(serverPtr->myAddr != NULL, "RX needs to know its MAC address to send the NodeList pkt. \n");
     memcpy(payload+1, &(serverPtr->myAddr), 6); //rx MAC address
-    memset(payload+6, (nodeCount % 256),1); //low byte of node count
-    memset(payload+7, (nodeCount / 256),1); //high byte of node count
+    memset(payload+7, (nodeCount % 256),1); //low byte of node count
+    memset(payload+8, (nodeCount / 256),1); //high byte of node count
     int count = 0;
 
     while(nodeInfo != NULL){
@@ -648,12 +648,11 @@ AppChanswitchServerSendVisibleNodeList(Node *node,
  */
 void 
 AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPtr, char *packet){
-    Mac802Address rxAddr;
     int nodeCount = 0;
 
-    memcpy(&rxAddr, &packet[1], 6);
-    memcpy(&nodeCount, &packet[6], 2);
-    printf("node count from RX: %d \n", nodeCount);
+    memcpy(&(clientPtr->rxAddr), &packet[1], 6);
+    memcpy(&nodeCount, &packet[7], 2);
+    printf("Node count from RX: %d \n", nodeCount);
 
     DOT11_VisibleNodeInfo* nodeList = clientPtr->rxNodeList;
     int channelId;
@@ -730,18 +729,19 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
     //look for HN
     while(rxNode != NULL){
         isHN = TRUE;
-        //hidden if RX sees it and TX doesn't
+        //hidden if RX sees it and TX doesn't, and the signal strength isn't strong enough for TX to negotiate
         while(txNode != NULL){
-            if(rxNode->bssAddr == txNode->bssAddr){
+            if((rxNode->bssAddr == txNode->bssAddr) && (txNode->signalStrength >= clientPtr->csThreshold)){ 
                 isHN = FALSE;
             }
             txNode = txNode->next;
         }
+
         //verify signal strength
         sinr = NON_DB(clientPtr->signalStrengthAtRx) / (NON_DB(rxNode->signalStrength) + clientPtr->noise_mW) ; 
+
         if(isHN && (sinr > clientPtr->hnThreshold)){ //20 dB default
-            #ifdef DEBUG_CHANSWITCH
-            printf("weak hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX is %f dBm when transmitting) \n",
+            printf("Weak hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX is %f dBm when transmitting) \n",
                     rxNode->bssAddr.byte[5], 
                     rxNode->bssAddr.byte[4], 
                     rxNode->bssAddr.byte[3],
@@ -750,13 +750,11 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
                     rxNode->bssAddr.byte[0], 
                     rxNode->channelId,
                     sinr);
-            #endif
             isHN = FALSE;
         }
 
         if(isHN){
-            #ifdef DEBUG_CHANSWITCH
-            printf("strong hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting)  \n",
+            printf("Strong hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting)  \n",
                     rxNode->bssAddr.byte[5], 
                     rxNode->bssAddr.byte[4], 
                     rxNode->bssAddr.byte[3],
@@ -765,7 +763,6 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
                     rxNode->bssAddr.byte[0],
                     rxNode->channelId,
                     sinr);
-            #endif
             hiddenNodeCount[rxNode->channelId]++;
 
         }
@@ -780,9 +777,9 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
     //count carrier sensing nodes at TX
     while(txNode != NULL){
         isCS = TRUE;
-        if(txNode->signalStrength < clientPtr->csThreshold){ //-69.0 dBm default
-            #ifdef DEBUG_CHANSWITCH
-            printf("weak cs node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f)\n",
+
+        if(txNode->bssAddr == clientPtr->rxAddr){
+            printf("RX node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f)\n",
                     txNode->bssAddr.byte[5], 
                     txNode->bssAddr.byte[4], 
                     txNode->bssAddr.byte[3],
@@ -791,12 +788,22 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
                     txNode->bssAddr.byte[0], 
                     txNode->channelId,
                     txNode->signalStrength);
-            #endif
+            isCS = FALSE;
+        }
+        else if(txNode->signalStrength < clientPtr->csThreshold){ //-69.0 dBm default
+            printf("Weak CS node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f)\n",
+                    txNode->bssAddr.byte[5], 
+                    txNode->bssAddr.byte[4], 
+                    txNode->bssAddr.byte[3],
+                    txNode->bssAddr.byte[2],
+                    txNode->bssAddr.byte[1],
+                    txNode->bssAddr.byte[0], 
+                    txNode->channelId,
+                    txNode->signalStrength);
             isCS = FALSE;
         }
         if(isCS){
-            #ifdef DEBUG_CHANSWITCH
-            printf("strong cs node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f) \n",
+            printf("Strong CS node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f) \n",
                     txNode->bssAddr.byte[5], 
                     txNode->bssAddr.byte[4], 
                     txNode->bssAddr.byte[3],
@@ -805,7 +812,6 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
                     txNode->bssAddr.byte[0], 
                     txNode->channelId,
                     txNode->signalStrength);
-            #endif
             csNodeCount[txNode->channelId]++;
         }
         txNode = txNode->next;

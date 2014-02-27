@@ -2531,9 +2531,11 @@ void MacDot11ReceivePhyStatusChangeNotification(
         case PHY_SENSING: {
             switch (newPhyStatus) {
                 case PHY_IDLE: {
-                    MacDot11StationPhyStatusIsNowIdleStartSendTimers(
-                        node,
-                        dot11);
+                    if(dot11->state == DOT11_S_IDLE){
+                        MacDot11StationPhyStatusIsNowIdleStartSendTimers(
+                            node,
+                            dot11);
+                    }
                     break;
                 }
                 case PHY_RECEIVING: {
@@ -2569,9 +2571,10 @@ void MacDot11ReceivePhyStatusChangeNotification(
 
             switch (newPhyStatus) {
                 case PHY_IDLE: {
-
-                    MacDot11StationPhyStatusIsNowIdleStartSendTimers
-                        (node, dot11);
+                    //Only if dot11 is also idle
+                    if(dot11->state == DOT11_S_IDLE){
+                        MacDot11StationPhyStatusIsNowIdleStartSendTimers(node, dot11);
+                    }
                     break;
                 }
 
