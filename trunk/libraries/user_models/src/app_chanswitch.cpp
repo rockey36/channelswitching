@@ -731,7 +731,8 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
         isHN = TRUE;
         //hidden if RX sees it and TX doesn't, and the signal strength isn't strong enough for TX to negotiate
         while(txNode != NULL){
-            if((rxNode->bssAddr == txNode->bssAddr) && (txNode->signalStrength >= clientPtr->csThreshold)){ 
+            if((rxNode->bssAddr == txNode->bssAddr) && (txNode->signalStrength >= clientPtr->csThreshold)){
+            // if(rxNode->bssAddr == txNode->bssAddr){ 
                 isHN = FALSE;
             }
             txNode = txNode->next;
