@@ -670,7 +670,7 @@ AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPt
         //if this is my (tx) node, save my signal strength
         if(bssAddr == clientPtr->myAddr){
             clientPtr->signalStrengthAtRx = signalStrength;
-            printf("AppChanswitchClientParseRxNodeList at node %d: my signal strength is %f dBm at RX \n",
+            printf("AppChanswitchClientParseRxNodeList at node %d: TX signal strength is %f dBm at RX \n",
                 node->nodeId, signalStrength);
         }
         //otherwise add to the list
@@ -682,10 +682,10 @@ AppChanswitchClientParseRxNodeList(Node *node, AppDataChanswitchClient *clientPt
             nodeInfo->bssAddr = bssAddr;
             nodeInfo->signalStrength = signalStrength;
             nodeInfo->isAP = isAP;
-
-            printf("AppChanswitchClientParseRxNodeList at node %d: channel %d, signal strength %f dBm, isAP %d, bss %d \n",
-                node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
-
+            #ifdef DEBUG_CHANSWITCH
+                printf("AppChanswitchClientParseRxNodeList at node %d: channel %d, signal strength %f dBm, isAP %d, bss %d \n",
+                    node->nodeId,nodeInfo->channelId, nodeInfo->signalStrength, nodeInfo->isAP, nodeInfo->bssAddr);
+            #endif
             // add visible node in the list
             nodeInfo->next = clientPtr->rxNodeList;
             clientPtr->rxNodeList = nodeInfo;
@@ -710,7 +710,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
     DOT11_VisibleNodeInfo* txNode = clientPtr->txNodeList;
 
     int i = 0;
-    printf("list of available channels: ");
+    printf("List of available channels: ");
     while(i<clientPtr->numChannels){
         if(clientPtr->channelSwitch[i]){
             printf("%d ", i);
@@ -742,6 +742,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
         sinr = NON_DB(clientPtr->signalStrengthAtRx) / (NON_DB(rxNode->signalStrength) + clientPtr->noise_mW) ; 
 
         if(isHN && (sinr > clientPtr->hnThreshold)){ //20 dB default
+            #ifdef DEBUG_CHANSWITCH
             printf("Weak hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX is %f dBm when transmitting) \n",
                     rxNode->bssAddr.byte[5], 
                     rxNode->bssAddr.byte[4], 
@@ -751,11 +752,12 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
                     rxNode->bssAddr.byte[0], 
                     rxNode->channelId,
                     sinr);
+            #endif
             isHN = FALSE;
         }
 
         if(isHN){
-            printf("Strong hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting)  \n",
+            printf("Hidden node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (sinr at RX = %f dBm when transmitting)  \n",
                     rxNode->bssAddr.byte[5], 
                     rxNode->bssAddr.byte[4], 
                     rxNode->bssAddr.byte[3],
@@ -780,6 +782,7 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
         isCS = TRUE;
 
         if(txNode->bssAddr == clientPtr->rxAddr){
+            #ifdef DEBUG_CHANSWITCH
             printf("RX node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f)\n",
                     txNode->bssAddr.byte[5], 
                     txNode->bssAddr.byte[4], 
@@ -789,9 +792,11 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
                     txNode->bssAddr.byte[0], 
                     txNode->channelId,
                     txNode->signalStrength);
+            #endif
             isCS = FALSE;
         }
         else if(txNode->signalStrength < clientPtr->csThreshold){ //-69.0 dBm default
+            #ifdef DEBUG_CHANSWITCH
             printf("Weak CS node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f)\n",
                     txNode->bssAddr.byte[5], 
                     txNode->bssAddr.byte[4], 
@@ -801,10 +806,11 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
                     txNode->bssAddr.byte[0], 
                     txNode->channelId,
                     txNode->signalStrength);
+            #endif
             isCS = FALSE;
         }
         if(isCS){
-            printf("Strong CS node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f) \n",
+            printf("Carrier sensing node %02x:%02x:%02x:%02x:%02x:%02x on channel %d (signal strength %f) \n",
                     txNode->bssAddr.byte[5], 
                     txNode->bssAddr.byte[4], 
                     txNode->bssAddr.byte[3],
@@ -819,10 +825,10 @@ AppChanswitchClientEvaluateChannels(Node *node,AppDataChanswitchClient *clientPt
     }
 
     i = 0;
-    printf("channel stats: \n");
+    printf("Channel stats: \n");
     while(i<NUM_CHANNELS){
         if(clientPtr->channelSwitch[i]){
-            printf("channel %d: %d hn, %d cs nodes \n", i, hiddenNodeCount[i], csNodeCount[i]);
+            printf("Channel %d: %d HN, %d CS nodes \n", i, hiddenNodeCount[i], csNodeCount[i]);
         }
         i++;
     }
@@ -1153,25 +1159,33 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 }
                 case TX_PROBING: { 
                     if(packet[0] == NODE_LIST){ //got node list before TX finished its probe
+                        #ifdef DEBUG_CHANSWITCH
                         printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBING state.\n",
-                            node->nodeId, buf);
+                                node->nodeId, buf);
+                        #endif
                         clientPtr->got_RX_nodelist = TRUE;
                         AppChanswitchClientParseRxNodeList(node,clientPtr,packet);
                     }
                     if(packet[0] == PROBE_ACK){
+                        #ifdef DEBUG_CHANSWITCH
                         printf("CHANSWITCH Client: Node %ld at %s got PROBE_ACK while in TX_PROBING state.\n",
-                            node->nodeId, buf);
+                                node->nodeId, buf);
+                        #endif
                     }
                     break;
                 }
                 case TX_PROBE_WFRX: {
                     if(packet[0] == PROBE_ACK){
+                        #ifdef DEBUG_CHANSWITCH
                         printf("CHANSWITCH Client: Node %ld at %s got PROBE_ACK while in TX_PROBE_WFRX state.\n",
                             node->nodeId, buf);
+                        #endif
                     }
                     if(packet[0] == NODE_LIST){ //got node list after TX finished probing
+                        #ifdef DEBUG_CHANSWITCH
                         printf("CHANSWITCH Client: Node %ld at %s got NODE_LIST while in TX_PROBE_WFRX state.\n",
                             node->nodeId, buf);
+                        #endif
                         clientPtr->got_RX_nodelist = TRUE;
                         //save RX's node list
                         AppChanswitchClientParseRxNodeList(node,clientPtr,packet);

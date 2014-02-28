@@ -3662,7 +3662,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
             dot11->firstScan = info->initial;
             MacDot11ManagementStartTimerOfGivenType(node, dot11, 0,
                                         MSG_MAC_DOT11_MACAddressRequest); 
-            printf("MSG_MAC_FromAppMACAddressRequest node %d \n", node->nodeId);
+            // printf("MSG_MAC_FromAppMACAddressRequest node %d \n", node->nodeId);
             MESSAGE_Free(node,msg);
             break;
         }
