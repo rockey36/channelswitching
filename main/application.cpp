@@ -50,6 +50,7 @@
 #include "app_video.h"
 #include "app_wbest.h"
 #include "app_chanswitch.h"
+#include "app_chanswitch_sinr.h"
 
 #include "app_lookup.h"
 
@@ -1721,6 +1722,87 @@ APP_InitializeApplications(
         }
 
         //end of added - chanswitch
+
+        //added - chanswitch_sinr
+
+        if (strcmp(appStr, "CHANSWITCH_SINR") == 0)
+        {
+            char sourceString[MAX_STRING_LENGTH];
+            char destString[MAX_STRING_LENGTH];
+            int itemsToSend;
+            char startTimeStr[MAX_STRING_LENGTH];
+            NodeAddress sourceNodeId;
+            Address sourceAddr;
+            NodeAddress destNodeId;
+            Address destAddr;
+
+            numValues = sscanf(appInput.inputStrings[i],
+                            "%*s %s %s %d %s",
+                            sourceString,
+                            destString,
+                            &itemsToSend,
+                            startTimeStr);
+
+            if (numValues != 4)
+            {
+                char errorString[MAX_STRING_LENGTH];
+                sprintf(errorString,
+                        "Wrong CHANSWITCH_SINR configuration format!\n"
+                        "CHANSWITCH_SINR <src> <dest> <items to send> <start time>\n");
+                ERROR_ReportError(errorString);
+            }
+
+            IO_AppParseSourceAndDestStrings(
+                firstNode,
+                appInput.inputStrings[i],
+                sourceString,
+                &sourceNodeId,
+                &sourceAddr,
+                destString,
+                &destNodeId,
+                &destAddr);
+
+            node = MAPPING_GetNodePtrFromHash(nodeHash, sourceNodeId);
+            if (node != NULL)
+            {
+                clocktype startTime = TIME_ConvertToClock(startTimeStr);
+#ifdef DEBUG
+                char clockStr[MAX_CLOCK_STRING_LENGTH];
+                char addrStr[MAX_STRING_LENGTH];
+
+                printf("Starting CHANSWITCH_SINR client with:\n");
+                printf("  src nodeId:    %u\n", sourceNodeId);
+                printf("  dst nodeId:    %u\n", destNodeId);
+                IO_ConvertIpAddressToString(&destAddr, addrStr);
+                printf("  dst address:   %s\n", addrStr);
+                printf("  items to send: %d\n", itemsToSend);
+                ctoa(startTime, clockStr);
+                printf("  start time:    %s\n", clockStr);
+#endif /* DEBUG */
+
+                AppChanswitchSinrClientInit(
+                    node, sourceAddr, destAddr, itemsToSend, startTime);
+            }
+
+            // Handle Loopback Address
+            if (node == NULL || !APP_SuccessfullyHandledLoopback(
+                                     node,
+                                     appInput.inputStrings[i],
+                                     destAddr,
+                                     destNodeId,
+                                     sourceAddr,
+                                     sourceNodeId))
+            {
+                node = MAPPING_GetNodePtrFromHash(nodeHash, destNodeId);
+            }
+
+            if (node != NULL)
+            {
+                AppChanswitchSinrServerInit(node, destAddr);
+            }
+        }
+
+        //end of added - chanswitch_sinr
 
         else
         if (strcmp(appStr, "FTP/GENERIC") == 0)
@@ -5027,6 +5109,16 @@ void APP_ProcessEvent(Node *node, Message *msg)
             AppLayerChanswitchServer(node, msg);
             break;
         }
+        case APP_CHANSWITCH_SINR_CLIENT:
+        {
+            AppLayerChanswitchSinrClient(node, msg);
+            break;
+        }
+        case APP_CHANSWITCH_SINR_SERVER:
+        {
+            AppLayerChanswitchSinrServer(node, msg);
+            break;
+        }
         case APP_GEN_FTP_CLIENT:
         {
             AppLayerGenFtpClient(node, msg);
@@ -5743,6 +5835,16 @@ APP_Finalize(Node *node)
             case APP_CHANSWITCH_SERVER:
             {
                 AppChanswitchServerFinalize(node, appList);
+                break;
+            }
+            case APP_CHANSWITCH_SINR_CLIENT:
+            {
+                AppChanswitchSinrClientFinalize(node, appList);
+                break;
+            }
+            case APP_CHANSWITCH_SINR_SERVER:
+            {
+                AppChanswitchSinrServerFinalize(node, appList);
                 break;
             }
             case APP_GEN_FTP_CLIENT:

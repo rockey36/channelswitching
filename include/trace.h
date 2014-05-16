@@ -368,6 +368,7 @@ typedef enum
 	TRACE_WBEST,
   TRACE_PHY_CHANSWITCH,
   TRACE_APP_CHANSWITCH,
+  TRACE_APP_CHANSWITCH_SINR,
       // Must be last one!!!
     TRACE_ANY_PROTOCOL
 }TraceProtocolType;
