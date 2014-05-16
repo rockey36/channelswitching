@@ -3591,6 +3591,7 @@ void MacDot11Layer(Node* node, int interfaceIndex, Message* msg)
                 }
 
                 dot11->waitForProbeDelay = FALSE;
+                printf("Calling MacDot11StationCheckForOutgoingPacket node %d \n", node->nodeId);
                 MacDot11StationCheckForOutgoingPacket(node, dot11, FALSE);
                 dot11->ActiveScanShortTimerFunctional = FALSE;
                 dot11->MayReceiveProbeResponce = FALSE;

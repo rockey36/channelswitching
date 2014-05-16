@@ -25,7 +25,7 @@
 
 #include "types.h"
 
-#define CHANSWITCH_PROBE_PKT_SIZE           6
+#define CHANSWITCH_PROBE_PKT_SIZE           4
  //id (1) : channel mask (2) : flags (1)
 #define CHANSWITCH_CHANGE_PKT_SIZE          2
  //id (1) : new channel (1)
@@ -35,9 +35,9 @@
 #define CHANSWITCH_LIST_ENTRY_SIZE          16   
 //  channel (1) :  mac addr (6) : signal strength (8) : isAp (1)
 
-#define TX_PROBE_WFACK_TIMEOUT     (200 * MILLI_SECOND)
-#define TX_CHANGE_WFACK_TIMEOUT    (1000 * MILLI_SECOND)
-#define TX_VERIFY_WFACK_TIMEOUT    (500 * MILLI_SECOND)
+#define TX_PROBE_WFACK_TIMEOUT     (100 * MILLI_SECOND)
+#define TX_CHANGE_WFACK_TIMEOUT    (200 * MILLI_SECOND)
+#define TX_VERIFY_WFACK_TIMEOUT    (200 * MILLI_SECOND)
 #define RX_PROBE_ACK_DELAY         (5 * MILLI_SECOND)
 #define RX_CHANGE_ACK_DELAY        (5 * MILLI_SECOND) 
 #define SINR_MIN_DB                20.0             //SINR threshold for hidden node in dB (default)
