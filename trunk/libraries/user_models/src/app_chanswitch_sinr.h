@@ -25,123 +25,51 @@
 
 #include "types.h"
 
-#define CHANSWITCH_SINR_PROBE_PKT_SIZE           4
- //id (1) : channel mask (2) : flags (1)
-#define CHANSWITCH_SINR_CHANGE_PKT_SIZE          2
- //id (1) : new channel (1)
-#define CHANSWITCH_SINR_ACK_SIZE                 1
-#define CHANSWITCH_SINR_LIST_HEADER_SIZE         9
- // id (1) : rx mac addr (6) : total station count (2) 
-#define CHANSWITCH_SINR_LIST_ENTRY_SIZE          16   
-//  channel (1) :  mac addr (6) : signal strength (8) : isAp (1)
-
-#define TX_PROBE_WFACK_TIMEOUT     (100 * MILLI_SECOND)
-#define TX_CHANGE_WFACK_TIMEOUT    (200 * MILLI_SECOND)
-#define TX_VERIFY_WFACK_TIMEOUT    (200 * MILLI_SECOND)
-#define RX_PROBE_ACK_DELAY         (5 * MILLI_SECOND)
-#define RX_CHANGE_ACK_DELAY        (5 * MILLI_SECOND) 
-#define SINR_MIN_DB                20.0             //SINR threshold for hidden node in dB (default)
-#define CS_MIN_DBM                 -69.0            //energy threshold for carrier sense node in dBm (default)
-#define CHANGE_BACKOFF             (1 * SECOND)
-#define NUM_CHANNELS               14               //hardcode because C++ is gross. should not be using more than this in our simulations  
-
-//tx (client) states
- enum {
-    TX_IDLE = 0,
-    TX_PROBE_INIT,
-    TX_PROBE_WFACK,
-    TX_PROBING,
-    TX_PROBE_WFRX,
-    TX_CHANGE_INIT,
-    TX_CHANGE_WFACK,
-    TX_VERIFY_WFACK
-
- };
-
- //rx (server) states
- enum{
-    RX_IDLE = 0,
-    RX_PROBE_ACK,
-    RX_PROBING,
-    RX_CHANGE_ACK,
-    RX_VERIFY_ACK
- };
-
-//pkts sent by chanswitch_sinr app
- enum {
-    PROBE_PKT   = 1,
-    PROBE_ACK   = 2,
-    CHANGE_PKT  = 3,
-    CHANGE_ACK  = 4,
-    VERIFY_PKT  = 5,
-    VERIFY_ACK  = 6,
-    NODE_LIST   = 7
- };
-
 typedef
 struct struct_app_chanswitch_sinr_client_str
 {
-    int                     connectionId;
-    Address                 localAddr;
-    Address                 remoteAddr;
-    clocktype               sessionStart;
-    clocktype               sessionFinish;
-    clocktype               lastTime;
-    BOOL                    sessionIsClosed;
-    int                     itemsToSend;
-    int                     itemSizeLeft;
-    Int64                   numBytesSent;
-    Int64                   numBytesRecvd;
-    Int32                   bytesRecvdDuringThePeriod;
-    clocktype               lastItemSent;
-    int                     uniqueId;
-    RandomSeed              seed;
-//DERIUS    
-    char                    cmd[MAX_STRING_LENGTH];
-    int                     state;
-    BOOL                    got_RX_nodelist;
-    Mac802Address           myAddr; 
-    DOT11_VisibleNodeInfo*  txNodeList;
-    DOT11_VisibleNodeInfo*  rxNodeList;
-    double                  signalStrengthAtRx;
-    int                     numChannels;
-    int                     currentChannel;
-    int                     nextChannel;
-    D_BOOL*                 channelSwitch; //channels that can be switched to  
-    double                  noise_mW; //thermal noise is the same on every channel in QualNet      
-    double                  hnThreshold; //threshold for strong hidden node in dB (relative interference from HN)
-    double                  csThreshold; //threshold for strong cs node in dBm 
-    clocktype               changeBackoffTime; //minimum delay between channel scan/change (default 1s)
-    BOOL                    initBackoff; 
-    BOOL                    initial; //is this the "initial" chanswitch_sinr or a "mid-stream" chanswitch_sinr?
-    Mac802Address           rxAddr; 
+    int         connectionId;
+    Address     localAddr;
+    Address     remoteAddr;
+    clocktype   sessionStart;
+    clocktype   sessionFinish;
+    clocktype   lastTime;
+    BOOL        sessionIsClosed;
+    int         itemsToSend;
+    int         itemSizeLeft;
+    Int64       numBytesSent;
+    Int64       numBytesRecvd;
+    Int32       bytesRecvdDuringThePeriod;
+    clocktype   lastItemSent;
+    int         uniqueId;
+    RandomSeed  seed;
+//DERIUS
+    char        cmd[MAX_STRING_LENGTH];
+
     
-}AppDataChanswitchSinrClient;
+}
+AppDataChanswitchSinrClient;
 
 typedef
 struct struct_app_chanswitch_sinr_server_str
 {
-    int             connectionId;
-    Address         localAddr;
-    Address         remoteAddr;
-    clocktype       sessionStart;
-    clocktype       sessionFinish;
-    clocktype       lastTime;
-    BOOL            sessionIsClosed;
-    Int64           numBytesSent;
-    Int64           numBytesRecvd;
-    Int32           bytesRecvdDuringThePeriod;
-    clocktype       lastItemSent;
-    RandomSeed      seed;
+    int         connectionId;
+    Address     localAddr;
+    Address     remoteAddr;
+    clocktype   sessionStart;
+    clocktype   sessionFinish;
+    clocktype   lastTime;
+    BOOL        sessionIsClosed;
+    Int64       numBytesSent;
+    Int64       numBytesRecvd;
+    Int32       bytesRecvdDuringThePeriod;
+    clocktype   lastItemSent;
+    RandomSeed  seed;
 //
-    BOOL            isLoggedIn;
-    int             portForDataConn;
-    int             state;
-    Mac802Address   myAddr;
-    int             numChannels;
-    int             currentChannel;
-    int             nextChannel;
-}AppDataChanswitchSinrServer;
+    BOOL        isLoggedIn;
+    int         portForDataConn;
+}
+AppDataChanswitchSinrServer;
 
 /*
  * NAME:        AppLayerChanswitchSinrClient.
@@ -168,10 +96,8 @@ AppChanswitchSinrClientInit(
     Node *nodePtr,
     Address clientAddr,
     Address serverAddr,
-    clocktype waitTime,
-    double hnThreshold,
-    double csThreshold,
-    clocktype changeBackoffTime);
+    int itemsToSend,
+    clocktype waitTime);
 
 /*
  * NAME:        AppChanswitchSinrClientPrintStats.
@@ -234,10 +160,27 @@ AppChanswitchSinrClientNewChanswitchSinrClient(
     Node *nodePtr,
     Address clientAddr,
     Address serverAddr,
-    double hnThreshold,
-    double csThreshold,
-    clocktype changeBackoffTime);
+    int itemsToSend);
 
+/*
+ * NAME:        AppChanswitchSinrClientSendNextItem.
+ * PURPOSE:     Send the next item.
+ * PARAMETERS:  nodePtr - pointer to the node,
+ *              clientPtr - pointer to the chanswitch_sinr client data structure.
+ * RETRUN:      none.
+ */
+void
+AppChanswitchSinrClientSendNextItem(Node *nodePtr, AppDataChanswitchSinrClient *clientPtr);
+
+/*
+ * NAME:        AppChanswitchSinrClientSendNextPacket.
+ * PURPOSE:     Send the remaining data.
+ * PARAMETERS:  nodePtr - pointer to the node,
+ *              clientPtr - pointer to the chanswitch_sinr client data structure.
+ * RETRUN:      none.
+ */
+void
+AppChanswitchSinrClientSendNextPacket(Node *nodePtr, AppDataChanswitchSinrClient *clientPtr);
 
 /*
  * NAME:        AppChanswitchSinrClientItemsToSend.
@@ -259,6 +202,14 @@ AppChanswitchSinrClientItemsToSend(AppDataChanswitchSinrClient *clientPtr);
 int
 AppChanswitchSinrClientItemSize(AppDataChanswitchSinrClient *clientPtr);
 
+/*
+ * NAME:        AppChanswitchSinrServerCtrlPktSize.
+ * PURPOSE:     call tcplib function chanswitch_sinr_ctlsize().
+ * PARAMETERS:  nodePtr - pointer to the node.
+ * RETRUN:      chanswitch_sinr control packet size.
+ */
+int
+AppChanswitchSinrClientCtrlPktSize(AppDataChanswitchSinrClient *clientPtr);
 
 /*
  * NAME:        AppLayerChanswitchSinrServer.
@@ -325,151 +276,25 @@ AppDataChanswitchSinrServer *
 AppChanswitchSinrServerNewChanswitchSinrServer(Node *nodePtr,
                          TransportToAppOpenResult *openResult);
 
-
 /*
- * NAME:        AppChanswitchSinrClientSendProbeInit.
- * PURPOSE:     Send the chanswitch_sinr request pkt.
- * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the server data structure.
- *              initial - is this the first channel switch?
- *              myAddr - MAC address of this TX node 
- * RETURN:      none.
- */
-void
-AppChanswitchSinrClientSendProbeInit(Node *node, AppDataChanswitchSinrClient *clientPtr);
-
-/*
- * NAME:        AppChanswitchSinrServerSendProbeAck.
- * PURPOSE:     Send the ack indicating server got probe request
- * PARAMETERS:  node - pointer to the node,
+ * NAME:        AppChanswitchSinrServerSendCtrlPkt.
+ * PURPOSE:     call AppChanswitchSinrCtrlPktSize() to get the response packet
+ *              size, and send the packet.
+ * PARAMETERS:  nodePtr - pointer to the node,
  *              serverPtr - pointer to the server data structure.
- *              initial - is this the first channel switch?
- * RETURN:      none.
+ * RETRUN:      none.
  */
 void
-AppChanswitchSinrServerSendProbeAck(Node *node, AppDataChanswitchSinrServer *serverPtr);
+AppChanswitchSinrServerSendCtrlPkt(Node *nodePtr, AppDataChanswitchSinrServer *serverPtr);
 
 /*
- * NAME:        AppChanswitchSinrServerSendChangeAck.
- * PURPOSE:     Send the ack indicating server got change request
- * PARAMETERS:  node - pointer to the node,
- *              serverPtr - pointer to the server data structure.
- * RETURN:      none.
- */
-void
-AppChanswitchSinrServerSendChangeAck(Node *node, AppDataChanswitchSinrServer *serverPtr);
-
-/*
- * NAME:        AppChanswitchSinrServerSendVerifyAck.
- * PURPOSE:     Send the ack indicating server changed to the new channel
- * PARAMETERS:  node - pointer to the node,
- *              serverPtr - pointer to the server data structure.
- * RETURN:      none.
- */
-void
-AppChanswitchSinrServerSendVerifyAck(Node *node, AppDataChanswitchSinrServer *serverPtr);
-
-
-/*
- * NAME:        AppChanswitchSinrClientSendChangeInit.
- * PURPOSE:     Send the "change init" packet.
- * PARAMETERS:  node - pointer to the node,
- *              serverPtr - pointer to the server data structure.
- * RETURN:      none.
- */
-void
-AppChanswitchSinrClientSendChangeInit(Node *node, AppDataChanswitchSinrClient *clientPtr);
-
-/*
- * NAME:        AppChanswitchSinrStartProbing.
- * PURPOSE:     Start scanning channels - either client or server.
- * PARAMETERS:  node - pointer to the node
- *              appType:     CHANSWITCH_SINR_TX_CLIENT or CHANSWITCH_SINR_RX_SERVER
- * RETURN:      none.
- */
-void
-AppChanswitchSinrStartProbing(Node *node, int appType);
-
-/*
- * NAME:            
- * PURPOSE:     Change to the next channel - either client or server.
- * PARAMETERS:  node - pointer to the node
- * connectionId - identifier of the client/server connection
- * appType      - is this app TX or RX
- * newChannel   - the new channel to switch to
- * RETURN:      none.
- */
-void 
-AppChanswitchSinrChangeChannels(Node *node, int connectionId, int appType, int oldChannel, int newChannel);
-
-/*
- * NAME:        AppChanswitchSinrServerSendVisibleNodeList.
- * PURPOSE:     Send the list of visible nodes to the TX.
- * PARAMETERS:  node - pointer to the node,
- *              serverPtr - pointer to the server data structure.
- * RETURN:      none.
- */
-void
-AppChanswitchSinrServerSendVisibleNodeList(Node *node, 
-                                        AppDataChanswitchSinrServer *serverPtr, 
-                                        DOT11_VisibleNodeInfo* nodeInfo,
-                                        int nodeCount);
-
-/*
- * NAME:        AppChanswitchSinrGetMyMacAddr.
- * PURPOSE:     Ask MAC for my MAC address (and start the probe after getting it.)
- * PARAMETERS:  node - pointer to the node,
- *              connectionId - identifier of the client/server connection
- *              appType - is this app TX or RX
- *              initial - true if first chanswitch_sinr, false otherwise
- * RETURN:      none.
- */
-void
-AppChanswitchSinrGetMyMacAddr(Node *node, int connectionId, int appType, BOOL initial);
-
-/*
- * NAME:        AppChanswitchSinrClientParseRXNodeList.
- * PURPOSE:     Parse the node list packet from RX.
- * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the client
- *              packet - raw packet from RX
- * RETURN:      none.
- */
-void
-AppChanswitchSinrClientParseRxNodeList(Node *node, AppDataChanswitchSinrClient *clientPtr, char *packet);
-
-/*
- * NAME:        AppChanswitchSinrClientEvaulateChannels
- * PURPOSE:     Evaulate the node list and select the next channel.
- * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the client
- *              
- * RETURN:      the channel to switch to.
+ * NAME:        AppChanswitchSinrServerCtrlPktSize.
+ * PURPOSE:     call tcplib function chanswitch_sinr_ctlsize().
+ * PARAMETERS:  nodePtr - pointer to the node.
+ * RETRUN:      chanswitch_sinr control packet size.
  */
 int
-AppChanswitchSinrClientEvaluateChannels(Node *node,AppDataChanswitchSinrClient *clientPtr);
-
-/*
- * NAME:        ClearVisibleNodeList
- * PURPOSE:     Clear (deallocate) this node list in preparation for the next scan.
- * PARAMETERS:  nodelist - pointer to the visible node list
- * RETURN:      none.
- */
-void
-ClearVisibleNodeList(DOT11_VisibleNodeInfo* nodeList);
-
-/*
- * NAME:        AppChanswitchSinrClientChangeInit.
- *              Perform required functions upon reaching TX_CHANGE_INIT state.
- *              (Evaluate channels, determine if channel change is needed and start ACK timeout.)
- * PARAMETERS:  node - pointer to the node which received the message.
- *              msg - message received by the layer
- * RETURN:      none.
- */
-void 
-AppChanswitchSinrClientChangeInit(Node *node,AppDataChanswitchSinrClient *clientPtr);
-
-
+AppChanswitchSinrServerCtrlPktSize(AppDataChanswitchSinrServer *serverPtr);
 
 
 
