@@ -193,6 +193,9 @@ void MacDot11ManagementStartListeningToChannel(
         short           channelIndex,
         MacDataDot11*   dot11)
 {
+
+    printf("MacDot11ManagementStartListeningToChannel: node %d, start listening to channel %d \n", node->nodeId, channelIndex);
+
     BOOL phyIsListening = TRUE;
 
     phyIsListening =
@@ -203,6 +206,9 @@ void MacDot11ManagementStartListeningToChannel(
 
     if (phyIsListening == FALSE)
     {
+
+        // printf("MacDot11ManagementStartListeningToChannel: node %d, PHY_StartListeningToChannel %d \n", node->nodeId, channelIndex);
+
         PHY_StartListeningToChannel(
             node,
             phyNumber,
@@ -316,6 +322,7 @@ void MacDot11ManagementChangeToChannel(
     if (mngmtVars->currentChannel == channelIndex)
         return;
 
+    // printf("MacDot11ManagementChangeToChannel: node %d, next channel is %d \n", node->nodeId, channelIndex);
     /// Check if able to use channel
     BOOL phyCanListen =
         PHY_CanListenToChannel(
@@ -4051,8 +4058,8 @@ void MacDot11ManagementScanCompleted(
 
     //added: 
     if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-        // printf("MacDot11ManagementScanCompleted: node %d, channel %d: Ad-hoc AP probe chanswitch mode (do not associate) \n", 
-        //     node->nodeId, mgmtVars->currentChannel);
+        printf("MacDot11ManagementScanCompleted: node %d, channel %d: Ad-hoc AP probe chanswitch mode (do not associate) \n", 
+            node->nodeId, mgmtVars->currentChannel);
 
         //print the entire visible node list
         DOT11_VisibleNodeInfo* nodeInfo = dot11->visibleNodeList;
@@ -4410,6 +4417,8 @@ int MacDot11ManagementScanNextChannel(
     DOT11_ManagementVars* mngmtVars =
         (DOT11_ManagementVars *) dot11->mngmtVars;
 
+    printf("MacDot11ManagementScanNextChannel: node %d \n", node->nodeId);
+
     if ( mngmtVars->channelInfo->numChannels <=
                 mngmtVars->channelInfo->numResults )
     {
@@ -4476,6 +4485,7 @@ int MacDot11ManagementScanNextChannel(
             }
             else
             {
+                // printf("MacDot11ManagementScanNextChannel: node %d, next channel is %d \n", node->nodeId, newChannel);
                 MacDot11ManagementChangeToChannel(
                     node,
                     dot11,

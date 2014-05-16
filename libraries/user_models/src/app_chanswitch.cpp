@@ -364,7 +364,7 @@ AppChanswitchClientSendProbeInit(Node *node, AppDataChanswitchClient *clientPtr)
 
     char *payload;
 
-    payload = (char *)MEM_malloc(CHANSWITCH_PROBE_PKT_SIZE); //6
+    payload = (char *)MEM_malloc(CHANSWITCH_PROBE_PKT_SIZE); //4
     memset(payload,PROBE_PKT,1);
     memset(payload+1,0xfe,2); //dummy data for chanswitch mask
     memset(payload+3,options,1); //options byte only specifies initial chanswitch

@@ -2116,6 +2116,7 @@ void MacDot11StationCheckForOutgoingPacket(
     MacDataDot11* dot11,
     BOOL backoff)
 {
+    
     if(backoff)
     {
       MacDot11StationSetBackoffIfZero(
