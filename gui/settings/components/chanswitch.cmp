@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<category name="Chanswitch Properties" singlehost="false" loopback="enabled" propertytype="CHANSWITCH">
+<category name="ASDCS Chanswitch Properties" singlehost="false" loopback="enabled" propertytype="CHANSWITCH">
    <variable name="Source" key="SOURCE" type="SelectionDynamic" keyvisible="false" optional="false"/>
    <variable name="Destination" key="DESTINATION" type="SelectionDynamic" keyvisible="false" optional="false"/>
    <variable name="Hidden node SINR threshold (dB)" type="Fixed" default="20.0" key="SINR-DB-THRESHOLD" keyvisible="false" optional="false"/>
