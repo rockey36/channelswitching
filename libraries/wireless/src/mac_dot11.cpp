@@ -5057,13 +5057,17 @@ void MacDot11Init(
     &wasFound,
     retString);
 
-    if ((!wasFound) || (strcmp(retString, "SIMPLE") == 0))
+    if ((!wasFound) || (strcmp(retString, "SIMPLE") == 0)) //Next Channel
     {
         dot11->chanswitchType = DOT11_CHANSWITCH_TYPE_SIMPLE;
     }
-    else if (strcmp(retString, "AP-PROBE") == 0)
+    else if (strcmp(retString, "AP-PROBE") == 0) //ASDCS
     {
         dot11->chanswitchType = DOT11_CHANSWITCH_TYPE_AP_PROBE;
+    }
+    else if (strcmp(retString, "SINR-BASED") == 0) //SINR-based
+    {
+        dot11->chanswitchType = DOT11_CHANSWITCH_TYPE_SINR;
     }
 
     //configuration for ASDCS
@@ -5102,7 +5106,7 @@ void MacDot11Init(
     {
         dot11->chanswitchTrigger = DOT11_CHANSWITCH_TRIGGER_QUEUE;
     }
-
+    
 
     // Read short retry count.
     // Format is :

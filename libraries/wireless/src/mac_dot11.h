@@ -184,11 +184,12 @@ struct DOT11s_Data;
 #define DOT11_CHANSWITCH_INITIAL_DELAY 3.0 //time to stay on the initial SINR selected channel
 #define DOT11_CHANSWITCH_RX_RETURN_PREV_CHANNEL 5.0 //time when RX returns to original channel if TX cannot be found
 //---- Channel switching defines --------------------------------------//
-#define DOT11_CHANSWITCH_TYPE_SIMPLE            0 //simple chanswitch - no communication, just move to next channel
-#define DOT11_CHANSWITCH_TYPE_AP_PROBE          1 //chanswitch based on ap probe and communication pkts
+#define DOT11_CHANSWITCH_TYPE_SIMPLE            0 //simple - no communication, just move to next channel (Next Channel)
+#define DOT11_CHANSWITCH_TYPE_AP_PROBE          1 //chanswitch based on ap probe and communication pkts (ASDCS)
+#define DOT11_CHANSWITCH_TYPE_SINR              2 //chanswitch based on sinr of channels (SINR-based)
 
-#define DOT11_CHANSWITCH_TRIGGER_NONE           0 //ASDCS - initial channel switch only
-#define DOT11_CHANSWITCH_TRIGGER_QUEUE          1 //ASDCS - channel switch activates when TX queue exceeds threshold
+#define DOT11_CHANSWITCH_TRIGGER_NONE           0 //ASDCS and SINR-based - initial channel switch only
+#define DOT11_CHANSWITCH_TRIGGER_QUEUE          1 //ASDCS and SINR-based - channel switch activates when TX queue exceeds threshold
 
 
 //---------------------------Power-Save-Mode-Updates---------------------//

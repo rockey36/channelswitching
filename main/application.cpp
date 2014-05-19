@@ -1635,7 +1635,8 @@ APP_InitializeApplications(
 
         //added - chanswitch
 
-        if (strcmp(appStr, "CHANSWITCH") == 0)
+        else if (strcmp(appStr, "CHANSWITCH") == 0)
+
         {
             char sourceString[MAX_STRING_LENGTH];
             char destString[MAX_STRING_LENGTH];
@@ -1725,7 +1726,7 @@ APP_InitializeApplications(
 
         //added - chanswitch_sinr
 
-        if (strcmp(appStr, "CHANSWITCH_SINR") == 0)
+        else if (strcmp(appStr, "CHANSWITCH_SINR") == 0)
         {
             char sourceString[MAX_STRING_LENGTH];
             char destString[MAX_STRING_LENGTH];

@@ -25,26 +25,61 @@
 
 #include "types.h"
 
+#define CHANSWITCH_SINR_SCAN_PKT_SIZE 1
+
+ //tx (client) states
+ enum {
+    TX_S_IDLE = 0,
+    TX_SCAN_INIT,
+    TX_CHANGE
+
+ };
+
+ //rx (server) states
+ enum{
+    RX_S_IDLE = 0,
+    RX_SCANNING,
+    RX_CHANGE,
+    RX_VERIFY
+ };
+
+//pkts sent by chanswitch app
+ enum {
+    TX_SCAN_PKT = 1,
+    RX_CHANGE_PKT,
+    TX_CHANGE_ACK,
+    TX_VERIFY_ACK
+ };
+
 typedef
 struct struct_app_chanswitch_sinr_client_str
 {
-    int         connectionId;
-    Address     localAddr;
-    Address     remoteAddr;
-    clocktype   sessionStart;
-    clocktype   sessionFinish;
-    clocktype   lastTime;
-    BOOL        sessionIsClosed;
-    int         itemsToSend;
-    int         itemSizeLeft;
-    Int64       numBytesSent;
-    Int64       numBytesRecvd;
-    Int32       bytesRecvdDuringThePeriod;
-    clocktype   lastItemSent;
-    int         uniqueId;
-    RandomSeed  seed;
+    int             connectionId;
+    Address         localAddr;
+    Address         remoteAddr;
+    clocktype       sessionStart;
+    clocktype       sessionFinish;
+    clocktype       lastTime;
+    BOOL            sessionIsClosed;
+    int             itemsToSend;
+    int             itemSizeLeft;
+    Int64           numBytesSent;
+    Int64           numBytesRecvd;
+    Int32           bytesRecvdDuringThePeriod;
+    clocktype       lastItemSent;
+    int             uniqueId;
+    RandomSeed      seed;
+
 //DERIUS
-    char        cmd[MAX_STRING_LENGTH];
+    char            cmd[MAX_STRING_LENGTH];
+//CHANSWITCH additions
+    int state;
+    Mac802Address   myAddr; 
+    int             numChannels;
+    int             currentChannel;
+    D_BOOL*         channelSwitch; //channels that can be switched to  
+    double          noise_mW;      //thermal noise is the same on every channel in QualNet   
+    BOOL            initBackoff;  //backoff to prevent too many channel switches
 
     
 }
@@ -68,8 +103,20 @@ struct struct_app_chanswitch_sinr_server_str
 //
     BOOL        isLoggedIn;
     int         portForDataConn;
+    //CHANSWITCH additions
+    int state;
 }
 AppDataChanswitchSinrServer;
+
+/*
+ * NAME:        AppChanswitchSinrClientSendScanInit.
+ * PURPOSE:     Send the "scan init" packet.
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrClientSendScanInit(Node *node, AppDataChanswitchSinrClient *clientPtr);
 
 /*
  * NAME:        AppLayerChanswitchSinrClient.
@@ -162,54 +209,7 @@ AppChanswitchSinrClientNewChanswitchSinrClient(
     Address serverAddr,
     int itemsToSend);
 
-/*
- * NAME:        AppChanswitchSinrClientSendNextItem.
- * PURPOSE:     Send the next item.
- * PARAMETERS:  nodePtr - pointer to the node,
- *              clientPtr - pointer to the chanswitch_sinr client data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchSinrClientSendNextItem(Node *nodePtr, AppDataChanswitchSinrClient *clientPtr);
 
-/*
- * NAME:        AppChanswitchSinrClientSendNextPacket.
- * PURPOSE:     Send the remaining data.
- * PARAMETERS:  nodePtr - pointer to the node,
- *              clientPtr - pointer to the chanswitch_sinr client data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchSinrClientSendNextPacket(Node *nodePtr, AppDataChanswitchSinrClient *clientPtr);
-
-/*
- * NAME:        AppChanswitchSinrClientItemsToSend.
- * PURPOSE:     call tcplib function chanswitch_sinr_nitems() to get the
- *              number of items to send in an chanswitch_sinr session.
- * PARAMETERS:  nodePtr - pointer to the node.
- * RETRUN:      amount of items to send.
- */
-int
-AppChanswitchSinrClientItemsToSend(AppDataChanswitchSinrClient *clientPtr);
-
-/*
- * NAME:        AppChanswitchSinrClientItemSize.
- * PURPOSE:     call tcplib function chanswitch_sinr_itemsize() to get the size
- *              of each item.
- * PARAMETERS:  nodePtr - pointer to the node.
- * RETRUN:      size of an item.
- */
-int
-AppChanswitchSinrClientItemSize(AppDataChanswitchSinrClient *clientPtr);
-
-/*
- * NAME:        AppChanswitchSinrServerCtrlPktSize.
- * PURPOSE:     call tcplib function chanswitch_sinr_ctlsize().
- * PARAMETERS:  nodePtr - pointer to the node.
- * RETRUN:      chanswitch_sinr control packet size.
- */
-int
-AppChanswitchSinrClientCtrlPktSize(AppDataChanswitchSinrClient *clientPtr);
 
 /*
  * NAME:        AppLayerChanswitchSinrServer.
@@ -276,25 +276,8 @@ AppDataChanswitchSinrServer *
 AppChanswitchSinrServerNewChanswitchSinrServer(Node *nodePtr,
                          TransportToAppOpenResult *openResult);
 
-/*
- * NAME:        AppChanswitchSinrServerSendCtrlPkt.
- * PURPOSE:     call AppChanswitchSinrCtrlPktSize() to get the response packet
- *              size, and send the packet.
- * PARAMETERS:  nodePtr - pointer to the node,
- *              serverPtr - pointer to the server data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchSinrServerSendCtrlPkt(Node *nodePtr, AppDataChanswitchSinrServer *serverPtr);
 
-/*
- * NAME:        AppChanswitchSinrServerCtrlPktSize.
- * PURPOSE:     call tcplib function chanswitch_sinr_ctlsize().
- * PARAMETERS:  nodePtr - pointer to the node.
- * RETRUN:      chanswitch_sinr control packet size.
- */
-int
-AppChanswitchSinrServerCtrlPktSize(AppDataChanswitchSinrServer *serverPtr);
+
 
 
 
