@@ -867,7 +867,7 @@ AppLayerChanswitchSinrServer(Node *node, Message *msg)
                 break;
                 }
             }
-
+            break;
         }
 
         case MSG_APP_FromTransCloseResult:
