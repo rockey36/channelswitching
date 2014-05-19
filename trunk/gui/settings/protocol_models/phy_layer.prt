@@ -11,34 +11,34 @@
       <option value="NO" name="Off" />
       <option value="YES" name="On">
         <variable key="MAC-DOT11-CHANSWITCH-TYPE" type="Selection" name="Channel Switch Type" default="SIMPLE">
-            <option value="SIMPLE" name="Simple Queue-Based Channel Switch">
-              <variable key="MAC-DOT11-CHANSWITCH-INITIAL" type="Selection" name="Initial Channel Switch Using SINR" default="NO">
+            <option value="SIMPLE" name="Simple Queue-Based Channel Switch (Next Channel)">
+              <variable key="MAC-DOT11-CHANSWITCH-INITIAL" type="Selection" name="Initial Channel Switch using SINR (Next Channel)" default="NO">
                 <option value="NO" name="Off" />
                 <option value="YES" name="On">
                   <variable key="MAC-DOT11-CHANSWITCH-INITIAL-DELAY" type="Fixed" name="Time to Stay on Initial Channel" default="3.0" />
                 </option>
               </variable>
-              <variable key="MAC-DOT11-CHANSWITCH-AFTER-START" type="Selection" name="Switch Channels After Start" default="NO">
+              <variable key="MAC-DOT11-CHANSWITCH-AFTER-START" type="Selection" name="Mid-Transmission Channel Switch (Next Channel)" default="NO">
                 <option value="NO" name="No" />
                 <option value="YES" name="Yes">
-                  <variable key="MAC-DOT11-CHANSWITCH-RX-DISCONNECT-PROBE" type="Fixed" name="RX Node Disconnect Probe Time" default="1.0" />
-                  <variable key="MAC-DOT11-CHANSWITCH-RX-RETURN-PREV-CHANNEL" type="Fixed" name="Time for RX Node to Look for TX Node" default="5.0" />
-                  <variable key="MAC-DOT11-TX-CHANSWITCH-DELAY" type="Fixed" name="TX Node Channel Switch Delay" default="10.0" />
+                  <variable key="MAC-DOT11-CHANSWITCH-RX-DISCONNECT-PROBE" type="Fixed" name="RX Node Disconnect Probe Time (Next Channel)" default="1.0" />
+                  <variable key="MAC-DOT11-CHANSWITCH-RX-RETURN-PREV-CHANNEL" type="Fixed" name="Time for RX Node to Look for TX Node (Next Channel)" default="5.0" />
+                  <variable key="MAC-DOT11-TX-CHANSWITCH-DELAY" type="Fixed" name="TX Node Channel Switch Delay (Next Channel)" default="10.0" />
                 </option>
               </variable>
             </option>
-            <option value="AP-PROBE" name="Active Scanning-based (ASDCS)">
-            <variable key="MAC-DOT11-ASDCS-INIT" type="Selection" name="Initial Channel Switch" default="YES">
-              <option value="NO" name="No" />
-              <option value="YES" name="Yes" />
-            </variable>
-            <variable key="MAC-DOT11-CHANSWITCH-TRIGGER" type="Selection" name="Mid-Transmission Channel Switch" default="NONE">
-                <option value="NONE" name="None" />
-                <option value="TX-QUEUE-THRESHOLD" name="TX queue filled percentage" />
-            </variable>
-            </option> 
-        </variable>
+            <option value="AP-PROBE" name="Active Scanning-based Channel Switch (ASDCS)" />
+            <option value="SINR-BASED" name="SINR-based Channel Switch" />
+        </variable>   
         <variable key="MAC-DOT11-CHANSWITCH-THRESHOLD" type="Fixed" name="Outgoing Queue Threshold Percentage" default="75.0" />
+        <variable key="MAC-DOT11-ASDCS-INIT" type="Selection" name="Initial Channel Switch (ASDCS and SINR-based)" default="YES">
+          <option value="NO" name="No" />
+          <option value="YES" name="Yes" />
+        </variable>
+        <variable key="MAC-DOT11-CHANSWITCH-TRIGGER" type="Selection" name="Mid-Transmission Channel Switch (ASDCS and SINR-based)" default="NONE">
+            <option value="NONE" name="None" />
+            <option value="TX-QUEUE-THRESHOLD" name="TX queue filled percentage" />
+        </variable>    
       </option>
     </variable>
     <variable name="Radio Type" key="PHY-MODEL" type="Selection" default="PHY802.11a" visibilityrequires="[DUMMY-INTERFACE-TYPE] == 'SUBNET-WIRELESS' || [DUMMY-INTERFACE-TYPE] == 'SUBNET-ADVANCE-SATELLITE'">

@@ -30,6 +30,7 @@
 #include "tcpapps.h"
 #include "app_util.h"
 #include "app_chanswitch_sinr.h"
+#include "app_chanswitch.h"
 
  #define DEBUG_CHANSWITCH_SINR 1
 
@@ -122,6 +123,7 @@ AppChanswitchSinrClientUpdateChanswitchSinrClient(Node *node,
     chanswitch_sinrClient->lastTime = 0;
     chanswitch_sinrClient->sessionIsClosed = FALSE;
     chanswitch_sinrClient->bytesRecvdDuringThePeriod = 0;
+    chanswitch_sinrClient->state = TX_S_IDLE;
 #ifdef DEBUG
     char addrStr[MAX_STRING_LENGTH];
     printf("CHANSWITCH_SINR Client: Node %d updating chanswitch_sinr client structure\n",
@@ -177,19 +179,16 @@ AppChanswitchSinrClientNewChanswitchSinrClient(Node *node,
                    APP_CHANSWITCH_SINR_CLIENT,
                    chanswitch_sinrClient->uniqueId);
 
-    if (itemsToSend > 0)
-    {
-        chanswitch_sinrClient->itemsToSend = itemsToSend;
-    }
-    else
-    {
-        chanswitch_sinrClient->itemsToSend = AppChanswitchSinrClientItemsToSend(chanswitch_sinrClient);
-    }
 
+    chanswitch_sinrClient->itemsToSend = 100;
     chanswitch_sinrClient->itemSizeLeft = 0;
     chanswitch_sinrClient->numBytesSent = 0;
     chanswitch_sinrClient->numBytesRecvd = 0;
     chanswitch_sinrClient->lastItemSent = 0;
+    chanswitch_sinrClient->state = TX_S_IDLE;
+    chanswitch_sinrClient->initBackoff = FALSE;
+    chanswitch_sinrClient->numChannels = 1;
+    chanswitch_sinrClient->currentChannel = 0;
 
 #ifdef DEBUG
     char addrStr[MAX_STRING_LENGTH];
@@ -231,150 +230,8 @@ AppChanswitchSinrClientNewChanswitchSinrClient(Node *node,
     return chanswitch_sinrClient;
 }
 
-/*
- * NAME:        AppChanswitchSinrClientSendNextItem.
- * PURPOSE:     Send the next item.
- * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the chanswitch_sinr client data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchSinrClientSendNextItem(Node *node, AppDataChanswitchSinrClient *clientPtr)
-{
-    assert(clientPtr->itemSizeLeft == 0);
 
-    if (clientPtr->itemsToSend > 0)
-    {
-        clientPtr->itemSizeLeft = AppChanswitchSinrClientItemSize(clientPtr);
-        clientPtr->itemSizeLeft += AppChanswitchSinrClientCtrlPktSize(clientPtr);
 
-        AppChanswitchSinrClientSendNextPacket(node, clientPtr);
-        clientPtr->itemsToSend --;
-    }
-    else
-    {
-        if (!clientPtr->sessionIsClosed)
-        {
-            APP_TcpSendData(
-                node,
-                clientPtr->connectionId,
-                (char *)"c",
-                1,
-                TRACE_APP_CHANSWITCH_SINR);
-        }
-
-        clientPtr->sessionIsClosed = TRUE;
-        clientPtr->sessionFinish = getSimTime(node);
-
-    }
-}
-
-/*
- * NAME:        AppChanswitchSinrClientSendNextPacket.
- * PURPOSE:     Send the remaining data.
- * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the chanswitch_sinr client data structure.
- * RETRUN:      none.
- */
-void
-AppChanswitchSinrClientSendNextPacket(Node *node, AppDataChanswitchSinrClient *clientPtr)
-{
-    int itemSize;
-    char *payload;
-
-    /* Break packet down of larger than APP_MAX_DATA_SIZE. */
-    if (clientPtr->itemSizeLeft > APP_MAX_DATA_SIZE)
-    {
-        itemSize = APP_MAX_DATA_SIZE;
-        clientPtr->itemSizeLeft -= APP_MAX_DATA_SIZE;
-        payload = (char *)MEM_malloc(itemSize);
-        memset(payload,'d',itemSize);
-    }
-    else
-    {
-        itemSize = clientPtr->itemSizeLeft;
-        payload = (char *)MEM_malloc(itemSize);
-        memset(payload,'d',itemSize);
-
-        /* Mark the end of the packet. */
-
-         *(payload + itemSize - 1) = 'e';
-          clientPtr->itemSizeLeft = 0;
-    }
-
-    if (!clientPtr->sessionIsClosed)
-    {
-        APP_TcpSendData(
-                node,
-                clientPtr->connectionId,
-                payload,
-                itemSize,
-                TRACE_APP_CHANSWITCH_SINR);
-    }
-    MEM_free(payload);
-}
-
-/*
- * NAME:        AppChanswitchSinrClientItemsToSend.
- * PURPOSE:     call tcplib function ftp_nitems() to get the
- *              number of items to send in an chanswitch_sinr session.
- * PARAMETERS:  node - pointer to the node.
- * RETRUN:      amount of items to send.
- */
-int
-AppChanswitchSinrClientItemsToSend(AppDataChanswitchSinrClient *clientPtr)
-{
-    int items;
-
-    items = ftp_nitems(clientPtr->seed);
-
-#ifdef DEBUG
-    printf("CHANSWITCH_SINR nitems = %d\n", items);
-#endif /* DEBUG */
-
-    return items;
-}
-
-/*
- * NAME:        AppChanswitchSinrClientItemSize.
- * PURPOSE:     call tcplib function ftp_itemsize() to get the size
- *              of each item.
- * PARAMETERS:  node - pointer to the node.
- * RETRUN:      size of an item.
- */
-int
-AppChanswitchSinrClientItemSize(AppDataChanswitchSinrClient *clientPtr)
-{
-    int size;
-
-    size = ftp_itemsize(clientPtr->seed);
-
-#ifdef DEBUG
-    printf("CHANSWITCH_SINR item size = %d\n", size);
-#endif /* DEBUG */
-
-    return size;
-}
-
-/*
- * NAME:        AppChanswitchSinrClientCtrlPktSize.
- * PURPOSE:     call tcplib function ftp_ctlsize().
- * PARAMETERS:  node - pointer to the node.
- * RETRUN:      chanswitch_sinr control packet size.
- */
-int
-AppChanswitchSinrClientCtrlPktSize(AppDataChanswitchSinrClient *clientPtr)
-{
-    int ctrlPktSize;
-    ctrlPktSize = ftp_ctlsize(clientPtr->seed);
-
-#ifdef DEBUG
-    printf("CHANSWITCH_SINR: Node %d chanswitch_sinr control pktsize = %d\n",
-           ctrlPktSize);
-#endif /* DEBUG */
-
-    return (ctrlPktSize);
-}
 
 /*
  * NAME:        AppChanswitchSinrServerGetChanswitchSinrServer.
@@ -438,6 +295,7 @@ AppChanswitchSinrServerNewChanswitchSinrServer(Node *node,
     chanswitch_sinrServer->numBytesSent = 0;
     chanswitch_sinrServer->numBytesRecvd = 0;
     chanswitch_sinrServer->bytesRecvdDuringThePeriod = 0;
+    chanswitch_sinrServer->state = RX_S_IDLE;
     chanswitch_sinrServer->lastItemSent = 0;
 
     RANDOM_SetSeed(chanswitch_sinrServer->seed,
@@ -474,62 +332,34 @@ AppChanswitchSinrServerNewChanswitchSinrServer(Node *node,
 }
 
 /*
- * NAME:        AppChanswitchSinrServerSendCtrlPkt.
- * PURPOSE:     call AppChanswitchSinrCtrlPktSize() to get the response packet
- *              size, and send the packet.
+ * NAME:        AppChanswitchSinrClientSendScanInit.
+ * PURPOSE:     Send the "scan init" packet.
  * PARAMETERS:  node - pointer to the node,
- *              serverPtr - pointer to the server data structure.
- * RETRUN:      none.
+ *              clientPtr - pointer to the server data structure.
+ * RETURN:      none.
  */
 void
-AppChanswitchSinrServerSendCtrlPkt(Node *node, AppDataChanswitchSinrServer *serverPtr)
-{
-    int pktSize;
+AppChanswitchSinrClientSendScanInit(Node *node, AppDataChanswitchSinrClient *clientPtr){
+
     char *payload;
 
-    pktSize = AppChanswitchSinrServerCtrlPktSize(serverPtr);
+    payload = (char *)MEM_malloc(CHANSWITCH_SINR_SCAN_PKT_SIZE); //1
+    memset(payload,TX_SCAN_PKT,1);
 
-    if (pktSize > APP_MAX_DATA_SIZE)
-    {
-        /*
-         * Control packet size is larger than APP_MAX_DATA_SIZE,
-         * set it to APP_MAX_DATA_SIZE. This should be rare.
-         */
-        pktSize = APP_MAX_DATA_SIZE;
-    }
-    payload = (char *)MEM_malloc(pktSize);
-    memset(payload,'d',pktSize);
-    if (!serverPtr->sessionIsClosed)
+    if (!clientPtr->sessionIsClosed)
     {
         APP_TcpSendData(
                 node,
-                serverPtr->connectionId,
+                clientPtr->connectionId,
                 payload,
-                pktSize,
+                CHANSWITCH_SINR_SCAN_PKT_SIZE,
                 TRACE_APP_CHANSWITCH_SINR);
+
     }
      MEM_free(payload);
+
 }
 
-/*
- * NAME:        AppChanswitchSinrServerCtrlPktSize.
- * PURPOSE:     call tcplib function ftp_ctlsize().
- * PARAMETERS:  node - pointer to the node.
- * RETRUN:      chanswitch_sinr control packet size.
- */
-int
-AppChanswitchSinrServerCtrlPktSize(AppDataChanswitchSinrServer *serverPtr)
-{
-    int ctrlPktSize;
-    ctrlPktSize = ftp_ctlsize(serverPtr->seed);
-
-#ifdef DEBUG
-    printf("CHANSWITCH_SINR: Node chanswitch_sinr control pktsize = %d\n",
-           ctrlPktSize);
-#endif /* DEBUG */
-
-    return (ctrlPktSize);
-}
 
 /*
  * Public Functions
@@ -582,7 +412,29 @@ AppLayerChanswitchSinrClient(Node *node, Message *msg)
 
                 assert(clientPtr != NULL);
 
-                AppChanswitchSinrClientSendNextItem(node, clientPtr);
+                clientPtr->state = TX_SCAN_INIT;
+
+                //get the needed info from MAC layer. initial scan will start after if enabled
+                AppChanswitchGetMyMacAddr(node,openResult->connectionId, CHANSWITCH_SINR_TX_CLIENT, TRUE);
+
+                // //start channel reselection backoff timer
+                clientPtr->initBackoff = TRUE;
+                Message *initTimeout;
+                initTimeout = MESSAGE_Alloc(node, 
+                    APP_LAYER,
+                    APP_CHANSWITCH_SINR_CLIENT,
+                    MSG_APP_TxChannelSelectionTimeout);
+
+                AppChanswitchTimeout* initInfo = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        initTimeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(initInfo, "cannot allocate enough space for needed info");
+                initInfo->connectionId = clientPtr->connectionId;
+
+                MESSAGE_Send(node, initTimeout, CHANGE_BACKOFF);
+
             }
 
             break;
@@ -603,57 +455,6 @@ AppLayerChanswitchSinrClient(Node *node, Message *msg)
 
             assert(clientPtr != NULL);
 
-            clientPtr->numBytesSent += (clocktype) dataSent->length;
-            clientPtr->lastItemSent = getSimTime(node);
-
-            /* Instant throughput is measured here after each 1 second */
-            #ifdef DEBUG_OUTPUT_FILE
-            {
-                char fileName[MAX_STRING_LENGTH];
-                FILE *fp;
-                clocktype currentTime;
-
-                clientPtr->bytesRecvdDuringThePeriod += dataSent->length;
-
-                sprintf(fileName, "CHANSWITCH_SINR_Throughput_%d", node->nodeId);
-
-                fp = fopen(fileName, "a");
-                if (fp)
-                {
-                    currentTime = getSimTime(node);
-
-                    if ((int)((currentTime -
-                        clientPtr->lastTime)/SECOND) >= 1)
-                    {
-                        /* get throughput within this time window */
-                        int throughput = (int)
-                            ((clientPtr->bytesRecvdDuringThePeriod
-                                * 8.0 * SECOND)
-                            / (getSimTime(node) - clientPtr->lastTime));
-
-                        fprintf(fp, "%d\t\t%d\n", (int)(currentTime/SECOND),
-                                (throughput/1000));
-
-                        clientPtr->lastTime = currentTime;
-                        clientPtr->bytesRecvdDuringThePeriod = 0;
-                    }
-                    fclose(fp);
-                }
-            }
-            #endif
-
-            if (clientPtr->itemSizeLeft > 0)
-            {
-                AppChanswitchSinrClientSendNextPacket(node, clientPtr);
-            }
-            else if (clientPtr->itemsToSend == 0
-                     && clientPtr->sessionIsClosed == TRUE)
-            {
-                APP_TcpCloseConnection(
-                    node,
-                    clientPtr->connectionId);
-            }
-
             break;
         }
         case MSG_APP_FromTransDataReceived:
@@ -672,16 +473,6 @@ AppLayerChanswitchSinrClient(Node *node, Message *msg)
                                                  dataRecvd->connectionId);
 
             assert(clientPtr != NULL);
-
-            clientPtr->numBytesRecvd += (clocktype) msg->packetSize;
-
-            assert(msg->packet[msg->packetSize - 1] == 'd');
-
-            if ((clientPtr->sessionIsClosed == FALSE) &&
-                (clientPtr->itemSizeLeft == 0))
-            {
-                AppChanswitchSinrClientSendNextItem(node, clientPtr);
-            }
 
             break;
         }
@@ -708,6 +499,48 @@ AppLayerChanswitchSinrClient(Node *node, Message *msg)
                 clientPtr->sessionFinish = getSimTime(node);
             }
 
+            break;
+        }
+
+        case MSG_APP_FromMac_MACAddressRequest: {
+            MacToAppAddrRequest* addrRequest;
+            addrRequest = (MacToAppAddrRequest*) MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchSinrClientGetChanswitchSinrClient(node, addrRequest->connectionId);
+            clientPtr->myAddr = addrRequest->myAddr; //save my address
+            clientPtr->currentChannel = addrRequest->currentChannel;
+            clientPtr->numChannels = addrRequest->numChannels;
+            clientPtr->noise_mW = addrRequest->noise_mW;
+            clientPtr->channelSwitch = addrRequest->channelSwitch;
+
+            printf("%s: CHANSWITCH_SINR Client node %u got MSG_APP_FromMac_MACAddressRequest\n",
+                   buf, node->nodeId);
+
+            if(!(addrRequest->initial) || (addrRequest->initial && addrRequest->asdcsInit))
+            {
+                printf("Initial scan enabled - sending SCAN_PKT to RX \n");  
+                AppChanswitchSinrClientSendScanInit(node, clientPtr);
+                clientPtr->state = TX_SCAN_INIT;
+
+            }
+            else {
+                clientPtr->state = TX_S_IDLE;
+            }
+            break;
+        }
+
+        //Prevents multiple channel reselections from being initiated simultaneously
+        case MSG_APP_TxChannelSelectionTimeout:
+        {
+            #ifdef DEBUG_CHANSWITCH_SINR
+                printf("%s: CHANSWITCH_SINR Client node %u got channel selection timeout\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG_CHANSWITCH */
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchSinrClientGetChanswitchSinrClient(node,
+                                            timeoutInfo->connectionId);
+            clientPtr->initBackoff = FALSE;
             break;
         }
         default:
@@ -1024,44 +857,17 @@ AppLayerChanswitchSinrServer(Node *node, Message *msg)
             }
             assert(serverPtr->sessionIsClosed == FALSE);
 
-            serverPtr->numBytesRecvd +=
-                    (clocktype) MESSAGE_ReturnPacketSize(msg);
 
-
-            /*
-             * Test if the received data contains the last byte
-             * of an item.  If so, send a response packet back.
-             * If the data contains a 'c', close the connection.
-             */
-            if (packet[msg->packetSize - 1] == 'd')
-            {
-                /* Do nothing since item is not completely received yet. */
-            }
-            else if (packet[msg->packetSize - 1] == 'e')
-            {
-                /* Item completely received, now send control info. */
-
-                AppChanswitchSinrServerSendCtrlPkt(node, serverPtr);
-            }
-            else if (packet[msg->packetSize - 1] == 'c')
-            {
-                /*
-                 * Client wants to close the session, so server also
-                 * initiates a close.
-                 */
-                APP_TcpCloseConnection(
-                    node,
-                    serverPtr->connectionId);
-
-                serverPtr->sessionFinish = getSimTime(node);
-                serverPtr->sessionIsClosed = TRUE;
-            }
-            else
-            {
-               assert(FALSE);
+            // printf("server is in state %d meow \n", serverPtr->state);
+            switch(serverPtr->state){
+                case RX_S_IDLE:{
+                    if(packet[0] == TX_SCAN_PKT){
+                        printf("CHANSWITCH_SINR Server: Got SCAN_PKT. Beginning SINR scan of channels. \n");
+                    }
+                break;
+                }
             }
 
-            break;
         }
 
         case MSG_APP_FromTransCloseResult:

@@ -4861,33 +4861,49 @@ void MacDot11ManagementHandleTimeout(
             ERROR_Assert(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE,
             "MSG_MAC_DOT11_ChangeChannelRequest: Channel switching type must be set to AP Probing. \n");   
             printf("Received request to change from channel %d to channel %d CHANSWITCH node %d \n", dot11->oldChannel, dot11->newChannel, node->nodeId);
-            //TODO: change channel
             MacDot11ManagementChangeToChannelNoProbe(node,dot11,dot11->newChannel);
             //TODO: send message back to app layer
             break;
         }
 
         case MSG_MAC_DOT11_MACAddressRequest:
-        {
-            ERROR_Assert(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE,
-            "Error: Channel switching type must be set to AP Probing. \n");   
-            printf("Received request to report MAC address from node %d (address %d) \n", node->nodeId, dot11->selfAddr);
+        { 
+            printf("Received request to report MAC address / other info from node %d (address %d) \n", node->nodeId, dot11->selfAddr);
             Message *appMsg;
-            if(dot11->appType == CHANSWITCH_TX_CLIENT){
-                appMsg = MESSAGE_Alloc(node,
-                    APP_LAYER,
-                    APP_CHANSWITCH_CLIENT,
-                    MSG_APP_FromMac_MACAddressRequest);
+
+            switch(dot11->appType){
+                case CHANSWITCH_TX_CLIENT:{
+                    appMsg = MESSAGE_Alloc(node,
+                        APP_LAYER,
+                        APP_CHANSWITCH_CLIENT,
+                        MSG_APP_FromMac_MACAddressRequest);
+                    break;
                 }
-            else if (dot11->appType == CHANSWITCH_RX_SERVER){
-                appMsg = MESSAGE_Alloc(node,
-                    APP_LAYER,
-                    APP_CHANSWITCH_SERVER,
-                    MSG_APP_FromMac_MACAddressRequest); 
+                case CHANSWITCH_RX_SERVER: {
+                    appMsg = MESSAGE_Alloc(node,
+                        APP_LAYER,
+                        APP_CHANSWITCH_SERVER,
+                        MSG_APP_FromMac_MACAddressRequest); 
+                    break;
+                }
+                case CHANSWITCH_SINR_TX_CLIENT: {
+                    appMsg = MESSAGE_Alloc(node,
+                        APP_LAYER,
+                        APP_CHANSWITCH_SINR_CLIENT,
+                        MSG_APP_FromMac_MACAddressRequest);
+                    break;
+                }
+                case CHANSWITCH_SINR_RX_SERVER: {
+                    appMsg = MESSAGE_Alloc(node,
+                        APP_LAYER,
+                        APP_CHANSWITCH_SINR_SERVER,
+                        MSG_APP_FromMac_MACAddressRequest);
+                    break;
+                }
+                default:
+                    ERROR_ReportError("MSG_APP_FromMac_MACAddressRequest: Application type not specified. \n");
             }
-            else {
-                ERROR_ReportError("MSG_APP_FromMac_MACAddressRequest: Application type not specified. \n");
-            }
+
             int phyIndex = dot11->myMacData->phyNumber;
             int channel;
             PhyData *thisPhy = node->phyData[phyIndex];
