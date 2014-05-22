@@ -1730,26 +1730,27 @@ APP_InitializeApplications(
         {
             char sourceString[MAX_STRING_LENGTH];
             char destString[MAX_STRING_LENGTH];
-            int itemsToSend;
             char startTimeStr[MAX_STRING_LENGTH];
+            char changeBackoffStr[MAX_STRING_LENGTH];
             NodeAddress sourceNodeId;
             Address sourceAddr;
             NodeAddress destNodeId;
             Address destAddr;
 
+
             numValues = sscanf(appInput.inputStrings[i],
-                            "%*s %s %s %d %s",
+                            "%*s %s %s %s %s",
                             sourceString,
                             destString,
-                            &itemsToSend,
+                            changeBackoffStr,
                             startTimeStr);
 
             if (numValues != 4)
             {
                 char errorString[MAX_STRING_LENGTH];
                 sprintf(errorString,
-                        "Wrong CHANSWITCH_SINR configuration format!\n"
-                        "CHANSWITCH_SINR <src> <dest> <items to send> <start time>\n");
+                        "Wrong CHANSWITCH configuration format!\n"
+                        "CHANSWITCH <src> <dest> <change backoff> <start time>\n");
                 ERROR_ReportError(errorString);
             }
 
@@ -1767,22 +1768,24 @@ APP_InitializeApplications(
             if (node != NULL)
             {
                 clocktype startTime = TIME_ConvertToClock(startTimeStr);
-#ifdef DEBUG
+                clocktype changeBackoffTime = TIME_ConvertToClock(changeBackoffStr);
+// #ifdef DEBUG
                 char clockStr[MAX_CLOCK_STRING_LENGTH];
                 char addrStr[MAX_STRING_LENGTH];
 
-                printf("Starting CHANSWITCH_SINR client with:\n");
+                printf("Starting CHANSWITCH client with:\n");
                 printf("  src nodeId:    %u\n", sourceNodeId);
                 printf("  dst nodeId:    %u\n", destNodeId);
                 IO_ConvertIpAddressToString(&destAddr, addrStr);
                 printf("  dst address:   %s\n", addrStr);
-                printf("  items to send: %d\n", itemsToSend);
+                ctoa(changeBackoffTime, clockStr);
+                printf("  minimum delay btwn channel changes:    %s\n", clockStr);
                 ctoa(startTime, clockStr);
                 printf("  start time:    %s\n", clockStr);
-#endif /* DEBUG */
+// #endif /* DEBUG */
 
                 AppChanswitchSinrClientInit(
-                    node, sourceAddr, destAddr, itemsToSend, startTime);
+                    node, sourceAddr, destAddr, startTime, changeBackoffTime);
             }
 
             // Handle Loopback Address

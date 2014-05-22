@@ -134,6 +134,10 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
     //Message Type for APP channel switching
+    MSG_APP_TxChangeAckDelay                    = 372,
+    MSG_APP_RxChangeWfAckTimeout                = 373,
+    MSG_APP_RxVerifyWfAckTimeout                = 374,
+    MSG_MAC_FromAppInitiateSinrScanRequest      = 375,
     MSG_APP_TxChannelSelectionTimeout           = 376,
     MSG_APP_InitiateChannelScanRequest          = 377,
     MSG_MAC_DOT11_ChangeChannelRequest          = 378,
@@ -1533,13 +1537,26 @@ typedef struct app_to_mac_channel_change{
 // /**
 // STRUCT      :: MacToAppScanComplete
 // DESCRIPTION :: MAC sends visible node list to App after finishing
-// Used in chanswitch
+// Used in ASDCS chanswitch
 // **/
 typedef struct mac_to_app_scan_complete{
     int connectionId;
     int nodeCount;
     DOT11_VisibleNodeInfo* nodeInfo;
 } MacToAppScanComplete;
+
+// /**
+// STRUCT :: MacToAppSinrScanComplete
+// DESCRIPTION :: MAC sends interference on each channel to App after finishing scan
+// Used in SINR-based chanswitch
+typedef struct mac_to_app_sinr_scan_complete{
+    int         connectionId;
+    int         currentChannel;
+    double      txRss;
+    double*     avg_intnoise_dB; 
+    double*     worst_intnoise_dB; 
+    D_BOOL*     channelSwitch;
+} MacToAppSinrScanComplete;
 
 // /**
 // STRUCT      :: init_scan_request
