@@ -174,9 +174,9 @@ struct DOT11s_Data;
 //----------Channel Switching defaults.----------------------------------//
 #define DOT11_CHANSWITCH_INTERVAL 5
 #define DOT11_RX_PROBE_INTERVAL   (10 * MILLI_SECOND)
-#define DOT11_RX_PROBE_BEGIN_TIME   2 //simulation time (in seconds) to begin looking at interference
-#define DOT11_RX_PROBE_CHAN_SAMPLE_TIME 0.1 //simulation time (in seconds) to look at interference on each channel
-#define DOT11_INTNOISE_SAMPLE_WEIGHT 0.1 //weight given to new interference + noise sample in rolling average
+#define DOT11_RX_PROBE_BEGIN_TIME   2 * SECOND //simulation time (in seconds) to begin looking at interference
+#define DOT11_RX_PROBE_CHAN_SAMPLE_TIME (100 * MILLI_SECOND) //simulation time (in seconds) to look at interference on each channel
+#define DOT11_INTNOISE_SAMPLE_WEIGHT 0.1 //weight to each sample in average = DOT11_RX_PROBE_INTERVAL / DOT11_RX_PROBE_CHAN_SAMPLE_TIME (hardcode cause grossness)
 #define DOT11_CHANSWITCH_MASTER FALSE
 #define DOT11_TX_CHANSWITCH_DELAY 15.0     //time (seconds) between TX node channel switch when queue is full
 #define DOT11_RX_DISCONNECT_PROBE 1.0     //how often RX nodes should check to see if they've been disconnected
@@ -1802,6 +1802,8 @@ struct MacDataDot11 {
     //whether to do the initial chanswitch if using ASDCS (app layer)
     BOOL asdcsInit;
     BOOL firstScan; //true if ASDCS first scan
+    //sinr-based only - signal strength of other node (TX/RX). this would break if TX or RX were getting unicast pkts from anywhere else
+    double pairRss; 
 };
 
 
@@ -2826,6 +2828,23 @@ void MacDot11NetworkLayerHasPacketToSend(
 //--------------------------------------------------------------------------
 void MacDot11NetworkLayerChanswitch(
    Node* node, MacDataDot11* dot11);
+
+//--------------------------------------------------------------------------
+//  NAME:        MacDot11InterferenceScan
+//  PURPOSE:     Start the timers for interference scan
+//               (Used by Next Channel (initial) and SINR-based chanswitch)
+//  PARAMETERS:  Node* node
+//                  Pointer to node
+//               MacDataDot11* dot11
+//                  Pointer to Dot11 structure
+//              clocktype delay
+//                  time to delay before beginning scan
+//  RETURN:      None
+//  ASSUMPTION:  None
+//  NOTES:       Only used by Channel Switching protocol
+//               
+//--------------------------------------------------------------------------
+void MacDot11InterferenceScan(Node* node, MacDataDot11* dot11, clocktype delay);
 
 
 //--------------------------------------------------------------------------

@@ -13858,12 +13858,21 @@ NetworkIpQueueInsert(
             if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_SIMPLE){
                 MAC_NetworkLayerChanswitch(node, outgoingInterface); //used by simple channel switch
             }
-            else if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE && dot11->chanswitchTrigger == DOT11_CHANSWITCH_TRIGGER_QUEUE){
+            else if((dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE 
+                        || dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_SINR)
+                        && dot11->chanswitchTrigger == DOT11_CHANSWITCH_TRIGGER_QUEUE){
                 // printf("telling app layer to initiate a chanswitch \n");
                 Message *appMsg;
+                int appType;
+                if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
+                    appType = APP_CHANSWITCH_CLIENT;
+                }
+                else if (dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_SINR){
+                    appType = APP_CHANSWITCH_SINR_CLIENT;
+                }
                 appMsg = MESSAGE_Alloc(node,
                     APP_LAYER,
-                    APP_CHANSWITCH_CLIENT,
+                    appType,
                     MSG_APP_InitiateChannelScanRequest);
                 AppInitScanRequest* info = (AppInitScanRequest *)
                 MESSAGE_InfoAlloc(

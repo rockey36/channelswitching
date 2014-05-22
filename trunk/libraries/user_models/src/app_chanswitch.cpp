@@ -1329,7 +1329,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                             MESSAGE_ReturnInfo(msg);
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                             timeoutInfo->connectionId);
-            //TODO: return to the previous channel and wait 
+            //return to the previous channel and wait 
             if(clientPtr->state = TX_VERIFY_WFACK){
                 clientPtr->state = TX_CHANGE_WFACK;
                 AppChanswitchChangeChannels(

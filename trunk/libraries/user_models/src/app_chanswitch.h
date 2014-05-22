@@ -384,11 +384,12 @@ AppChanswitchClientSendChangeInit(Node *node, AppDataChanswitchClient *clientPtr
  * NAME:        AppChanswitchStartProbing.
  * PURPOSE:     Start scanning channels - either client or server.
  * PARAMETERS:  node - pointer to the node
- *              appType:     CHANSWITCH_TX_CLIENT or CHANSWITCH_RX_SERVER
+ *              connectionId - identifier of the client/server connection
+ *              appType:     CHANSWITCH_TX_CLIENT, CHANSWITCH_RX_SERVER, CHANSWITCH_SINR_TX_CLIENT, CHANSWITCH_SINR_RX_SERVER
  * RETURN:      none.
  */
 void
-AppChanswitchStartProbing(Node *node, int appType);
+AppChanswitchStartProbing(Node *node, int connectionId, int appType);
 
 /*
  * NAME:            

@@ -26,6 +26,13 @@
 #include "types.h"
 
 #define CHANSWITCH_SINR_SCAN_PKT_SIZE 1
+#define CHANSWITCH_SINR_CHANGE_PKT_SIZE 2
+
+#define RX_CHANGE_WFACK_TIMEOUT    (200 * MILLI_SECOND)
+#define RX_VERIFY_WFACK_TIMEOUT    (200 * MILLI_SECOND)
+#define TX_CHANGE_ACK_DELAY        (5 * MILLI_SECOND)
+
+ //id (1) :: new channel (1)
 
  //tx (client) states
  enum {
@@ -39,8 +46,8 @@
  enum{
     RX_S_IDLE = 0,
     RX_SCANNING,
-    RX_CHANGE,
-    RX_VERIFY
+    RX_CHANGE_WFACK,
+    RX_VERIFY_WFACK
  };
 
 //pkts sent by chanswitch app
@@ -80,10 +87,11 @@ struct struct_app_chanswitch_sinr_client_str
     D_BOOL*         channelSwitch; //channels that can be switched to  
     double          noise_mW;      //thermal noise is the same on every channel in QualNet   
     BOOL            initBackoff;  //backoff to prevent too many channel switches
+    int             nextChannel;
+    clocktype       changeBackoffTime;
 
     
-}
-AppDataChanswitchSinrClient;
+} AppDataChanswitchSinrClient;
 
 typedef
 struct struct_app_chanswitch_sinr_server_str
@@ -104,19 +112,58 @@ struct struct_app_chanswitch_sinr_server_str
     BOOL        isLoggedIn;
     int         portForDataConn;
     //CHANSWITCH additions
-    int state;
-}
-AppDataChanswitchSinrServer;
+    int             state;
+    int             currentChannel;
+    D_BOOL*         channelSwitch; //channels that can be switched to
+    double*         avg_intnoise_dB; //arrays for worst/average noise on each channel
+    double*         worst_intnoise_dB;
+    double          noise_mW;
+    double          txRss;    //RSS of TX node
+    int             nextChannel;
+} AppDataChanswitchSinrServer;
 
 /*
  * NAME:        AppChanswitchSinrClientSendScanInit.
  * PURPOSE:     Send the "scan init" packet.
  * PARAMETERS:  node - pointer to the node,
- *              clientPtr - pointer to the server data structure.
+ *              clientPtr - pointer to the client data structure.
  * RETURN:      none.
  */
 void
 AppChanswitchSinrClientSendScanInit(Node *node, AppDataChanswitchSinrClient *clientPtr);
+
+
+
+/*
+ * NAME:        AppChanswitchSinrClientSendChangeAck.
+ * PURPOSE:     Send the ack indicating client got change request
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the client data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrClientSendChangeAck(Node *node, AppDataChanswitchSinrClient *clientPtr);
+
+/*
+ * NAME:        AppChanswitchSinrClientSendVerifyAck.
+ * PURPOSE:     Send the ack indicating client changed to the new channel
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the client data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrClientSendVerifyAck(Node *node, AppDataChanswitchSinrClient *clientPtr);
+
+/*
+ * NAME:        AppChanswitchSinrServerScanChannels.
+ * PURPOSE:     Initiate SINR scan of channels at RX node.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrServerScanChannels(Node *node, AppDataChanswitchSinrServer *serverPtr);
+
 
 /*
  * NAME:        AppLayerChanswitchSinrClient.
@@ -143,8 +190,8 @@ AppChanswitchSinrClientInit(
     Node *nodePtr,
     Address clientAddr,
     Address serverAddr,
-    int itemsToSend,
-    clocktype waitTime);
+    clocktype waitTime,
+    clocktype changeBackoffTime);
 
 /*
  * NAME:        AppChanswitchSinrClientPrintStats.
@@ -207,8 +254,30 @@ AppChanswitchSinrClientNewChanswitchSinrClient(
     Node *nodePtr,
     Address clientAddr,
     Address serverAddr,
-    int itemsToSend);
+    clocktype changeBackoffTime);
 
+/*
+ * NAME:        AppChanswitchSinrServerEvaulateChannels
+ * PURPOSE:     Evaulate the node list and select the next channel.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server
+ *              
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrServerEvaluateChannels(Node *node, AppDataChanswitchSinrServer *serverPtr);
+
+
+/*
+ * NAME:        AppChanswitchSinrServerSendChangePkt
+ * PURPOSE:     Send the change packet to the TX node.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server
+ *              
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrServerSendChangePkt(Node *node, AppDataChanswitchSinrServer *serverPtr);
 
 
 /*

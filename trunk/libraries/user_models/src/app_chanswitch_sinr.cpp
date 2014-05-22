@@ -154,7 +154,7 @@ AppDataChanswitchSinrClient *
 AppChanswitchSinrClientNewChanswitchSinrClient(Node *node,
                          Address clientAddr,
                          Address serverAddr,
-                         int itemsToSend)
+                         clocktype changeBackoffTime)
 {
     AppDataChanswitchSinrClient *chanswitch_sinrClient;
 
@@ -189,6 +189,7 @@ AppChanswitchSinrClientNewChanswitchSinrClient(Node *node,
     chanswitch_sinrClient->initBackoff = FALSE;
     chanswitch_sinrClient->numChannels = 1;
     chanswitch_sinrClient->currentChannel = 0;
+    chanswitch_sinrClient->changeBackoffTime = changeBackoffTime; //1 second default
 
 #ifdef DEBUG
     char addrStr[MAX_STRING_LENGTH];
@@ -360,6 +361,61 @@ AppChanswitchSinrClientSendScanInit(Node *node, AppDataChanswitchSinrClient *cli
 
 }
 
+/*
+ * NAME:        AppChanswitchSinrClientSendChangeAck.
+ * PURPOSE:     Send the ack indicating client got change request
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the client data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrClientSendChangeAck(Node *node, AppDataChanswitchSinrClient *clientPtr){
+
+    char *payload;
+
+    payload = (char *)MEM_malloc(CHANSWITCH_ACK_SIZE); //1
+    memset(payload,TX_CHANGE_ACK,1);
+    
+    if (!clientPtr->sessionIsClosed)
+    {
+        APP_TcpSendData(
+                node,
+                clientPtr->connectionId,
+                payload,
+                CHANSWITCH_ACK_SIZE,
+                TRACE_APP_CHANSWITCH_SINR);
+    }
+     MEM_free(payload);
+}
+
+/*
+ * NAME:        AppChanswitchSinrClientSendVerifyAck.
+ * PURPOSE:     Send the ack indicating client got verify request
+ * PARAMETERS:  node - pointer to the node,
+ *              clientPtr - pointer to the client data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrClientSendVerifyAck(Node *node, AppDataChanswitchSinrClient *clientPtr){
+
+    char *payload;
+
+    payload = (char *)MEM_malloc(CHANSWITCH_ACK_SIZE); //1
+    memset(payload,TX_VERIFY_ACK,1);
+    
+    if (!clientPtr->sessionIsClosed)
+    {
+        APP_TcpSendData(
+                node,
+                clientPtr->connectionId,
+                payload,
+                CHANSWITCH_ACK_SIZE,
+                TRACE_APP_CHANSWITCH_SINR);
+    }
+     MEM_free(payload);
+}
+
+
 
 /*
  * Public Functions
@@ -433,7 +489,7 @@ AppLayerChanswitchSinrClient(Node *node, Message *msg)
                 ERROR_Assert(initInfo, "cannot allocate enough space for needed info");
                 initInfo->connectionId = clientPtr->connectionId;
 
-                MESSAGE_Send(node, initTimeout, CHANGE_BACKOFF);
+                MESSAGE_Send(node, initTimeout, clientPtr->changeBackoffTime);
 
             }
 
@@ -460,9 +516,11 @@ AppLayerChanswitchSinrClient(Node *node, Message *msg)
         case MSG_APP_FromTransDataReceived:
         {
             TransportToAppDataReceived *dataRecvd;
+            char *packet;
 
             dataRecvd = (TransportToAppDataReceived *)
                          MESSAGE_ReturnInfo(msg);
+            packet = MESSAGE_ReturnPacket(msg);
 
 #ifdef DEBUG
             printf("%s: CHANSWITCH_SINR Client node %u received data %d\n",
@@ -473,6 +531,41 @@ AppLayerChanswitchSinrClient(Node *node, Message *msg)
                                                  dataRecvd->connectionId);
 
             assert(clientPtr != NULL);
+
+            switch(clientPtr->state){
+                case TX_SCAN_INIT: {
+                    if(packet[0] == RX_CHANGE_PKT){
+                    printf("CHANSWITCH_SINR Client: Node %ld at %s got RX_CHANGE_PKT while in TX_SCAN_INIT state.\n",
+                            node->nodeId, buf);
+                    //set the new channel
+                    int nextChannel = 0;
+                    memcpy(&nextChannel,packet+1,1);
+                    clientPtr->nextChannel = nextChannel;
+                    //send the TX_CHANGE_ACK to RX
+                    AppChanswitchSinrClientSendChangeAck(node, clientPtr);
+                    //delay
+                    Message *changeMsg;
+                    changeMsg = MESSAGE_Alloc(node, 
+                        APP_LAYER,
+                        APP_CHANSWITCH_SINR_CLIENT,
+                        MSG_APP_TxChangeAckDelay);
+                    AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                        MESSAGE_InfoAlloc(
+                            node,
+                            changeMsg,
+                            sizeof(AppChanswitchTimeout));
+                    ERROR_Assert(info, "cannot allocate enough space for needed info");
+                    info->connectionId = dataRecvd->connectionId;
+
+                    MESSAGE_Send(node, changeMsg, TX_CHANGE_ACK_DELAY);
+                    }
+                    else {
+                        ERROR_ReportWarning("CHANSWITCH_SINR Client: received unknown packet from RX \n");
+                        
+                    }
+                    break;
+                }
+            }
 
             break;
         }
@@ -543,6 +636,63 @@ AppLayerChanswitchSinrClient(Node *node, Message *msg)
             clientPtr->initBackoff = FALSE;
             break;
         }
+
+        case MSG_APP_TxChangeAckDelay: {
+            #ifdef DEBUG_CHANSWITCH_SINR
+                printf("%s: CHANSWITCH Client node %u change ACK delay timer expired\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG_CHANSWITCH_SINR */
+                            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchSinrClientGetChanswitchSinrClient(node,
+                            timeoutInfo->connectionId);
+            //change channels
+            AppChanswitchChangeChannels(
+                node, 
+                clientPtr->connectionId, 
+                CHANSWITCH_SINR_TX_CLIENT, 
+                clientPtr->currentChannel,
+                clientPtr->nextChannel);
+            //send TX_VERIFY_ACK
+            AppChanswitchSinrClientSendVerifyAck(node, clientPtr);
+            break;
+        }
+
+        case MSG_APP_InitiateChannelScanRequest: {
+            #ifdef DEBUG_CHANSWITCH_SINR
+                printf("%s: CHANSWITCH SINR Client node %u received a request to initiate a channel scan \n",
+                       buf, node->nodeId);
+            #endif /* DEBUG_CHANSWITCH_SINR */
+            AppInitScanRequest* initRequest = (AppInitScanRequest*) MESSAGE_ReturnInfo(msg);
+            clientPtr = AppChanswitchSinrClientGetChanswitchSinrClient(node, initRequest->connectionId);
+
+            //start the scan if timer isn't expired
+            if(clientPtr->state == TX_S_IDLE && clientPtr->initBackoff == FALSE){
+                printf("Attempting mid-stream channel switch on node %u \n", node->nodeId);
+                //start backoff timer to prevent multiple requests
+                clientPtr->state = TX_SCAN_INIT;
+                clientPtr->initBackoff = TRUE;
+                Message *initTimeout;
+                initTimeout = MESSAGE_Alloc(node, 
+                    APP_LAYER,
+                    APP_CHANSWITCH_SINR_CLIENT,
+                    MSG_APP_TxChannelSelectionTimeout);
+
+                AppChanswitchTimeout* initInfo = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        initTimeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(initInfo, "cannot allocate enough space for needed info");
+                initInfo->connectionId = clientPtr->connectionId;
+                MESSAGE_Send(node, initTimeout, clientPtr->changeBackoffTime);
+
+                //Get my mac address from MAC layer (probe will start after)
+                AppChanswitchGetMyMacAddr(node,clientPtr->connectionId, CHANSWITCH_SINR_TX_CLIENT, FALSE);
+            }
+            break;
+        }
         default:
             ctoa(getSimTime(node), buf);
             printf("Time %s: CHANSWITCH_SINR Client node %u received message of unknown"
@@ -567,25 +717,16 @@ AppChanswitchSinrClientInit(
     Node *node,
     Address clientAddr,
     Address serverAddr,
-    int itemsToSend,
-    clocktype waitTime)
+    clocktype waitTime,
+    clocktype changeBackoffTime)
 {
     AppDataChanswitchSinrClient *clientPtr;
 
-    /* Check to make sure the number of chanswitch_sinr items is a correct value. */
-
-    if (itemsToSend < 0)
-    {
-        printf("CHANSWITCH_SINR Client: Node %d items to send needs to be >= 0\n",
-               node->nodeId);
-
-        exit(0);
-    }
 
     clientPtr = AppChanswitchSinrClientNewChanswitchSinrClient(node,
                                          clientAddr,
                                          serverAddr,
-                                         itemsToSend);
+                                         changeBackoffTime);
 
     if (clientPtr == NULL)
     {
@@ -745,6 +886,109 @@ AppChanswitchSinrClientFinalize(Node *node, AppInfo* appInfo)
 }
 
 /*
+ * NAME:        AppChanswitchSinrServerScanChannels.
+ * PURPOSE:     Initiate SINR scan of channels at RX node.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server data structure.
+ * RETURN:      none.
+ */
+void
+AppChanswitchSinrServerScanChannels(Node *node, AppDataChanswitchSinrServer *serverPtr){
+    // printf("AppChanswitchSinrServerScanChannels \n");
+    Message *macMsg;
+    macMsg = MESSAGE_Alloc(node, 
+    MAC_LAYER,
+    MAC_PROTOCOL_DOT11,
+    MSG_MAC_FromAppInitiateSinrScanRequest);
+
+    AppToMacStartProbe* info = (AppToMacStartProbe*)
+        MESSAGE_InfoAlloc(
+            node,
+            macMsg,
+            sizeof(AppToMacStartProbe));
+    ERROR_Assert(info, "cannot allocate enough space for needed info");
+    info->connectionId = serverPtr->connectionId;
+    info->appType = APP_CHANSWITCH_SINR_SERVER;
+    info->initial = FALSE; //unused
+
+    MESSAGE_Send(node, macMsg, 0);
+}
+
+/*
+ * NAME:        AppChanswitchSinrServerEvaulateChannels
+ * PURPOSE:     Evaulate the node list and select the next channel.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the client
+ *              
+ * RETURN:      the channel to switch to.
+ */
+void
+AppChanswitchSinrServerEvaluateChannels(Node *node, AppDataChanswitchSinrServer *serverPtr){
+
+    int newChannel;
+    int lowest_int_channel = serverPtr->currentChannel;
+    int highest_int_channel = serverPtr->currentChannel;
+    double lowest_int = 0.0;
+    double highest_int = -100.0;
+    double this_channel_int = -90.0;
+    int numChannels = PROP_NumberChannels(node);
+
+    for (int i = 1; i < numChannels+1; i++) {     
+        if (serverPtr->channelSwitch[newChannel]) {
+            this_channel_int = serverPtr->avg_intnoise_dB[newChannel];
+            double sinr = NON_DB(serverPtr->txRss) / NON_DB(this_channel_int) ; 
+            printf("Channel %d: Interference %f, SINR %f \n", newChannel, this_channel_int, IN_DB(sinr));
+            if(this_channel_int < lowest_int){
+                lowest_int = this_channel_int;
+                lowest_int_channel = newChannel;
+            }
+            if(this_channel_int > highest_int){
+                highest_int = this_channel_int;
+                highest_int_channel = newChannel;
+            }
+        }
+        newChannel = (i + serverPtr->currentChannel) % numChannels; 
+    }
+    printf("AppChanswitchSinrServerEvaluateChannels: worst int is %f dBm on channel %d, best is %f dBm on channel %d for node %d \n", 
+        highest_int,highest_int_channel, lowest_int, lowest_int_channel, node->nodeId);
+
+    printf("AppChanswitchSinrServerEvaluateChannels: Selecting channel %d on node %d...\n",lowest_int_channel,node->nodeId);
+    serverPtr->nextChannel = newChannel;
+}
+
+/*
+ * NAME:        AppChanswitchSinrServerSendChangePkt
+ * PURPOSE:     Send the change packet to the TX node.
+ * PARAMETERS:  node - pointer to the node,
+ *              serverPtr - pointer to the server
+ *              
+ * RETURN:      none.
+ */
+void AppChanswitchSinrServerSendChangePkt(Node *node, AppDataChanswitchSinrServer *serverPtr){
+        printf("best channel is channel %d, sending change pkt to TX \n", serverPtr->nextChannel);
+
+        //first send the packet.
+        char *payload;
+        payload = (char *)MEM_malloc(CHANSWITCH_SINR_CHANGE_PKT_SIZE); //2
+        memset(payload,RX_CHANGE_PKT,1);
+        memcpy(payload+1,&(serverPtr->nextChannel),1); //first byte of int
+
+        if (!serverPtr->sessionIsClosed)
+        {
+            APP_TcpSendData(
+                    node,
+                    serverPtr->connectionId,
+                    payload,
+                    CHANSWITCH_SINR_CHANGE_PKT_SIZE,
+                    TRACE_APP_CHANSWITCH_SINR);
+
+        }
+         MEM_free(payload);
+
+}
+
+
+/*
  * NAME:        AppLayerChanswitchSinrServer.
  * PURPOSE:     Models the behaviour of ChanswitchSinr Server on receiving the
  *              message encapsulated in msg.
@@ -862,10 +1106,43 @@ AppLayerChanswitchSinrServer(Node *node, Message *msg)
             switch(serverPtr->state){
                 case RX_S_IDLE:{
                     if(packet[0] == TX_SCAN_PKT){
-                        printf("CHANSWITCH_SINR Server: Got SCAN_PKT. Beginning SINR scan of channels. \n");
+                        serverPtr->state = RX_SCANNING;
+                        AppChanswitchSinrServerScanChannels(node, serverPtr);
                     }
                 break;
                 }
+                case RX_CHANGE_WFACK:{
+                    if(packet[0] == TX_CHANGE_ACK){
+                        #ifdef DEBUG_CHANSWITCH_SINR
+                        printf("CHANSWITCH Server: Node %ld at %s got TX_CHANGE_ACK while in RX_CHANGE_WFACK state.\n",
+                            node->nodeId, buf);
+                       #endif 
+                       //change to the new channel 
+                        AppChanswitchChangeChannels(node, 
+                                serverPtr->connectionId, 
+                                CHANSWITCH_SINR_RX_SERVER, 
+                                serverPtr->currentChannel,
+                                serverPtr->nextChannel);
+                        serverPtr->currentChannel = serverPtr->nextChannel;
+                        printf("Switch to new channel %d completed on TX and RX nodes. \n",serverPtr->currentChannel);
+                        serverPtr->state = RX_S_IDLE;
+
+                    }
+                    break;
+                }
+                case RX_VERIFY_WFACK:{
+                    if(packet[0] == TX_VERIFY_ACK){
+                        #ifdef DEBUG_CHANSWITCH_SINR
+                        printf("CHANSWITCH Server: Node %ld at %s got TX_VERIFY_ACK while in RX_VERIFY_WFACK state.\n",
+                            node->nodeId, buf);
+                       #endif 
+                        printf("Switch to new channel %d completed on TX and RX nodes. \n",serverPtr->currentChannel);
+                        serverPtr->state = RX_S_IDLE;
+
+                    }
+                    break;
+                }
+
             }
             break;
         }
@@ -893,6 +1170,132 @@ AppLayerChanswitchSinrServer(Node *node, Message *msg)
             }
 
             break;
+        }
+
+        case MSG_APP_FromMacRxScanFinished: {
+            MacToAppSinrScanComplete* scanComplete;
+            scanComplete = (MacToAppSinrScanComplete*) MESSAGE_ReturnInfo(msg);
+            serverPtr = AppChanswitchSinrServerGetChanswitchSinrServer(node,
+                                                 scanComplete->connectionId);
+
+            switch(serverPtr->state){
+                case RX_SCANNING:{
+                    printf("MSG_APP_FromMacRxScanFinished: TX RSS = %f \n", scanComplete->txRss);
+                    serverPtr->currentChannel = scanComplete->currentChannel;
+                    serverPtr->avg_intnoise_dB = scanComplete->avg_intnoise_dB;
+                    serverPtr->worst_intnoise_dB = scanComplete->worst_intnoise_dB;
+                    serverPtr->txRss = scanComplete->txRss;
+                    serverPtr->channelSwitch = scanComplete->channelSwitch;
+                    serverPtr->state = RX_CHANGE_WFACK;
+                    AppChanswitchSinrServerEvaluateChannels(node, serverPtr);
+                    AppChanswitchSinrServerSendChangePkt(node, serverPtr);
+
+                    //start change ACK timeout timer
+                    Message *timeout;
+
+                    timeout = MESSAGE_Alloc(node, 
+                        APP_LAYER,
+                        APP_CHANSWITCH_SINR_SERVER,
+                        MSG_APP_RxChangeWfAckTimeout);
+
+                    AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                    MESSAGE_InfoAlloc(
+                            node,
+                            timeout,
+                            sizeof(AppChanswitchTimeout));
+                    ERROR_Assert(info, "cannot allocate enough space for needed info");
+                    info->connectionId = serverPtr->connectionId;
+                    MESSAGE_Send(node, timeout, RX_CHANGE_WFACK_TIMEOUT);
+                
+                    serverPtr->state = RX_CHANGE_WFACK;
+
+
+                    break;  
+                }
+                default: {
+                    ERROR_ReportWarning("SINR scan finished with RX node in invalid state. \n");
+                }
+
+            }
+
+            break;
+        }
+        case MSG_APP_RxChangeWfAckTimeout: {
+            #ifdef DEBUG_CHANSWITCH_SINR
+            printf("CHANSWITCH_SINR Server: got change ACK timeout \n");
+            #endif
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            serverPtr = AppChanswitchSinrServerGetChanswitchSinrServer(node,
+                                            timeoutInfo->connectionId);
+            //switch to new channel, wait for VERIFY_ACK
+            if(serverPtr->state == RX_CHANGE_WFACK){
+                //change channels, start timer, wait for verify pkt
+                serverPtr->state = RX_VERIFY_WFACK;
+                AppChanswitchChangeChannels(
+                        node, 
+                        serverPtr->connectionId, 
+                        CHANSWITCH_SINR_RX_SERVER, 
+                        serverPtr->currentChannel,
+                        serverPtr->nextChannel);
+
+                Message *timeout;
+                timeout = MESSAGE_Alloc(node, 
+                                        APP_LAYER,
+                                        CHANSWITCH_SINR_RX_SERVER,
+                                        MSG_APP_RxVerifyWfAckTimeout);
+                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        timeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(info, "cannot allocate enough space for needed info");
+                info->connectionId = serverPtr->connectionId;
+                MESSAGE_Send(node, timeout, RX_VERIFY_WFACK_TIMEOUT);
+                
+            }
+            break;
+        }
+
+        case MSG_APP_RxVerifyWfAckTimeout:
+        {
+            #ifdef DEBUG_CHANSWITCH_SINR
+                printf("%s: CHANSWITCH_SINR Server node %u got verify ACK timeout\n",
+                       buf, node->nodeId);
+            #endif /* DEBUG_CHANSWITCH_SINR */
+            AppChanswitchTimeout* timeoutInfo;
+            timeoutInfo = (AppChanswitchTimeout*) 
+                            MESSAGE_ReturnInfo(msg);
+            serverPtr = AppChanswitchSinrServerGetChanswitchSinrServer(node,
+                                            timeoutInfo->connectionId);
+            //return to the previous channel and wait 
+            if(serverPtr->state = RX_VERIFY_WFACK){
+                serverPtr->state = RX_CHANGE_WFACK;
+                AppChanswitchChangeChannels(
+                        node, 
+                        serverPtr->connectionId, 
+                        CHANSWITCH_SINR_RX_SERVER, 
+                        serverPtr->nextChannel,
+                        serverPtr->currentChannel);
+
+                Message *timeout;
+                timeout = MESSAGE_Alloc(node, 
+                                        APP_LAYER,
+                                        APP_CHANSWITCH_SINR_SERVER,
+                                        MSG_APP_RxChangeWfAckTimeout);
+                AppChanswitchTimeout* info = (AppChanswitchTimeout*)
+                MESSAGE_InfoAlloc(
+                        node,
+                        timeout,
+                        sizeof(AppChanswitchTimeout));
+                ERROR_Assert(info, "cannot allocate enough space for needed info");
+                info->connectionId = serverPtr->connectionId;
+                MESSAGE_Send(node, timeout, RX_CHANGE_WFACK_TIMEOUT);
+
+            }
+            break;
+
         }
 
         default:
