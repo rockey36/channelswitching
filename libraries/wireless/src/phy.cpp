@@ -271,14 +271,9 @@ void PHY_CreateAPhyForMac(
         thisPhy->worst_intnoise_dB[i] = -100.0;
         thisPhy->channelChecked[i] = FALSE;
     }
-    thisPhy->tx_chanswitch_wait = FALSE;
-    thisPhy->rx_chanswitch_wait = FALSE;
-    thisPhy->is_rx = FALSE;
     thisPhy->last_rx = (clocktype) 0;
     thisPhy->prev_channel = 6;
-    thisPhy->rx_try_next_channel = FALSE;
     thisPhy->isProbing = FALSE;
-    thisPhy->isInitWaiting = FALSE;
 
 
 #ifdef ADDON_NGCNMS

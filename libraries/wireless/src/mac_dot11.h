@@ -173,10 +173,10 @@ struct DOT11s_Data;
 
 //----------Channel Switching defaults.----------------------------------//
 #define DOT11_CHANSWITCH_INTERVAL 5
-#define DOT11_RX_PROBE_INTERVAL   (10 * MILLI_SECOND)
-#define DOT11_RX_PROBE_BEGIN_TIME   2 * SECOND //simulation time (in seconds) to begin looking at interference
-#define DOT11_RX_PROBE_CHAN_SAMPLE_TIME (100 * MILLI_SECOND) //simulation time (in seconds) to look at interference on each channel
-#define DOT11_INTNOISE_SAMPLE_WEIGHT 0.1 //weight to each sample in average = DOT11_RX_PROBE_INTERVAL / DOT11_RX_PROBE_CHAN_SAMPLE_TIME (hardcode cause grossness)
+#define DOT11_RX_SCAN_INTERVAL   (10 * MICRO_SECOND)
+#define DOT11_RX_PROBE_BEGIN_TIME   1 * SECOND //simulation time (in seconds) to begin looking at interference
+#define DOT11_RX_SCAN_CHAN_SAMPLE_TIME (100 * MILLI_SECOND) //simulation time (in seconds) to look at interference on each channel
+#define DOT11_INTNOISE_SAMPLE_WEIGHT 0.0001 //weight to each sample in average = DOT11_RX_SCAN_INTERVAL / DOT11_RX_SCAN_CHAN_SAMPLE_TIME (hardcode cause grossness)
 #define DOT11_CHANSWITCH_MASTER FALSE
 #define DOT11_TX_CHANSWITCH_DELAY 15.0     //time (seconds) between TX node channel switch when queue is full
 #define DOT11_RX_DISCONNECT_PROBE 1.0     //how often RX nodes should check to see if they've been disconnected
@@ -190,6 +190,22 @@ struct DOT11s_Data;
 
 #define DOT11_CHANSWITCH_TRIGGER_NONE           0 //ASDCS and SINR-based - initial channel switch only
 #define DOT11_CHANSWITCH_TRIGGER_QUEUE          1 //ASDCS and SINR-based - channel switch activates when TX queue exceeds threshold
+
+//States of Next Channel
+ //tx (client) states
+ enum {
+    TX_N_IDLE = 0,
+    TX_INIT = 1,
+    TX_CHANGED
+
+ };
+
+ //rx (server) states
+ enum{
+    RX_N_IDLE = 0,
+    RX_INIT = 1,
+    RX_SEARCHING
+ };
 
 
 //---------------------------Power-Save-Mode-Updates---------------------//
@@ -1804,6 +1820,11 @@ struct MacDataDot11 {
     BOOL firstScan; //true if ASDCS first scan
     //sinr-based only - signal strength of other node (TX/RX). this would break if TX or RX were getting unicast pkts from anywhere else
     double pairRss; 
+    BOOL      is_rx;               //true if this node is the RX node (Next Channel only)
+    int simple_state;   //state for Next Channel chanswitch mode
+    BOOL first_pkt; //used by Next Channel RX node - start RX probe if this is the first packet
+    BOOL tx_waiting; //used by Next Channel TX node - TRUE when waiting for the set amt of time on the new channel
+    BOOL tx_gotack; //used by Next Channel TX node - TRUE when we changed to the new channel and just got an ACK from RX
 };
 
 

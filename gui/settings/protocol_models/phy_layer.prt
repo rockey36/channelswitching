@@ -12,6 +12,10 @@
       <option value="YES" name="On">
         <variable key="MAC-DOT11-CHANSWITCH-TYPE" type="Selection" name="Channel Switch Type" default="SIMPLE">
             <option value="SIMPLE" name="Simple Queue-Based Channel Switch (Next Channel)">
+              <variable key="MAC-DOT11-CHANSWITCH-SIMPLE-NODETYPE" type="Selection" default="TX" name="Node type (TX or RX)">
+                <option value="TX" name="TX node"/>
+                <option value="RX" name="RX node"/>
+              </variable>
               <variable key="MAC-DOT11-CHANSWITCH-INITIAL" type="Selection" name="Initial Channel Switch using SINR (Next Channel)" default="NO">
                 <option value="NO" name="Off" />
                 <option value="YES" name="On">
