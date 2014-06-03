@@ -344,8 +344,9 @@ AppChanswitchSinrClientSendScanInit(Node *node, AppDataChanswitchSinrClient *cli
 
     char *payload;
 
-    payload = (char *)MEM_malloc(CHANSWITCH_SINR_SCAN_PKT_SIZE); //1
+    payload = (char *)MEM_malloc(CHANSWITCH_SINR_SCAN_PKT_SIZE); //3
     memset(payload,TX_SCAN_PKT,1);
+    memset(payload+1,0xfe,2); //dummy data for chanswitch mask
 
     if (!clientPtr->sessionIsClosed)
     {
@@ -935,8 +936,8 @@ AppChanswitchSinrServerEvaluateChannels(Node *node, AppDataChanswitchSinrServer 
 
     for (int i = 1; i < numChannels+1; i++) {     
         if (serverPtr->channelSwitch[newChannel]) {
-            this_channel_int = serverPtr->avg_intnoise_dB[newChannel];
-            double sinr = NON_DB(serverPtr->txRss) / NON_DB(this_channel_int) ; 
+            this_channel_int = serverPtr->worst_intnoise_dB[newChannel];
+            double sinr = serverPtr->txRss - this_channel_int ; 
             printf("Channel %d: Interference %f, SINR %f \n", newChannel, this_channel_int, IN_DB(sinr));
             if(this_channel_int < lowest_int){
                 lowest_int = this_channel_int;
@@ -949,8 +950,10 @@ AppChanswitchSinrServerEvaluateChannels(Node *node, AppDataChanswitchSinrServer 
         }
         newChannel = (i + serverPtr->currentChannel) % numChannels; 
     }
-    printf("AppChanswitchSinrServerEvaluateChannels: worst int is %f dBm on channel %d, best is %f dBm on channel %d for node %d \n", 
-        highest_int,highest_int_channel, lowest_int, lowest_int_channel, node->nodeId);
+    double worstsinr = serverPtr->txRss - highest_int;
+    double bestsinr = serverPtr->txRss - lowest_int;
+    printf("AppChanswitchSinrServerEvaluateChannels: worst SINR is %f dB on channel %d, best is %f dB on channel %d for node %d \n", 
+        worstsinr,highest_int_channel, bestsinr, lowest_int_channel, node->nodeId);
 
     printf("AppChanswitchSinrServerEvaluateChannels: Selecting channel %d on node %d...\n",lowest_int_channel,node->nodeId);
     serverPtr->nextChannel = newChannel;

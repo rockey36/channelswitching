@@ -25,8 +25,8 @@
 
 #include "types.h"
 
-#define CHANSWITCH_SINR_SCAN_PKT_SIZE 1
-#define CHANSWITCH_SINR_CHANGE_PKT_SIZE 2
+#define CHANSWITCH_SINR_SCAN_PKT_SIZE 3 // id (1) : channel mask (2)
+#define CHANSWITCH_SINR_CHANGE_PKT_SIZE 2 //id (1) : new channel (1)
 
 #define RX_CHANGE_WFACK_TIMEOUT    (200 * MILLI_SECOND)
 #define RX_VERIFY_WFACK_TIMEOUT    (200 * MILLI_SECOND)
