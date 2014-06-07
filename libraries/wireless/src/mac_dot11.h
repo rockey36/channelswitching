@@ -178,11 +178,11 @@ struct DOT11s_Data;
 #define DOT11_RX_SCAN_CHAN_SAMPLE_TIME (100 * MILLI_SECOND) //simulation time (in seconds) to look at interference on each channel
 #define DOT11_INTNOISE_SAMPLE_WEIGHT 0.0001 //weight to each sample in average = DOT11_RX_SCAN_INTERVAL / DOT11_RX_SCAN_CHAN_SAMPLE_TIME (hardcode cause grossness)
 #define DOT11_CHANSWITCH_MASTER FALSE
-#define DOT11_TX_CHANSWITCH_DELAY 15.0     //time (seconds) between TX node channel switch when queue is full
-#define DOT11_RX_DISCONNECT_PROBE 1.0     //how often RX nodes should check to see if they've been disconnected
+#define DOT11_TX_CHANSWITCH_DELAY 2.0     //time (seconds) between TX node channel switch when queue is full
+#define DOT11_RX_DISCONNECT_TIMEOUT 0.5     //how often RX nodes should check to see if they've been disconnected
 #define DOT11_CHANSWITCH_THRESHOLD 75.0 //percentage of queue filled to change channels
 #define DOT11_CHANSWITCH_INITIAL_DELAY 3.0 //time to stay on the initial SINR selected channel
-#define DOT11_CHANSWITCH_RX_RETURN_PREV_CHANNEL 5.0 //time when RX returns to original channel if TX cannot be found
+#define DOT11_CHANSWITCH_RX_RETURN_PREV_CHANNEL 3.0 //time when RX returns to original channel if TX cannot be found
 //---- Channel switching defines --------------------------------------//
 #define DOT11_CHANSWITCH_TYPE_SIMPLE            0 //simple - no communication, just move to next channel (Next Channel)
 #define DOT11_CHANSWITCH_TYPE_AP_PROBE          1 //chanswitch based on ap probe and communication pkts (ASDCS)

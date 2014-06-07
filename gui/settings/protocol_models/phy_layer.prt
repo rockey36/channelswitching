@@ -25,9 +25,9 @@
               <variable key="MAC-DOT11-CHANSWITCH-AFTER-START" type="Selection" name="Mid-Transmission Channel Switch (Next Channel)" default="NO">
                 <option value="NO" name="No" />
                 <option value="YES" name="Yes">
-                  <variable key="MAC-DOT11-CHANSWITCH-RX-DISCONNECT-PROBE" type="Fixed" name="RX Node Disconnect Probe Time (Next Channel)" default="1.0" />
-                  <variable key="MAC-DOT11-CHANSWITCH-RX-RETURN-PREV-CHANNEL" type="Fixed" name="Time for RX Node to Look for TX Node (Next Channel)" default="5.0" />
-                  <variable key="MAC-DOT11-TX-CHANSWITCH-DELAY" type="Fixed" name="TX Node Channel Switch Delay (Next Channel)" default="10.0" />
+                  <variable key="MAC-DOT11-CHANSWITCH-RX-DISCONNECT-TIMEOUT" type="Fixed" name="RX Node Disconnect Timeout" default="0.5" />
+                  <variable key="MAC-DOT11-CHANSWITCH-RX-RETURN-PREV-CHANNEL" type="Fixed" name="RX Node Return Timeout" default="3.0" />
+                  <variable key="MAC-DOT11-TX-CHANSWITCH-DELAY" type="Fixed" name="TX Node Return Timeout" default="2.0" />
                 </option>
               </variable>
             </option>
