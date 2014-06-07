@@ -5150,7 +5150,7 @@ void MacDot11Init(
          node->nodeId,
          &address,
          nodeInput,
-         "MAC-DOT11-CHANSWITCH-RX-DISCONNECT-PROBE",
+         "MAC-DOT11-CHANSWITCH-RX-DISCONNECT-TIMEOUT",
          &wasFound,
          &aDouble);
 
@@ -5159,7 +5159,7 @@ void MacDot11Init(
         dot11->chanswitchRxDisconnectProbe = aDouble;
     }
     else {
-        dot11->chanswitchRxDisconnectProbe = DOT11_RX_DISCONNECT_PROBE;
+        dot11->chanswitchRxDisconnectProbe = DOT11_RX_DISCONNECT_TIMEOUT;
 
     }
 
