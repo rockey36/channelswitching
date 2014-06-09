@@ -115,6 +115,7 @@ struct struct_app_chanswitch_client_str
     BOOL                    initBackoff; 
     BOOL                    initial; //is this the "initial" chanswitch or a "mid-stream" chanswitch?
     Mac802Address           rxAddr; 
+    BOOL                    opened; //TCP connection is open (prevent too early channel switch)
     
 }AppDataChanswitchClient;
 
