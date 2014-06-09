@@ -180,6 +180,7 @@ typedef struct struct_app_video_client_str
 #endif
 
 	std::vector<std::vector<PacketInfoAtom>>	SentPacketInfo;
+	BOOL	paused; //chanswitch magic
 } AppDataVideoClient;
 
 typedef struct struct_app_video_server_str

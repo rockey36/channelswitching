@@ -134,6 +134,8 @@ enum
     MSG_MAC_DOT11_Management                   = 333,
 
     //Message Type for APP channel switching
+    MSG_APP_FromChanswitchResumePlayback        = 370,
+    MSG_APP_FromChanswitchPausePlayback         = 371,
     MSG_APP_TxChangeAckDelay                    = 372,
     MSG_APP_RxChangeWfAckTimeout                = 373,
     MSG_APP_RxVerifyWfAckTimeout                = 374,

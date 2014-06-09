@@ -815,6 +815,12 @@ void AppLayerVideoClient(Node *node, Message *msg)
 			}
 		}
 		break;
+		case MSG_APP_FromChanswitchPausePlayback:
+			printf("Video Client: Got MSG_APP_FromChanswitchPausePlayback from CHANSWITCH app \n");
+			break;
+		case MSG_APP_FromChanswitchResumePlayback:
+			printf("Video Client: Got MSG_APP_FromChanswitchResumePlayback from CHANSWITCH app \n");
+			break;
 		default:
 			TIME_PrintClockInSecond(getSimTime(node), buf, node);
 			sprintf(error, "Video Client: at time %sS, node %d "

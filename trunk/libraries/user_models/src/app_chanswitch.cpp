@@ -201,6 +201,7 @@ AppChanswitchClientNewChanswitchClient(Node *node,
     chanswitchClient->nextChannel = 0;
     chanswitchClient->initBackoff = FALSE;
     chanswitchClient->initial = FALSE;
+    chanswitchClient->opened = FALSE;
     chanswitchClient->hnThreshold = hnThreshold;
     chanswitchClient->csThreshold = csThreshold;
     chanswitchClient->changeBackoffTime = changeBackoffTime;
@@ -1006,6 +1007,8 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 assert(clientPtr != NULL);
 
                 clientPtr->state = TX_PROBE_INIT;
+                clientPtr->opened = TRUE;
+
                 //get MAC addr from MAC layer (probe will immediately start thereafter unless disabled)
                 AppChanswitchGetMyMacAddr(node,openResult->connectionId, CHANSWITCH_TX_CLIENT, TRUE);
 
@@ -1026,6 +1029,13 @@ AppLayerChanswitchClient(Node *node, Message *msg)
                 initInfo->connectionId = clientPtr->connectionId;
 
                 MESSAGE_Send(node, initTimeout, clientPtr->changeBackoffTime);
+
+                //test: send message to video client
+                Message *videoClientMsg = MESSAGE_Alloc(node,
+                    APP_LAYER,
+                    APP_VIDEO_CLIENT,
+                    MSG_APP_FromChanswitchPausePlayback);
+                MESSAGE_Send(node,videoClientMsg,0);
 
             }
 
@@ -1483,7 +1493,7 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             clientPtr = AppChanswitchClientGetChanswitchClient(node, initRequest->connectionId);
 
             //start the scan if timer isn't expired
-            if(clientPtr->state == TX_IDLE && clientPtr->initBackoff == FALSE){
+            if(clientPtr->state == TX_IDLE && !(clientPtr->initBackoff) && clientPtr->opened){
                 printf("Attempting mid-stream channel switch on node %u \n", node->nodeId);
                 //start backoff timer to prevent multiple requests
                 clientPtr->state = TX_PROBE_INIT;
