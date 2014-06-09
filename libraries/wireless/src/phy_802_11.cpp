@@ -1590,6 +1590,7 @@ void Phy802_11SignalEndFromChannel(
             phy802_11->stats.totalRxSignalsToMac++;
         }
         else {
+            // printf("receive error occurred node %d \n", node->nodeId);
             Phy802_11ReportStatusToMac(
                 node,
                 phyIndex,

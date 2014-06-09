@@ -2392,8 +2392,8 @@ void MacDot11ReceivePacketFromPhy(
     PhySignalMeasurement* signalMeaInfo;
     signalMeaInfo = (PhySignalMeasurement*) MESSAGE_ReturnInfo(msg);
 
-    // if(dot11->chanswitchType == DOT11_CHANSWITCH_TYPE_AP_PROBE){
-    //    printf("visible packet at node %d, frametype %d from bss %d \n", node->nodeId,hdr->frameType,sourceAddr);
+    // if(sourceAddr != INVALID_802ADDRESS){
+    //     printf("visible packet at node %d, frametype %d from bss %d \n", node->nodeId,hdr->frameType,sourceAddr);
     // }   
     
     //ASDCS: add the visible non-AP nodes while scanning

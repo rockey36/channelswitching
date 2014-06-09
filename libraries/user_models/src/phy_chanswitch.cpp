@@ -1542,7 +1542,7 @@ void PhyChanSwitchSignalEndFromChannel(
         sigMeasure.cinr = IN_DB(phychanswitch->rxMsgPower_mW /
                              (phychanswitch->interferencePower_mW + noise));
 
-		//printf("message power from PhyChanSwitchSignalEndFromChannel = %f \n", phychanswitch->rxMsgPower_mW);
+		// printf("PhyChanSwitchSignalEndFromChannel: rss %f, snr = %f, cinr = %f \n", sigMeasure.rss, sigMeasure.snr, sigMeasure.cinr);
 
         PhyChanSwitchUnlockSignal(phychanswitch);
 
@@ -1578,6 +1578,7 @@ void PhyChanSwitchSignalEndFromChannel(
             phychanswitch->stats.totalRxSignalsToMac++;
         }
         else {
+            // printf("receive error occurred node %d \n", node->nodeId);
             PhyChanSwitchReportStatusToMac(
                 node,
                 phyIndex,

@@ -936,7 +936,7 @@ AppChanswitchSinrServerEvaluateChannels(Node *node, AppDataChanswitchSinrServer 
 
     for (int i = 1; i < numChannels+1; i++) {     
         if (serverPtr->channelSwitch[newChannel]) {
-            this_channel_int = serverPtr->worst_intnoise_dB[newChannel];
+            this_channel_int = serverPtr->avg_intnoise_dB[newChannel];
             double sinr = serverPtr->txRss - this_channel_int ; 
             printf("Channel %d: Interference %f, SINR %f \n", newChannel, this_channel_int, IN_DB(sinr));
             if(this_channel_int < lowest_int){
