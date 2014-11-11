@@ -5294,6 +5294,10 @@ void MacDot11Init(
     {
         dot11->chanswitchTrigger = DOT11_CHANSWITCH_TRIGGER_QUEUE;
     }
+    else if (strcmp(retString, "PREDICTED-DROP") == 0)
+    {
+        dot11->chanswitchTrigger = DOT11_CHANSWITCH_TRIGGER_PRED_DROP;
+    }
 
 
     // Read short retry count.

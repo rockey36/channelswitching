@@ -42,6 +42,7 @@
         <variable key="MAC-DOT11-CHANSWITCH-TRIGGER" type="Selection" name="Mid-Transmission Channel Switch (ASDCS and SINR-based)" default="NONE">
             <option value="NONE" name="None" />
             <option value="TX-QUEUE-THRESHOLD" name="TX queue filled percentage" />
+            <option value="PREDICTED-DROP" name="Predicted drop method" />
         </variable>    
       </option>
     </variable>
