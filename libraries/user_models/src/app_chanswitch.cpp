@@ -1381,6 +1381,13 @@ AppLayerChanswitchClient(Node *node, Message *msg)
             clientPtr = AppChanswitchClientGetChanswitchClient(node,
                                             timeoutInfo->connectionId);
             clientPtr->initBackoff = FALSE;
+
+            //test: send resume playback message to video
+            Message *videoClientMsg = MESSAGE_Alloc(node,
+                APP_LAYER,
+                APP_VIDEO_CLIENT,
+                MSG_APP_FromChanswitchResumePlayback);
+            MESSAGE_Send(node,videoClientMsg,0);
             break;
         }
 

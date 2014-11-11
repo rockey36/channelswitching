@@ -190,7 +190,7 @@ struct DOT11s_Data;
 
 #define DOT11_CHANSWITCH_TRIGGER_NONE           0 //ASDCS and SINR-based - initial channel switch only
 #define DOT11_CHANSWITCH_TRIGGER_QUEUE          1 //ASDCS and SINR-based - channel switch activates when TX queue exceeds threshold
-
+#define DOT11_CHANSWITCH_TRIGGER_PRED_DROP      2 //ASDCS and SINR-based - channel switch based on predicted drop method
 //States of Next Channel
  //tx (client) states
  enum {

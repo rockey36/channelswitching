@@ -157,6 +157,7 @@ AppDataVideoClient* GetNewAppVideoClient(Node *node,					///< Node pointer
 
 	VideoClientPtr->hNamedPIPE		 =	INVALID_HANDLE_VALUE;
 	VideoClientPtr->hNamedPIPECmd	 =	INVALID_HANDLE_VALUE;
+	VideoClientPtr->paused 			 =  FALSE;
 
 	strcpy(VideoClientPtr->strSenderLogFile,"sl_01.log");
 	strcpy(VideoClientPtr->strReceiverLogFile,"rl_01.log");
@@ -583,6 +584,7 @@ bool AppVideoClientScheduleNextPkt(Node *node,							///< The pointer of node
 			case IPC_MESSAGE_END_FLOW:
 				{
 					chun_log(LOG_IPC_RECEIVE, "IPC_MESSAGE_END_FLOW \n");
+					// printf("number of flows: %d \n", VideoClientPtr->nNumberOfFlows);
 
 					if (--VideoClientPtr->nNumberOfFlows == 0) {
 						printf("BYE Message!\n");
@@ -757,7 +759,7 @@ void AppLayerVideoClient(Node *node, Message *msg)
 						printf("discard\n");
 					}
 
-					if(bMsgSend == true) {
+					if(bMsgSend == true && !(VideoClientPtr->paused)) {
 						Message* newMsg;
 						newMsg = MESSAGE_Alloc(node,APP_LAYER,APP_VIDEO_CLIENT,MSG_APP_TimerExpired);
 						MESSAGE_InfoAlloc(node, newMsg, sizeof(AppTimer));
@@ -816,10 +818,24 @@ void AppLayerVideoClient(Node *node, Message *msg)
 		}
 		break;
 		case MSG_APP_FromChanswitchPausePlayback:
-			printf("Video Client: Got MSG_APP_FromChanswitchPausePlayback from CHANSWITCH app \n");
+			printf("Video Client: Got pause playback message from CHANSWITCH app \n");
+			VideoClientPtr = GetAppDataVideoClient(node,APP_VIDEO_CLIENT);
+			VideoClientPtr->paused = TRUE;
 			break;
 		case MSG_APP_FromChanswitchResumePlayback:
-			printf("Video Client: Got MSG_APP_FromChanswitchResumePlayback from CHANSWITCH app \n");
+			printf("Video Client: Got resume playback message from CHANSWITCH app \n");
+			VideoClientPtr = GetAppDataVideoClient(node,APP_VIDEO_CLIENT);
+			VideoClientPtr->paused = FALSE;
+			//unpause video, send the next frame
+			Message* newMsg;
+			newMsg = MESSAGE_Alloc(node,APP_LAYER,APP_VIDEO_CLIENT,MSG_APP_TimerExpired);
+			MESSAGE_InfoAlloc(node, newMsg, sizeof(AppTimer));
+			timer = (AppTimer *)MESSAGE_ReturnInfo(newMsg);
+			timer->sourcePort = VideoClientPtr->sourcePort;
+			timer->type = APP_TIMER_SEND_PKT;
+
+			MESSAGE_Send( node, newMsg, SECOND/VideoClientPtr->nFPS );
+
 			break;
 		default:
 			TIME_PrintClockInSecond(getSimTime(node), buf, node);
@@ -983,10 +999,26 @@ void AppLayerVideoServer(Node *node, Message *msg)
 			TRACE_PrintTrace(node,msg,TRACE_APPLICATION_LAYER,PACKET_IN,&acnData);
 
 			RTPParsing((byte*)dataBuffer,rp);
-
-			// FILE* fp = MAP_OpenFileP(serverPtr,rp.pt);
-			// fwrite((byte*)dataBuffer+RTP_HDR_SIZE,nByte-RTP_HDR_SIZE,1,fp);
+			FILE* fp = MAP_OpenFileP(serverPtr,rp.pt);
+			int jitter = 150; //150ms jitter hardcode
+			int startDelay = 5; //5s start delay hardcode
+			int fps = 24; //fps hardcode
 			// REQ: Check  timestamp and/ throw it away
+			char CurrentTime[MAX_STRING_LENGTH];
+			TIME_PrintClockInSecond(getSimTime(node),CurrentTime);  // Mohammed Sinky (testing timing)
+			char onTime[MAX_STRING_LENGTH];
+			printf("Just before sending comparison FromTransport: Current time [%s], ",CurrentTime);	
+			if ( getSimTime(node) <= (startDelay * SECOND + (jitter * MILLI_SECOND) + rp.timestamp * (SECOND / fps)))
+			{
+				printf("On time\n");
+				fwrite((byte*)dataBuffer + RTP_HDR_SIZE,nByte - RTP_HDR_SIZE,1,fp);
+				sprintf(onTime,"on time");
+			}
+			else {
+				printf("late \n");
+				sprintf(onTime,"LATE");
+
+			}
 
 			Atom.Seq	= rp.seq;
 			Atom.Size	= nByte;
@@ -998,7 +1030,7 @@ void AppLayerVideoServer(Node *node, Message *msg)
 			}
 
 			serverPtr->RecvPacketInfo[rp.ssrc].push_back(Atom);
-			sprintf(szLog,"FlowId %d Timestamp %d Seq %d size %d",rp.ssrc, rp.timestamp, rp.seq, nByte);
+			sprintf(szLog,"FlowId %d Timestamp %d Seq %d size %d, %s",rp.ssrc, rp.timestamp, rp.seq, nByte, onTime);
 			SaveLog(RECEIVER_LOG_FILE,node,szLog);
 			break;
 		}
@@ -1562,7 +1594,7 @@ FILE* MAP_OpenFileP(AppDataVideoServer *serverPtr,int payload_type)
 	if (serverPtr->PayloadTypeFilePMap.count(payload_type) == 0)
 	{
 		char FileName[MAX_STRING_LENGTH];
-		sprintf(FileName, "%d", payload_type);
+		sprintf(FileName, "%d.h264", payload_type);
 
 		FILE* fileP = fopen(FileName,"wb");
 		pair<int, FILE*> NewItem(payload_type, fileP);
