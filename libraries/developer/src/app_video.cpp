@@ -517,7 +517,7 @@ bool AppVideoClientScheduleNextPkt(Node *node,							///< The pointer of node
 	chun_log(LOG_IPC_RECEIVE, "start AppVideoClientScheduleNextPkt \n");
 
 	if(VideoClientPtr == NULL) {
-		printf("VideoCleintPtr error!!!!!\n");
+		printf("VideoClientPtr error!!!!!\n");
 		return false;
 	}
 
@@ -557,12 +557,21 @@ bool AppVideoClientScheduleNextPkt(Node *node,							///< The pointer of node
 						&cbRead,							// number of bytes read 
 						NULL);
 
+
 					if(fSuccess == FALSE) {
 						ERROR_Assert(FALSE,"[AppVideoClientScheduleNextPkt] Reading data failed!");
 					}
 
-					//printf("IPC_MESSAGE_DATA_SEND dump = 0x%x 0x%x 0x%x 0x%x \n", VideoClientPtr->pBuffer[0], VideoClientPtr->pBuffer[1], VideoClientPtr->pBuffer[2], VideoClientPtr->pBuffer[3]);
+					printf("IPC_MESSAGE_DATA_SEND dump = 0x%x 0x%x 0x%x 0x%x (size %d) \n", VideoClientPtr->pBuffer[0], VideoClientPtr->pBuffer[1], VideoClientPtr->pBuffer[2], VideoClientPtr->pBuffer[3], IPCMessage.ipc_packet_size);
+					if(FragCount == 0){
+						printf("First packet - send to h264_analyze \n");
+						printf("0x%x 0x%x 0x%x 0x%x \n",  VideoClientPtr->pBuffer[12], VideoClientPtr->pBuffer[13], VideoClientPtr->pBuffer[14], VideoClientPtr->pBuffer[15]);
+						printf("0x%x 0x%x 0x%x 0x%x \n",  VideoClientPtr->pBuffer[16], VideoClientPtr->pBuffer[17], VideoClientPtr->pBuffer[18], VideoClientPtr->pBuffer[19]);
+						printf("0x%x 0x%x 0x%x 0x%x \n",  VideoClientPtr->pBuffer[20], VideoClientPtr->pBuffer[21], VideoClientPtr->pBuffer[22], VideoClientPtr->pBuffer[23]);
+						printf("0x%x 0x%x 0x%x 0x%x \n",  VideoClientPtr->pBuffer[24], VideoClientPtr->pBuffer[25], VideoClientPtr->pBuffer[26], VideoClientPtr->pBuffer[27]);
 
+						
+					}
 
 					FragCount++;
 #if 0
@@ -1007,15 +1016,15 @@ void AppLayerVideoServer(Node *node, Message *msg)
 			char CurrentTime[MAX_STRING_LENGTH];
 			TIME_PrintClockInSecond(getSimTime(node),CurrentTime);  // Mohammed Sinky (testing timing)
 			char onTime[MAX_STRING_LENGTH];
-			printf("Just before sending comparison FromTransport: Current time [%s], ",CurrentTime);	
+			//printf("Just before sending comparison FromTransport: Current time [%s], ",CurrentTime);	
 			if ( getSimTime(node) <= (startDelay * SECOND + (jitter * MILLI_SECOND) + rp.timestamp * (SECOND / fps)))
 			{
-				printf("On time\n");
+				//printf("On time\n");
 				fwrite((byte*)dataBuffer + RTP_HDR_SIZE,nByte - RTP_HDR_SIZE,1,fp);
 				sprintf(onTime,"on time");
 			}
 			else {
-				printf("late \n");
+				//printf("late \n");
 				sprintf(onTime,"LATE");
 
 			}

@@ -1,0 +1,110 @@
+DEVELOPER_OPTIONS =
+
+
+DEVELOPER_DIR = ../libraries/developer
+DEVELOPER_SRCDIR = ../libraries/developer/src
+
+#
+# common sources
+#
+DEVELOPER_SRCS = \
+$(DEVELOPER_SRCDIR)/adaptation_aal5.cpp \
+$(DEVELOPER_SRCDIR)/adaptation.cpp \
+$(DEVELOPER_SRCDIR)/adaptation_saal.cpp \
+$(DEVELOPER_SRCDIR)/app_cbr.cpp \
+$(DEVELOPER_SRCDIR)/app_forward.cpp \
+$(DEVELOPER_SRCDIR)/app_ftp.cpp \
+$(DEVELOPER_SRCDIR)/app_gen_ftp.cpp \
+$(DEVELOPER_SRCDIR)/app_http.cpp \
+$(DEVELOPER_SRCDIR)/app_lookup.cpp \
+$(DEVELOPER_SRCDIR)/app_mcbr.cpp \
+$(DEVELOPER_SRCDIR)/app_messenger.cpp \
+$(DEVELOPER_SRCDIR)/app_superapplication.cpp \
+$(DEVELOPER_SRCDIR)/app_telnet.cpp \
+$(DEVELOPER_SRCDIR)/app_traffic_gen.cpp \
+$(DEVELOPER_SRCDIR)/app_traffic_trace.cpp \
+$(DEVELOPER_SRCDIR)/app_vbr.cpp \
+$(DEVELOPER_SRCDIR)/atm_layer2.cpp \
+$(DEVELOPER_SRCDIR)/atm_logical_subnet.cpp \
+$(DEVELOPER_SRCDIR)/atm_queue.cpp \
+$(DEVELOPER_SRCDIR)/if_loopback.cpp \
+$(DEVELOPER_SRCDIR)/if_ndp6.cpp \
+$(DEVELOPER_SRCDIR)/if_queue.cpp \
+$(DEVELOPER_SRCDIR)/if_scheduler.cpp \
+$(DEVELOPER_SRCDIR)/ip6_icmp.cpp \
+$(DEVELOPER_SRCDIR)/ip6_input.cpp \
+$(DEVELOPER_SRCDIR)/ip6_opts.cpp \
+$(DEVELOPER_SRCDIR)/ip6_output.cpp \
+$(DEVELOPER_SRCDIR)/ipv6.cpp \
+$(DEVELOPER_SRCDIR)/ipv6_radix.cpp \
+$(DEVELOPER_SRCDIR)/ipv6_route.cpp \
+$(DEVELOPER_SRCDIR)/mac_802_3.cpp \
+$(DEVELOPER_SRCDIR)/mac_arp.cpp \
+$(DEVELOPER_SRCDIR)/mac_llc.cpp \
+$(DEVELOPER_SRCDIR)/mac_background_traffic.cpp \
+$(DEVELOPER_SRCDIR)/mac_link.cpp \
+$(DEVELOPER_SRCDIR)/mac_satcom.cpp \
+$(DEVELOPER_SRCDIR)/mobility_placement.cpp \
+$(DEVELOPER_SRCDIR)/multicast_igmp.cpp \
+$(DEVELOPER_SRCDIR)/multicast_static.cpp \
+$(DEVELOPER_SRCDIR)/network_dualip.cpp \
+$(DEVELOPER_SRCDIR)/network_icmp.cpp \
+$(DEVELOPER_SRCDIR)/network_ip.cpp \
+$(DEVELOPER_SRCDIR)/network_ipsec.cpp \
+$(DEVELOPER_SRCDIR)/network_ipsec_esp.cpp \
+$(DEVELOPER_SRCDIR)/prop_flat_binning.cpp \
+$(DEVELOPER_SRCDIR)/queue_red.cpp \
+$(DEVELOPER_SRCDIR)/queue_red_ecn.cpp \
+$(DEVELOPER_SRCDIR)/queue_rio_ecn.cpp \
+$(DEVELOPER_SRCDIR)/queue_wred_ecn.cpp \
+$(DEVELOPER_SRCDIR)/resource_manager_cbq.cpp \
+$(DEVELOPER_SRCDIR)/route_atm.cpp \
+$(DEVELOPER_SRCDIR)/routing_bellmanford.cpp \
+$(DEVELOPER_SRCDIR)/routing_rip.cpp \
+$(DEVELOPER_SRCDIR)/routing_ripng.cpp \
+$(DEVELOPER_SRCDIR)/routing_static.cpp \
+$(DEVELOPER_SRCDIR)/sch_atm.cpp \
+$(DEVELOPER_SRCDIR)/sch_fq.cpp \
+$(DEVELOPER_SRCDIR)/sch_graph.cpp \
+$(DEVELOPER_SRCDIR)/sch_roundrobin.cpp \
+$(DEVELOPER_SRCDIR)/sch_scfq.cpp \
+$(DEVELOPER_SRCDIR)/sch_strictprio.cpp \
+$(DEVELOPER_SRCDIR)/sch_wfq.cpp \
+$(DEVELOPER_SRCDIR)/sch_wrr.cpp \
+$(DEVELOPER_SRCDIR)/tcplib_brkdn_dist.cpp \
+$(DEVELOPER_SRCDIR)/tcplib.cpp \
+$(DEVELOPER_SRCDIR)/tcplib_distributions.cpp \
+$(DEVELOPER_SRCDIR)/tcplib_ftp.cpp \
+$(DEVELOPER_SRCDIR)/tcplib_nntp.cpp \
+$(DEVELOPER_SRCDIR)/tcplib_phone.cpp \
+$(DEVELOPER_SRCDIR)/tcplib_smtp.cpp \
+$(DEVELOPER_SRCDIR)/tcplib_telnet.cpp \
+$(DEVELOPER_SRCDIR)/transport_abstract_tcp.cpp \
+$(DEVELOPER_SRCDIR)/transport_abstract_tcp_input.cpp \
+$(DEVELOPER_SRCDIR)/transport_abstract_tcp_output.cpp \
+$(DEVELOPER_SRCDIR)/transport_abstract_tcp_timer.cpp \
+$(DEVELOPER_SRCDIR)/transport_abstract_tcp_usrreq.cpp \
+$(DEVELOPER_SRCDIR)/transport_in_pcb.cpp \
+$(DEVELOPER_SRCDIR)/transport_tcp.cpp \
+$(DEVELOPER_SRCDIR)/transport_tcp_input.cpp \
+$(DEVELOPER_SRCDIR)/transport_tcp_output.cpp \
+$(DEVELOPER_SRCDIR)/transport_tcp_subr.cpp \
+$(DEVELOPER_SRCDIR)/transport_tcp_timer.cpp \
+$(DEVELOPER_SRCDIR)/transport_tcp_usrreq.cpp \
+$(DEVELOPER_SRCDIR)/transport_udp.cpp \
+$(DEVELOPER_SRCDIR)/util_dlb.cpp \
+$(DEVELOPER_SRCDIR)/app_video.cpp \
+$(DEVELOPER_SRCDIR)/app_wbest.cpp \
+$(DEVELOPER_SRCDIR)/chun/chun_RTP.cpp \
+$(DEVELOPER_SRCDIR)/chun/chun_RTCP.cpp \
+$(DEVELOPER_SRCDIR)/chun/chun_IPC.cpp \
+$(DEVELOPER_SRCDIR)/chun/chun_Global.cpp \
+$(DEVELOPER_SRCDIR)/chun/pGNUPlot.cpp \
+$(DEVELOPER_SRCDIR)/h264_bitstream/h264_avcc.cpp \
+$(DEVELOPER_SRCDIR)/h264_bitstream/h264_sei.cpp \
+$(DEVELOPER_SRCDIR)/h264_bitstream/h264_stream.cpp
+
+
+
+DEVELOPER_INCLUDES = \
+-I$(DEVELOPER_SRCDIR)
